@@ -44,65 +44,17 @@ Rectangle {
         Repeater {
             model: root.tools
 
-            delegate: Rectangle {
-                id: button
+            delegate: ToolButton {
                 required property var modelData
-                width: 28
-                height: 28
-                radius: 2
-                color: root.currentTool === modelData.name
-                       ? root.selectedColor
-                       : (mouseArea.containsMouse ? root.hoverColor : "transparent")
-                border.width: (root.currentTool === modelData.name || mouseArea.containsMouse) ? 1 : 0
-                border.color: "#777777"
-
-                Image {
-                    anchors.centerIn: parent
-                    width: 20
-                    height: 20
-                    source: "qrc:/assets/icons/" + button.modelData.icon
-                    fillMode: Image.PreserveAspectFit
-                    smooth: true
-                    opacity: root.currentTool === button.modelData.name ? 1.0 : 0.82
-                }
-
-                MouseArea {
-                    id: mouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.selectTool(button.modelData.name)
-
-                    ToolTip {
-                        visible: mouseArea.containsMouse
-                        text: button.modelData.label
-                    }
-                }
-
-                Shortcut {
-                    sequence: button.modelData.shortcut
-                    onActivated: root.selectTool(button.modelData.name)
-                }
+                toolName: modelData.name
+                label: modelData.label
+                iconSource: modelData.icon
+                shortcut: modelData.shortcut
+                selected: root.currentTool === modelData.name
+                hoverColor: root.hoverColor
+                selectedColor: root.selectedColor
+                onActivated: (tool) => root.selectTool(tool)
             }
-        }
-    }
-
-    component ToolTip: Rectangle {
-        property alias text: caption.text
-        x: parent.width + 7
-        y: (parent.height - height) / 2
-        width: caption.implicitWidth + 16
-        height: 26
-        radius: 3
-        color: "#252525"
-        border.color: "#666666"
-        z: 10
-
-        Text {
-            id: caption
-            anchors.centerIn: parent
-            color: "#eeeeee"
-            font.pixelSize: 12
         }
     }
 }
