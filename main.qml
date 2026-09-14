@@ -10,6 +10,7 @@ Window {
 
     ToolBar {
         id: toolBar
+        z: 1    // 提示工具栏的层级，因为右侧内容区域后绘制，覆盖了工具栏向右扩展的 Tooltip
         anchors {
             left: parent.left
             top: parent.top

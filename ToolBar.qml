@@ -2,23 +2,16 @@ import QtQuick 2.15
 
 pragma ComponentBehavior: Bound
 
-/**
- * The vertical tool palette used by the editor.
- *
- * The component deliberately keeps the tool state local and exposes the
- * selected tool through `currentTool`, so the editor can later bind its
- * canvas behaviour to this property without knowing about the button layout.
- */
 Rectangle {
     id: root
 
     property string currentTool: "create"
-    property color panelColor: "#535353"
-    property color iconColor: "#d6d6d6"
-    property color selectedColor: "#303030"
-    property color hoverColor: "#565656"
 
-    width: 42
+    property color panelColor: "#535353"
+    property color hoverColor: "#454545"
+    property color selectedColor: "#363636"
+
+    width: 38
     color: panelColor
 
     signal toolSelected(string tool)
@@ -54,19 +47,19 @@ Rectangle {
             delegate: Rectangle {
                 id: button
                 required property var modelData
-                width: 34
-                height: 34
+                width: 28
+                height: 28
                 radius: 2
                 color: root.currentTool === modelData.name
                        ? root.selectedColor
-                       : (mouse.containsMouse ? root.hoverColor : "transparent")
-                border.width: root.currentTool === modelData.name ? 1 : 0
+                       : (mouseArea.containsMouse ? root.hoverColor : "transparent")
+                border.width: (root.currentTool === modelData.name || mouseArea.containsMouse) ? 1 : 0
                 border.color: "#777777"
 
                 Image {
                     anchors.centerIn: parent
-                    width: 22
-                    height: 22
+                    width: 20
+                    height: 20
                     source: "qrc:/assets/icons/" + button.modelData.icon
                     fillMode: Image.PreserveAspectFit
                     smooth: true
@@ -74,14 +67,14 @@ Rectangle {
                 }
 
                 MouseArea {
-                    id: mouse
+                    id: mouseArea
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.selectTool(button.modelData.name)
 
                     ToolTip {
-                        visible: mouse.containsMouse
+                        visible: mouseArea.containsMouse
                         text: button.modelData.label
                     }
                 }
@@ -94,8 +87,6 @@ Rectangle {
         }
     }
 
-    // A small tooltip implementation keeps this component independent from
-    // Qt Quick Controls while still making the shortcuts discoverable.
     component ToolTip: Rectangle {
         property alias text: caption.text
         x: parent.width + 7
