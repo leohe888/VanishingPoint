@@ -13,10 +13,10 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Quick)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Quick)
 
 set(PROJECT_SOURCES
-        main.cpp
-        perspectivecanvas.cpp
-        perspectivecanvas.h
-        qml.qrc
+        src/main.cpp
+        src/canvas/perspectivecanvas.cpp
+        src/canvas/perspectivecanvas.h
+        src/res.qrc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
