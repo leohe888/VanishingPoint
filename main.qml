@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
+import QtQuick.Layouts 1.15
 
 Window {
     width: 1280
@@ -19,8 +20,8 @@ Window {
         onToolSelected: (tool) => console.log("Selected tool:", tool)
     }
 
-    Column {
-        id: con
+    ColumnLayout {
+        id: contentColumn
         spacing: 4
         anchors {
             left: toolBar.right
@@ -29,32 +30,17 @@ Window {
             bottom: parent.bottom
         }
 
-        Rectangle {
-            id: parameterBar
-            width: parent.width
-            height: 38
-            color: "#535353"
+        ParameterBar {
+            Layout.fillWidth: true
         }
 
-        Rectangle {
-            id: hintBar
-            width: parent.width
-            height: 38
-            color: "#535353"
-            border.color: "#3E3E3E"
-            border.width: 1
+        HintBar {
+            Layout.fillWidth: true
         }
 
-        Rectangle {
-            id: canvas
-            width: parent.width
-            height: Math.max(0, parent.height
-                             - parameterBar.height
-                             - hintBar.height
-                             - editorLayout.spacing * 2)
-            color: "#4D4D4D"
-            border.color: "#3E3E3E"
-            border.width: 1
+        PerspectiveCanvas {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
         }
     }
 }
