@@ -6,7 +6,11 @@ Rectangle {
     border.color: "#3e3e3e"
     border.width: 1
 
+    property alias canvas: canvas
+
     VpCanvas {
+        id: canvas
         anchors.fill: parent
+        anchors.margins: parent.border.width
     }
 }

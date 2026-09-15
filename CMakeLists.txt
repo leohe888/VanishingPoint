@@ -32,6 +32,8 @@ set(PROJECT_SOURCES
         src/core/paintengine.h
         src/core/planeedittool.cpp
         src/core/planeedittool.h
+        src/core/planecreatetool.cpp
+        src/core/planecreatetool.h
         src/core/planemath.cpp
         src/core/planemath.h
         src/core/projectivemapping.cpp
@@ -65,6 +67,8 @@ else()
         )
     endif()
 endif()
+
+target_include_directories(VanishingPoint PRIVATE src)
 
 target_link_libraries(VanishingPoint
   PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)

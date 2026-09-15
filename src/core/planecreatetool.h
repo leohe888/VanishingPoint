@@ -1,0 +1,30 @@
+#pragma once
+
+#include "planemath.h"
+
+#include <QPointF>
+#include <QString>
+#include <QVector>
+
+// 创建平面工具：依次收集用户点击的 4 个角点，凑齐后生成一个透视平面。
+// 与 PlaneEditTool 一样只维护交互状态，不接触文档和视图；
+// 橡皮筋预览由 SceneRenderer 根据 points() 与当前光标位置绘制。
+class PlaneCreateTool
+{
+public:
+    static constexpr int CornerCount = 4;
+
+    void addPoint(const QPointF &point);           // 落下一个角点；已凑齐时忽略
+    void reset() { m_points.clear(); }             // 放弃本次创建
+    bool active() const { return !m_points.isEmpty(); }
+    bool complete() const { return m_points.size() == CornerCount; }
+    const QVector<QPointF> &points() const { return m_points; }
+
+    // 用已落下的 4 个角点构造平面。展开曲面按对边平均长度初始化为矩形，
+    // 使贴到平面上的内容在初始状态下不被额外拉伸。
+    // 角点是否构成有效凸四边形由调用方通过 PlaneMath::isValidPlane 判断。
+    Plane makePlane(int surfaceGroup, const QString &name) const;
+
+private:
+    QVector<QPointF> m_points;
+};

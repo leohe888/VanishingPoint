@@ -2,7 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <qqml.h>
 
-#include "canvas/VpCanvas.h"
+#include "canvas/vpcanvas.h"
 
 int main(int argc, char *argv[])
 {
