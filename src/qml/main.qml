@@ -38,7 +38,7 @@ Window {
             Layout.fillWidth: true
         }
 
-        WokArea {
+        WorkArea {
             Layout.fillWidth: true
             Layout.fillHeight: true
         }
