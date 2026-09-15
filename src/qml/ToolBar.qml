@@ -7,12 +7,11 @@ Rectangle {
 
     property string currentTool: "create"
 
-    property color panelColor: "#535353"
+    property color backgroundColor: "#535353"
     property color hoverColor: "#454545"
     property color selectedColor: "#363636"
 
-    width: 38
-    color: panelColor
+    color: backgroundColor
 
     signal toolSelected(string tool)
 

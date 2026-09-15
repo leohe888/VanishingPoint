@@ -9,38 +9,38 @@ Window {
     color: "#535353"
     title: qsTr("消失点")
 
-    ToolBar {
-        id: toolBar
-        z: 1    // 提升工具栏的层级，因为右侧内容区域后绘制，覆盖了工具栏向右扩展的 Tooltip
-        anchors {
-            left: parent.left
-            top: parent.top
-            bottom: parent.bottom
-        }
-        onToolSelected: (tool) => console.log("Selected tool:", tool)
-    }
+    RowLayout {
+        anchors.fill: parent
+        spacing: 0
 
-    ColumnLayout {
-        id: contentColumn
-        spacing: 4
-        anchors {
-            left: toolBar.right
-            top: parent.top
-            right: parent.right
-            bottom: parent.bottom
+        ToolBar {
+            id: toolBar
+            z: 1    // 提升工具栏的层级，因为右侧内容区域后绘制，覆盖了工具栏向右扩展的 Tooltip
+            Layout.preferredWidth: 38
+            Layout.fillHeight: true
+            onToolSelected: (tool) => console.log("Selected tool:", tool)
         }
 
-        ParameterBar {
-            Layout.fillWidth: true
-        }
-
-        HintBar {
-            Layout.fillWidth: true
-        }
-
-        WorkArea {
+        ColumnLayout {
+            id: mainColumn
+            spacing: 4
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            ToolOptionsBar {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 38
+            }
+
+            HintBar {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 38
+            }
+
+            WorkArea {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+            }
         }
     }
 }
