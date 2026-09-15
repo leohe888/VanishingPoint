@@ -38,7 +38,7 @@ Window {
             Layout.fillWidth: true
         }
 
-        PerspectiveCanvas {
+        WokArea {
             Layout.fillWidth: true
             Layout.fillHeight: true
         }

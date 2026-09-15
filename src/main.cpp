@@ -1,5 +1,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <qqml.h>
+
+#include "canvas/perspectivecanvas.h"
 
 int main(int argc, char *argv[])
 {
@@ -7,6 +10,8 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
     QGuiApplication app(argc, argv);
+
+    qmlRegisterType<PerspectiveCanvas>("VanishingPoint", 1, 0, "PerspectiveCanvas");
 
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/src/qml/main.qml"));
