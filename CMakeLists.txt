@@ -14,8 +14,32 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Quick)
 
 set(PROJECT_SOURCES
         src/main.cpp
-        src/canvas/perspectivecanvas.cpp
-        src/canvas/perspectivecanvas.h
+        src/canvas/vpcanvas.cpp
+        src/canvas/vpcanvas.h
+        src/core/canvasdocument.cpp
+        src/core/canvasdocument.h
+        src/core/clonestampengine.cpp
+        src/core/clonestampengine.h
+        src/core/clonetool.cpp
+        src/core/clonetool.h
+        src/core/floatingimagemath.cpp
+        src/core/floatingimagemath.h
+        src/core/imagegeometry.cpp
+        src/core/imagegeometry.h
+        src/core/imagetransformtool.cpp
+        src/core/imagetransformtool.h
+        src/core/paintengine.cpp
+        src/core/paintengine.h
+        src/core/planeedittool.cpp
+        src/core/planeedittool.h
+        src/core/planemath.cpp
+        src/core/planemath.h
+        src/core/projectivemapping.cpp
+        src/core/projectivemapping.h
+        src/core/scenecontentcache.cpp
+        src/core/scenecontentcache.h
+        src/core/scenerenderer.cpp
+        src/core/scenerenderer.h
         res.qrc
 )
 

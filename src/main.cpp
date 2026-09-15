@@ -2,7 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <qqml.h>
 
-#include "canvas/perspectivecanvas.h"
+#include "canvas/VpCanvas.h"
 
 int main(int argc, char *argv[])
 {
@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 #endif
     QGuiApplication app(argc, argv);
 
-    qmlRegisterType<PerspectiveCanvas>("VanishingPoint", 1, 0, "PerspectiveCanvas");
+    qmlRegisterType<VpCanvas>("VanishingPoint", 1, 0, "VpCanvas");
 
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/src/qml/main.qml"));

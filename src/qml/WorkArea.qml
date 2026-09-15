@@ -6,7 +6,7 @@ Rectangle {
     border.color: "#3e3e3e"
     border.width: 1
 
-    PerspectiveCanvas {
+    VpCanvas {
         anchors.fill: parent
     }
 }
