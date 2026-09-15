@@ -3,27 +3,12 @@
 #include "core/scenerenderer.h"
 
 #include <QCursor>
-#include <QHash>
 #include <QHoverEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 
 namespace {
-// 工具枚举与 QML 短名的对应表，新增工具时在此登记即可。
-const QHash<QString, VpCanvas::Tool> &toolNames()
-{
-    static const QHash<QString, VpCanvas::Tool> table {
-        { QStringLiteral("create"), VpCanvas::Tool::CreatePlane },
-        { QStringLiteral("edit"), VpCanvas::Tool::EditPlane },
-        { QStringLiteral("marquee"), VpCanvas::Tool::Marquee },
-        { QStringLiteral("stamp"), VpCanvas::Tool::CloneStamp },
-        { QStringLiteral("brush"), VpCanvas::Tool::Brush },
-        { QStringLiteral("transform"), VpCanvas::Tool::Transform },
-    };
-    return table;
-}
-
 constexpr qreal ViewMargin = 16.0; // 图像与控件边缘的留白（控件像素）
 }
 
@@ -43,28 +28,34 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     updateViewTransform();
 }
 
-QString VpCanvas::tool() const
+VpCanvas::Tool VpCanvas::tool() const
 {
-    return toolNames().key(m_tool);
-}
-
-void VpCanvas::setTool(const QString &name)
-{
-    const auto it = toolNames().constFind(name);
-    if (it != toolNames().constEnd())
-        setTool(it.value());
+    return m_tool;
 }
 
 // 切换工具：放弃进行中的交互，更新光标与提示。
 void VpCanvas::setTool(Tool tool)
 {
-    if (tool == m_tool)
+    const auto statusForTool = [tool]() {
+        switch (tool) {
+        case Tool::CreatePlane: return QObject::tr("依次单击四个角点以创建平面");
+        case Tool::EditPlane: return QObject::tr("拖动控制点或边缘以编辑平面");
+        case Tool::Marquee: return QObject::tr("拖动以框选画布区域");
+        case Tool::CloneStamp: return QObject::tr("选择源区域并在目标位置绘制");
+        case Tool::Brush: return QObject::tr("拖动以绘制笔触");
+        case Tool::Transform: return QObject::tr("拖动控制点以变换图像");
+        }
+        return QString();
+    };
+
+    if (tool == m_tool) {
+        emit statusMessage(statusForTool());
         return;
+    }
     cancelInteraction();
     m_tool = tool;
     setCursor(tool == Tool::EditPlane ? Qt::SizeAllCursor : Qt::CrossCursor);
-    if (tool == Tool::CreatePlane)
-        emit statusMessage(tr("依次单击四个角点以创建平面"));
+    emit statusMessage(statusForTool());
     emit toolChanged();
     update();
 }

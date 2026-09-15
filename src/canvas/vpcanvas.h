@@ -5,23 +5,21 @@
 
 #include <QPointF>
 #include <QQuickPaintedItem>
-#include <QString>
 
 // 透视画布：负责视图变换（图像坐标 <-> 控件坐标）、输入路由与工具切换。
 // 工具各自维护交互状态，几何、文档与渲染分别由 src/core 中的模块承担。
 class VpCanvas : public QQuickPaintedItem
 {
     Q_OBJECT
-    // 工具用短名暴露给 QML（"create"/"edit"/...），与工具栏按钮的 toolName 一致。
-    Q_PROPERTY(QString tool READ tool WRITE setTool NOTIFY toolChanged)
+    Q_PROPERTY(Tool tool READ tool WRITE setTool NOTIFY toolChanged)
 
 public:
-    enum class Tool { CreatePlane, EditPlane, Marquee, CloneStamp, Brush, Transform };
+    enum Tool { CreatePlane, EditPlane, Marquee, CloneStamp, Brush, Transform };
+    Q_ENUM(Tool)
 
     explicit VpCanvas(QQuickItem *parent = nullptr);
 
-    QString tool() const;
-    void setTool(const QString &name);
+    Tool tool() const;
     void setTool(Tool tool);
 
     void paint(QPainter *painter) override;

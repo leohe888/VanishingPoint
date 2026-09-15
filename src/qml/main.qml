@@ -18,7 +18,7 @@ Window {
             z: 1    // 提升工具栏的层级，因为右侧内容区域后绘制，覆盖了工具栏向右扩展的 Tooltip
             Layout.preferredWidth: 38
             Layout.fillHeight: true
-            onToolSelected: (tool) => workArea.canvas.tool = tool
+            onToolSelected: (toolId) => workArea.canvas.tool = toolId
         }
 
         ColumnLayout {
@@ -36,7 +36,6 @@ Window {
                 id: hintBar
                 Layout.fillWidth: true
                 Layout.preferredHeight: 38
-                message: qsTr("依次单击四个角点以创建平面")
             }
 
             WorkArea {

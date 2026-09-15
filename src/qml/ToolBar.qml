@@ -1,11 +1,12 @@
 import QtQuick 2.15
+import VanishingPoint 1.0
 
 pragma ComponentBehavior: Bound
 
 Rectangle {
     id: root
 
-    property string currentTool: "create"
+    property int currentTool: VpCanvas.CreatePlane
 
     property color backgroundColor: "#535353"
     property color hoverColor: "#454545"
@@ -13,15 +14,17 @@ Rectangle {
 
     color: backgroundColor
 
-    signal toolSelected(string tool)
+    signal toolSelected(int toolId)
+
+    Component.onCompleted: root.toolSelected(root.currentTool)
 
     readonly property var tools: [
-        { toolName: "edit",         tooltip: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
-        { toolName: "create",       tooltip: qsTr("创建平面工具 (C)"),  icon: "perspective.png",shortcut: "C" },
-        { toolName: "marquee",      tooltip: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M" },
-        { toolName: "stamp",        tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S" },
-        { toolName: "brush",        tooltip: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
-        { toolName: "transform",    tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T" }
+        { toolId: VpCanvas.EditPlane,   tooltip: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
+        { toolId: VpCanvas.CreatePlane, tooltip: qsTr("创建平面工具 (C)"),  icon: "perspective.png", shortcut: "C" },
+        { toolId: VpCanvas.Marquee,     tooltip: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M" },
+        { toolId: VpCanvas.CloneStamp,  tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S" },
+        { toolId: VpCanvas.Brush,       tooltip: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
+        { toolId: VpCanvas.Transform,   tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T" }
     ]
 
     function selectTool(tool) {
@@ -45,11 +48,11 @@ Rectangle {
 
             delegate: ToolButton {
                 required property var modelData
-                toolName: modelData.toolName
+                toolId: modelData.toolId
                 tooltip: modelData.tooltip
                 iconSource: modelData.icon
                 shortcut: modelData.shortcut
-                selected: root.currentTool === modelData.toolName
+                selected: root.currentTool === modelData.toolId
                 hoverColor: root.hoverColor
                 selectedColor: root.selectedColor
                 onActivated: (tool) => root.selectTool(tool)

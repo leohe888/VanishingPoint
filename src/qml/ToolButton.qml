@@ -5,7 +5,7 @@ pragma ComponentBehavior: Bound
 Rectangle {
     id: root
 
-    property string toolName: ""
+    property int toolId: -1
     property string tooltip: ""
     property string iconSource: ""
     property string shortcut: ""
@@ -22,7 +22,7 @@ Rectangle {
     border.width: (root.selected || mouseArea.containsMouse) ? 1 : 0
     border.color: "#777777"
 
-    signal activated(string tool)
+    signal activated(int toolId)
 
     Image {
         anchors.centerIn: parent
@@ -39,7 +39,7 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.activated(root.toolName)
+        onClicked: root.activated(root.toolId)
 
         ToolTip {
             visible: mouseArea.containsMouse
@@ -49,7 +49,7 @@ Rectangle {
 
     Shortcut {
         sequence: root.shortcut
-        onActivated: root.activated(root.toolName)
+        onActivated: root.activated(root.toolId)
     }
 
     component ToolTip: Rectangle {
@@ -59,14 +59,14 @@ Rectangle {
         width: caption.implicitWidth + 16
         height: 26
         radius: 3
-        color: "#252525"
+        color: "#F9F9F9"
         border.color: "#666666"
         z: 10
 
         Text {
             id: caption
             anchors.centerIn: parent
-            color: "#eeeeee"
+            color: "#575757"
             font.pixelSize: 12
         }
     }
