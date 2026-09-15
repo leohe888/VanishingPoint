@@ -17,12 +17,12 @@ Rectangle {
     signal toolSelected(string tool)
 
     readonly property var tools: [
-        { name: "edit",         label: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
-        { name: "create",       label: qsTr("创建平面工具 (C)"),  icon: "perspective.png",shortcut: "C" },
-        { name: "marquee",      label: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M" },
-        { name: "stamp",        label: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S" },
-        { name: "brush",        label: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
-        { name: "transform",    label: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T" }
+        { toolName: "edit",         tooltip: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
+        { toolName: "create",       tooltip: qsTr("创建平面工具 (C)"),  icon: "perspective.png",shortcut: "C" },
+        { toolName: "marquee",      tooltip: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M" },
+        { toolName: "stamp",        tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S" },
+        { toolName: "brush",        tooltip: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
+        { toolName: "transform",    tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T" }
     ]
 
     function selectTool(tool) {
@@ -46,11 +46,11 @@ Rectangle {
 
             delegate: ToolButton {
                 required property var modelData
-                toolName: modelData.name
-                label: modelData.label
+                toolName: modelData.toolName
+                tooltip: modelData.tooltip
                 iconSource: modelData.icon
                 shortcut: modelData.shortcut
-                selected: root.currentTool === modelData.name
+                selected: root.currentTool === modelData.toolName
                 hoverColor: root.hoverColor
                 selectedColor: root.selectedColor
                 onActivated: (tool) => root.selectTool(tool)

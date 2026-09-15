@@ -6,7 +6,7 @@ Rectangle {
     id: root
 
     property string toolName: ""
-    property string label: ""
+    property string tooltip: ""
     property string iconSource: ""
     property string shortcut: ""
     property bool selected: false
@@ -43,7 +43,7 @@ Rectangle {
 
         ToolTip {
             visible: mouseArea.containsMouse
-            text: root.label
+            text: root.tooltip
         }
     }
 

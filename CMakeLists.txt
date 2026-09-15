@@ -16,7 +16,7 @@ set(PROJECT_SOURCES
         src/main.cpp
         src/canvas/perspectivecanvas.cpp
         src/canvas/perspectivecanvas.h
-        src/res.qrc
+        res.qrc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
