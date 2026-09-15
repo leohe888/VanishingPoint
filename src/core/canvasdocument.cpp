@@ -1,8 +1,6 @@
 #include "canvasdocument.h"
 
 #include <QPainter>
-#include <QLineF>
-#include <QTransform>
 
 namespace {
 // 历史条目可能包含多张大纹理的脏矩形，因此限制历史数量以防内存失控。
@@ -22,7 +20,6 @@ bool CanvasDocument::loadImage(const QString &fileName)
     if (image.isNull())
         return false;
     m_background = image.convertToFormat(QImage::Format_ARGB32);
-    m_hasLoadedImage = true;
     emit documentAvailabilityChanged(true);
     m_planes.clear();
     m_images.clear();
@@ -33,17 +30,6 @@ bool CanvasDocument::loadImage(const QString &fileName)
     m_paintTransactionActive = false;
     resetHistory();
     return true;
-}
-
-// 设置背景图像而不重置历史（仅在画布初始化默认背景时使用）
-void CanvasDocument::setBackground(const QImage &image)
-{
-    m_background = image.convertToFormat(QImage::Format_ARGB32);
-    // 绘画层需与背景同尺寸（仅初始化时绘画层尚未建立，或尺寸不一致时重建）
-    if (m_paintLayer.isNull() || m_paintLayer.size() != m_background.size()) {
-        m_paintLayer = QImage(m_background.size(), QImage::Format_ARGB32);
-        m_paintLayer.fill(Qt::transparent);
-    }
 }
 
 // 分配一个新的展开曲面分组号（比现有最大分组号大 1）
@@ -260,28 +246,6 @@ void CanvasDocument::detachImage(int index, const QPointF &canvasPosition)
     img.hostFace = -1;
     img.position = canvasPosition;
     img.attached = false;
-}
-
-// 将指定浮动图像顺时针旋转 90°（直接旋转位图，位置不变）
-bool CanvasDocument::rotateImage(int index)
-{
-    if (index < 0 || index >= m_images.size() || m_images[index].image.isNull())
-        return false;
-    m_images[index].image = m_images[index].image.transformed(QTransform().rotate(90),
-                                                               Qt::SmoothTransformation);
-    m_images[index].scale = QPointF(m_images[index].scale.y(), m_images[index].scale.x());
-    commitHistory();
-    return true;
-}
-
-// 将指定浮动图像水平或垂直翻转
-bool CanvasDocument::flipImage(int index, bool horizontal, bool vertical)
-{
-    if (index < 0 || index >= m_images.size() || m_images[index].image.isNull())
-        return false;
-    m_images[index].image = m_images[index].image.mirrored(horizontal, vertical);
-    commitHistory();
-    return true;
 }
 
 // 撤销：回退到上一状态（结构 + 绘画层脏矩形反演）

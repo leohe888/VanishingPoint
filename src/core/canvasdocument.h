@@ -38,8 +38,7 @@ public:
     // —— 背景（即“文档”） ——
     bool loadImage(const QString &fileName);       // 加载背景并重置文档状态
     const QImage &background() const { return m_background; }
-    void setBackground(const QImage &image);       // 设置背景而不重置历史（初始化用）
-    bool hasLoadedImage() const { return m_hasLoadedImage; }
+    bool hasLoadedImage() const { return !m_background.isNull(); }
 
     // —— 平面 ——
     const QVector<Plane> &planes() const { return m_planes; }
@@ -74,8 +73,6 @@ public:
     void attachImage(int index, const QVector<Facet> &faces, int hostFace,
                      const QPointF &surfacePosition);
     void detachImage(int index, const QPointF &canvasPosition); // 脱离曲面回到画布坐标
-    bool rotateImage(int index);                   // 顺时针旋转 90°，返回是否成功
-    bool flipImage(int index, bool horizontal, bool vertical); // 翻转，返回是否成功
 
     // —— 历史 ——
     bool undo();                                   // 回退到上一状态，返回是否发生了撤销
@@ -114,7 +111,6 @@ private:
     void applyPaint(const QRect &rect, const QImage &pixels); // 把像素写回绘画层
 
     QImage m_background;                // 背景图像（即“文档”）
-    bool m_hasLoadedImage = false;      // 是否已加载背景图像
     QVector<Plane> m_planes;            // 全部透视平面
     int m_selectedPlane = -1;           // 当前选中的平面索引
     QImage m_paintLayer;                // 绘画层（画布同尺寸）

@@ -15,16 +15,15 @@ constexpr qreal ViewMargin = 16.0; // 图像与控件边缘的留白（控件像
 VpCanvas::VpCanvas(QQuickItem *parent)
     : QQuickPaintedItem(parent)
 {
-    setAcceptHoverEvents(true);
-    setAcceptedMouseButtons(Qt::LeftButton);
-    setActiveFocusOnTab(true);
-    setAntialiasing(true);
-    setCursor(Qt::CrossCursor);
+    setAcceptHoverEvents(true); // 接受鼠标悬停事件
+    setAcceptedMouseButtons(Qt::LeftButton); // 接受鼠标左键
+    setActiveFocusOnTab(true);  // 允许通过 Tab 键获得焦点
+    setAntialiasing(true);  // 开启抗锯齿
+    setCursor(Qt::CrossCursor); // 设置鼠标指针为十字光标
 
-    // 未打开图片前先给一块默认画布，使视图变换与平面创建可以直接工作。
-    QImage background(1200, 800, QImage::Format_ARGB32);
-    background.fill(QColor("#26292d"));
-    m_doc.setBackground(background);
+    // 启动时加载默认背景；加载失败时保持空文档。
+    constexpr auto DefaultBackgroundPath = R"(C:\Users\yixin\Pictures\3.jpg)";
+    m_doc.loadImage(QString::fromUtf8(DefaultBackgroundPath));
     updateViewTransform();
 }
 
@@ -62,7 +61,7 @@ void VpCanvas::setTool(Tool tool)
 
 void VpCanvas::paint(QPainter *painter)
 {
-    painter->fillRect(boundingRect(), QColor("#191b1e"));
+    painter->fillRect(boundingRect(), QColor("#4D4D4D"));
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
     painter->translate(m_offset);
