@@ -22,10 +22,10 @@ Plane PlaneCreateTool::makePlane(int surfaceGroup) const
         plane.corner[i] = m_points[i];
 
     const qreal surfaceWidth = qMax(1.0,
-        (QLineF(plane.corner[0], plane.corner[1]).length() +
+        (QLineF(plane.corner[0], plane.corner[1]).length() +        // (上边 + 下边) / 2
          QLineF(plane.corner[3], plane.corner[2]).length()) / 2.0);
     const qreal surfaceHeight = qMax(1.0,
-        (QLineF(plane.corner[0], plane.corner[3]).length() +
+        (QLineF(plane.corner[0], plane.corner[3]).length() +        // (左边 + 右边) / 2
          QLineF(plane.corner[1], plane.corner[2]).length()) / 2.0);
     plane.surfaceCorner[0] = QPointF(0, 0);
     plane.surfaceCorner[1] = QPointF(surfaceWidth, 0);

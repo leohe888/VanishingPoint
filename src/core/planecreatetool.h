@@ -21,9 +21,7 @@ public:
     bool finished() const { return m_points.size() == CornerCount; }
     const QVector<QPointF> &points() const { return m_points; }
 
-    // 用已落下的 4 个角点构造平面。展开曲面按对边平均长度初始化为矩形，
-    // 使贴到平面上的内容在初始状态下不被额外拉伸。
-    // 角点是否构成有效凸四边形由调用方通过 PlaneMath::isValidPlane 判断。
+    // 用已落下的 4 个角点构造平面；角点是否有效由调用方用 isValidPlane 判断。
     Plane makePlane(int surfaceGroup) const;
 
 private:

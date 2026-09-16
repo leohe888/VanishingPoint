@@ -9,8 +9,8 @@
 
 // 图片上一个带透视效果的四边形
 struct Facet {
-    QPointF corner[4];  // 画布上的透视四边形，依次为左上 / 右上 / 右下 / 左下
-    QPointF surfaceCorner[4];   // 展开曲面上的对应四边形
+    QPointF corner[4];  // 四个角点在画布上坐标，依次为左上 / 右上 / 右下 / 左下
+    QPointF surfaceCorner[4];   // 四个角点在展开曲面上的坐标
 };
 
 struct Plane : Facet {
