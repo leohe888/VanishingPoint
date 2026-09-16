@@ -172,15 +172,10 @@ void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
     QQuickPaintedItem::hoverLeaveEvent(event);
 }
 
-// 创建平面过程中：Esc 放弃本次创建，Backspace / Delete 回退最后一个角点。
 void VpCanvas::keyPressEvent(QKeyEvent *event)
 {
-    if (m_createTool.active()) {
+    if (m_createTool.active()) {    //  创建平面过程中：Backspace / Delete 回退最后一个角点。
         switch (event->key()) {
-        case Qt::Key_Escape:
-            cancelInteraction();
-            emit statusMessage(tr("已取消创建平面"));
-            break;
         case Qt::Key_Backspace:
         case Qt::Key_Delete:
             m_createTool.removeLastPoint();
