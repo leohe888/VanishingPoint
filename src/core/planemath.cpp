@@ -11,8 +11,7 @@
 #include <cmath>
 
 // —— 内部工具：双精度三维向量与相机模型 ——
-// 图像坐标可达数千，两条直线叉乘后的中间量会超过 float 的有效位数，
-// 因此这里不用 QVector3D，全部按双精度计算。
+// 图像坐标可达数千，叉乘中间量超出 float 有效位数，故不用 QVector3D。
 namespace {
 
 struct Vec3 {
@@ -65,8 +64,7 @@ struct CameraFrame {
     double cy = 0.0;
 };
 
-// 由两个相互正交的世界方向的消失点解出焦距。
-// 退化（消失点在无穷远或解不合理）时返回与画幅相关的经验值。
+// 由一对正交消失点解出焦距；退化时返回与画幅相关的经验值。
 double focalFromOrthogonalVanishingPoints(const QPointF &vx, const QPointF &vy,
                                           const QSize &backgroundSize)
 {
@@ -104,8 +102,7 @@ Vec3 imageRay(const QPointF &p, const CameraFrame &frame)
     return {p.x() - frame.cx, p.y() - frame.cy, frame.focal};
 }
 
-// 相机坐标点 -> 图像点（经内参矩阵 K 投影）。
-// 落到相机后方或飞到极远处都视为失败。
+// 相机坐标点 -> 图像点（经内参矩阵 K 投影）；落到相机后方或过远都算失败。
 bool projectPoint(const Vec3 &p, const CameraFrame &frame, QPointF *out)
 {
     if (!out || !(p.z > 1e-9))
@@ -133,11 +130,9 @@ ProjectiveMapping uvMapping(const Facet &facet)
 }
 
 
-// 把 4 个角点组装为多边形。
 QPolygonF planePolygon(const QPointF corner[4])
 {
-    // 角点顺序保持不变：调用方必须按顺时针或逆时针提供四个点，
-    // 绝不能是交叉的多边形。
+    // 角点顺序原样保留，调用方须给出不自交的顺时针或逆时针四点。
     return QPolygonF{corner[0], corner[1], corner[2], corner[3]};
 }
 
@@ -164,13 +159,10 @@ qreal distanceToSegment(const QPointF &p, const QPointF &a,
     return QLineF(p, a + d * amount).length();
 }
 
-// 校验面片是否为可用的单应变换目标：必须是非交叉的凸四边形，
-// 且不能过于退化（边过短、面积过小或分母过零）。
+// 校验面片是否是可用的单应变换目标：非交叉凸四边形，且不过于退化。
 bool isValidPlane(const Facet &facet)
 {
-    // 射影变换把单位正方形映射为简单的凸四边形。
-    // 必须在进入 quadToQuad() 之前拒绝凹形、自交叉和近乎退化的
-    // 配置，否则变换的极点可能穿过平面。
+    // 必须在 quadToQuad() 前拒绝凹形、自交叉与近乎退化的配置，否则极点可能穿过平面。
     qreal windingSign = 0.0;
     qreal twiceArea = 0.0;
     for (int i = 0; i < 4; ++i) {
@@ -199,8 +191,7 @@ bool isValidPlane(const Facet &facet)
     if (!QTransform::quadToQuad(unit, planePolygon(facet.corner), transform))
         return false;
 
-    // 齐次分母必须在完整的单位正方形上保持同一符号。
-    // 由于它对 u/v 是线性的，只需检查四个角即可。
+    // 齐次分母对 u/v 线性，只需检查单位正方形四个角同号。
     qreal denominatorSign = 0.0;
     for (const QPointF &uv : unit) {
         const qreal w = transform.m13() * uv.x() + transform.m23() * uv.y() + transform.m33();
@@ -318,8 +309,7 @@ Plane resizePlaneAlongEdge(const Plane &source, int edge,
     const QPointF edgeMidpoint = (a + b) / 2.0;
     const QPointF oppositeMidpoint = (oppositeA + oppositeB) / 2.0;
 
-    // 沿边缩放只有一个自由度。忽略指针的侧向移动，
-    // 只保留沿平面既有延伸轴方向的位移量。
+    // 沿边缩放只有一个自由度：忽略指针侧向移动，只取沿延伸轴的位移。
     QPointF extensionAxis = edgeMidpoint - oppositeMidpoint;
     qreal axisLength = QLineF(QPointF(), extensionAxis).length();
     if (axisLength < Epsilon) {
@@ -347,8 +337,7 @@ Plane resizePlaneAlongEdge(const Plane &source, int edge,
         resizedEdge = QLineF(targetPoint, targetPoint + (b - a));
     }
 
-    // 每个端点都被约束在它原来所在的侧边线上。
-    // 这正是保证“垂直平面在缩放时只改变高度、仍然保持垂直”的原因。
+    // 端点约束在各自原侧边线上，垂直平面缩放时才只改高度、保持垂直。
     QPointF movedA;
     QPointF movedB;
     const auto aType = QLineF(a, source.corner[previous]).intersects(resizedEdge, &movedA);
@@ -361,10 +350,7 @@ Plane resizePlaneAlongEdge(const Plane &source, int edge,
     result.corner[edge] = movedA;
     result.corner[next] = movedB;
 
-    // 四边形范围变了，但它在展开曲面上的参数化必须原封不动：用改动前的
-    // 映射反推两个新角点的曲面坐标。只改 corner 而留下旧的 surfaceCorner，
-    // 等于把整张展开图重新拉伸标定——相邻平面在接缝处会把同一个曲面坐标
-    // 送到不同的画布点，跨缝的浮动图像和笔迹就会错位。
+    // 展开参数化必须原封不动：用改动前的映射反推新角点的曲面坐标，否则接缝处会错位。
     const ProjectiveMapping projection = surfaceMapping(source);
     QPointF surface[2];
     for (int i = 0; i < 2; ++i) {
@@ -378,13 +364,11 @@ Plane resizePlaneAlongEdge(const Plane &source, int edge,
     return result;
 }
 
-// 恢复源平面法线在图像上的投影方向（即第三个消失方向）。
-// 该方向被所有垂直于源平面的平面共享。
+// 恢复源平面法线在图像上的投影方向（第三个消失方向），所有垂直平面共享它。
 bool perpendicularDirection(const Plane &source, const QPointF &atPoint,
                             const QSize &backgroundSize, QPointF *direction)
 {
-    // 在齐次图像坐标下恢复源平面的两个消失点。
-    // 齐次形式同时也能覆盖平行线族（消失点在无穷远）的情形。
+    // 齐次形式恢复两个消失点，同时覆盖消失点在无穷远的平行线族。
     const Vec3 p0 = imagePoint(source.corner[0]);
     const Vec3 p1 = imagePoint(source.corner[1]);
     const Vec3 p2 = imagePoint(source.corner[2]);
@@ -403,8 +387,7 @@ bool perpendicularDirection(const Plane &source, const QPointF &atPoint,
     const qreal imageExtent = qMax(backgroundSize.width(), backgroundSize.height());
     qreal focalLength = imageExtent * 1.2;
 
-    // 当两个消失点均为有限值、且两条网格轴代表相互正交的世界方向时，
-    // 可由正交性解出焦距。
+    // 两个消失点均为有限值时，可由正交性解出焦距。
     if (qAbs(vanishingX.z) > 1e-6 && qAbs(vanishingY.z) > 1e-6) {
         QPointF vx;
         QPointF vy;
@@ -421,8 +404,7 @@ bool perpendicularDirection(const Plane &source, const QPointF &atPoint,
     if (!normalize(&normal))
         return false;
 
-    // 把 3D 法线经内参矩阵 K 投影回图像。这就是与源平面垂直的所有
-    // 平面共享的第三个消失点。
+    // 3D 法线经内参矩阵投影回图像，即所有垂直平面共享的第三个消失点。
     const Vec3 projected = projectDirection(normal, frame);
     QPointF projectedDirection;
     if (qAbs(projected.z) > 1e-6) {
@@ -462,8 +444,7 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
     if (!perpendicularDirection(source, midpoint, backgroundSize, &perpendicularAtMidpoint))
         return result;
 
-    // 指针只控制沿投影后 3D 法线方向的有符号距离。
-    // 侧向移动无法改变垂直平面的角度。
+    // 指针只控制沿投影后 3D 法线的有符号距离，侧向移动不改变夹角。
     const qreal amount = QPointF::dotProduct(dragPoint - pressPoint,
                                              perpendicularAtMidpoint);
     const QPointF targetMidpoint = midpoint + perpendicularAtMidpoint * amount;
@@ -476,8 +457,7 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
         return result;
     }
 
-    // 共享边与新的外侧边在 3D 中代表同一方向，
-    // 因此二者相交于原边线族的消失点。
+    // 共享边与外侧边在 3D 中同向，故交于原边线族的消失点。
     const QPointF oppositeA = source.corner[(edge + 2) % 4];
     const QPointF oppositeB = source.corner[(edge + 3) % 4];
     QPointF edgeVanishingPoint;
@@ -509,8 +489,7 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
         }
     }
 
-    // 源平面的边相互平行时其消失点在无穷远处，因此外侧边保持平行，
-    // 但其端点仍沿第三个（垂直）消失方向移动。
+    // 对边平行时消失点在无穷远：外侧边保持平行，端点仍沿垂直方向移动。
     if (!constructedWithVanishingPoint) {
         const QLineF outerLine(targetMidpoint, targetMidpoint + (b - a));
         QPointF perpendicularAtA;
@@ -531,8 +510,7 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
         }
     }
 
-    // 把垂直面绕共享边展开到曲面上。两个面在接缝处保持完全相同的
-    // 曲面坐标，而新的外侧边被放置在源面内部的另一侧。
+    // 绕共享边把垂直面展开到曲面上：接缝处曲面坐标相同，外侧边落在源面另一侧。
     const QPointF surfaceA = result.surfaceCorner[0];
     const QPointF surfaceB = result.surfaceCorner[1];
     const QPointF surfaceEdge = surfaceB - surfaceA;
@@ -557,19 +535,9 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
     return result;
 }
 
-// 把子平面绕共享边做真正的三维旋转，再重新投影回图像。
-//
-// 以前这里做的是图像平面上的二维旋转：让两个外侧角点绕共享边的端点画圆弧。
-// 那是错的——绕三维直线旋转的投影并不是圆周运动，于是夹角数值与几何互相脱节，
-// 把夹角调到 0° 时两个平面看上去依然有角度。
-//
-// 现在的步骤：
-//  1. 由子平面自身的两个消失点解出相机内参，并把共享边方向 u、深度方向 v
-//     恢复成三维方向（u ⊥ v，因为子平面在世界里是矩形）；
-//  2. 由 u、v 重建子平面所在的三维平面，把四个角点反投影到该平面上；
-//  3. 用 Rodrigues 公式把外侧角点绕共享边（方向 u）旋转 Δ = 目标角 − 当前角；
-//  4. 重新投影回图像。
-// 旋转是刚体的，因此 0° 与 180° 时子平面必然与父平面共面。
+// 把子平面绕共享边做三维旋转，再重新投影回图像。
+// 不能用图像平面上的二维圆弧代替：绕三维直线旋转的投影不是圆周运动，
+// 那样夹角数值会与几何脱节，调成 0° 时两个平面看上去依然有角度。
 Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
                        const QSize &backgroundSize)
 {
@@ -612,8 +580,7 @@ Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
     if (!normalize(&normal))
         return result; // 两个消失方向重合，无法定义子平面
 
-    // 2. 把角点反投影到平面 normal·X = h 上。h 只决定整体尺度，而透视投影
-    //    对整体尺度不敏感，所以直接由共享边端点所在的射线确定它。
+    // 2. 把角点反投影到平面 normal·X = h 上；h 只决定整体尺度，由共享边端点射线确定。
     const Vec3 raySeamA = imageRay(seamA, frame);
     const double h = dot(normal, raySeamA);
     if (qAbs(h) < 1e-9)
@@ -633,14 +600,11 @@ Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
     if (!onPlane(seamA, &a) || !onPlane(seamB, &b) ||
         !onPlane(source.corner[farA], &outerA) || !onPlane(source.corner[farB], &outerB))
         return result;
-    // 消失点的齐次符号是任意的。把旋转轴统一成“由 seamA 指向 seamB”，
-    // 夹角增大的方向才不会随四边形绕向而变。翻转 axis 不影响上面的平面，
-    // 因为 h 与 normal 会同时变号，交点位置是它们的比值。
+    // 消失点齐次符号任意：把轴统一成 seamA -> seamB，夹角正方向才不随绕向变化。
     if (dot(b - a, axis) < 0.0)
         axis = axis * -1.0;
 
-    // 3. 绕共享边旋转 Δ。用完整的 Rodrigues 公式，即使子平面被自由拖动成
-    //    一般四边形（深度方向不严格垂直于共享边）也能保持刚体旋转。
+    // 3. 绕共享边旋转 Δ；用完整 Rodrigues 公式，子平面被拖成一般四边形也能保持刚体旋转。
     qreal delta = targetAngle - source.relativeAngle;
     while (delta > 180.0)
         delta -= 360.0;
@@ -650,8 +614,7 @@ Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
     const double cosine = qCos(radians);
     const double sine = qSin(radians);
     auto rotateAroundSeam = [&](const Vec3 &v) {
-        // 取 v × axis 为正方向，使 relativeAngle 减小时子平面朝远离父平面的
-        // 一侧倒下：于是 0° 恰好是“完全展开、与父平面共面并向外延展”的状态。
+        // 取 v × axis 为正方向，使 0° 恰好是完全展开、与父平面共面的状态。
         return v * cosine + cross(v, axis) * sine + axis * (dot(axis, v) * (1.0 - cosine));
     };
     const Vec3 movedA = a + rotateAroundSeam(outerA - a);

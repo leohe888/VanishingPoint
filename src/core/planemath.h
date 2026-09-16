@@ -9,11 +9,7 @@
 
 // 图片上一个带透视效果的四边形
 struct Facet {
-    QPointF corner[4];  // 画布上的透视四边形：
-                        // corner[0] —— 左上
-                        // corner[1] —— 右上
-                        // corner[2] —— 右下
-                        // corner[3] —— 左下
+    QPointF corner[4];  // 画布上的透视四边形，依次为左上 / 右上 / 右下 / 左下
     QPointF surfaceCorner[4];   // 展开曲面上的对应四边形
 };
 
@@ -27,9 +23,7 @@ struct Plane : Facet {
     bool angleAdjusted = false; // 用户是否手动调整过夹角
 };
 
-// 平面几何与透视构造算法的纯函数集合。
-// 这些函数不持有任何状态，所需的上下文（视图缩放、背景尺寸、
-// 按下起点等）一律由调用方作为参数提供，因此可以独立测试。
+// 平面几何与透视构造的纯函数集合：不持有状态，上下文一律由调用方传参，便于独立测试。
 namespace PlaneMath {
 ProjectiveMapping surfaceMapping(const Facet &facet);
 ProjectiveMapping uvMapping(const Facet &facet);
@@ -47,7 +41,7 @@ qreal distanceToSegment(const QPointF &p, const QPointF &a,
 bool isValidPlane(const Facet &facet);             // 校验是否为有效的凸四边形
 
 // —— 坐标变换（单应） ——
-// 这些函数接受 Facet，因此既能作用于平面，也能作用于浮动图像的几何快照。
+// 接受 Facet，因此对平面和浮动图像的几何快照都适用。
 QPointF uvToPlane(const Facet &facet, const QPointF &uv);             // 归一化 UV -> 图像坐标
 QPointF planeToUv(const Facet &facet, const QPointF &point,           // 图像坐标 -> 归一化 UV
                   bool *ok = nullptr);
@@ -60,8 +54,7 @@ int handleAt(const Facet &facet, const QPointF &point, qreal tolerance); // 控�
 int edgeAt(const Facet &facet, const QPointF &point, qreal tolerance);   // 边缘索引
 
 // —— 平面构造算法（pressPoint 为本次拖动的按下起点） ——
-// 在原来的无限透视平面上平移有限四边形，同时移动展开坐标以保持单应规则。
-// 越过地平线、出现极点或退化时返回 false，调用方保留最后有效位置。
+// 平移四边形并同步移动展开坐标；越过地平线或退化时返回 false，调用方保留最后有效位置。
 bool movePlaneOnSurface(const Plane &source, const QPointF &dragPoint,
                         const QPointF &pressPoint, Plane *result);
 // 沿某条边方向缩放平面：只改变该边到对边的距离，保持透视关系不变
@@ -74,8 +67,7 @@ bool perpendicularDirection(const Plane &source, const QPointF &atPoint,
 Plane makePerpendicularPlane(const Plane &source, int edge,
                              const QPointF &dragPoint, const QPointF &pressPoint,
                              const QSize &backgroundSize);
-// 调整子平面相对共享边的夹角：绕共享边做三维旋转后重新投影回图像。
-// 因此 0° / 180° 时子平面与父平面严格共面（backgroundSize 用于估计焦距）。
+// 绕共享边三维旋转子平面再重投影；0°/180° 时与父平面严格共面（backgroundSize 估焦距）。
 Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
                        const QSize &backgroundSize);
 

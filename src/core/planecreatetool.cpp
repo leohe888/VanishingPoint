@@ -4,7 +4,7 @@
 
 void PlaneCreateTool::addPoint(const QPointF &point)
 {
-    if (!complete())
+    if (!finished())
         m_points.append(point);
 }
 
@@ -16,7 +16,7 @@ void PlaneCreateTool::removeLastPoint()
 
 Plane PlaneCreateTool::makePlane(int surfaceGroup, const QString &name) const
 {
-    Q_ASSERT(complete());
+    Q_ASSERT(finished());
     Plane plane;
     for (int i = 0; i < CornerCount; ++i)
         plane.corner[i] = m_points[i];

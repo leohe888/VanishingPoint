@@ -18,7 +18,7 @@ public:
     void removeLastPoint();                        // 回退最后一个角点；已空时忽略
     void reset() { m_points.clear(); }             // 放弃本次创建
     bool active() const { return !m_points.isEmpty(); }
-    bool complete() const { return m_points.size() == CornerCount; }
+    bool finished() const { return m_points.size() == CornerCount; }
     const QVector<QPointF> &points() const { return m_points; }
 
     // 用已落下的 4 个角点构造平面。展开曲面按对边平均长度初始化为矩形，
