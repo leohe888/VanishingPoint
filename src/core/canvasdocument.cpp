@@ -83,7 +83,7 @@ void CanvasDocument::addPaintDirty(const QRect &rect)
     m_paintDirtyRect = m_paintDirtyRect.isEmpty() ? rect : m_paintDirtyRect.united(rect);
 }
 
-// 删除指定平面。内容已与平面解耦：浮动图像持有自己的几何快照，
+// 追加一个平面并返回其下标；几何非法时不追加，返回 -1。
 int CanvasDocument::appendPlane(const Plane &plane)
 {
     if (!PlaneMath::isValidPlane(plane))

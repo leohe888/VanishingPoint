@@ -26,7 +26,7 @@ static void addRectangle(PlaneCreateTool &tool)
 void PlaneCreateToolTest::startsEmpty()
 {
     PlaneCreateTool tool;
-    QVERIFY(!tool.active());
+    QVERIFY(!tool.creating());
     QVERIFY(!tool.finished());
     QCOMPARE(tool.points().size(), 0);
 }
@@ -35,7 +35,7 @@ void PlaneCreateToolTest::completesAfterFourPoints()
 {
     PlaneCreateTool tool;
     addRectangle(tool);
-    QVERIFY(tool.active());
+    QVERIFY(tool.creating());
     QVERIFY(tool.finished());
     QCOMPARE(tool.points().size(), 4);
 }
@@ -56,14 +56,14 @@ void PlaneCreateToolTest::removesLastPoint()
 
     tool.removeLastPoint();
     QCOMPARE(tool.points().size(), 3);
-    QVERIFY(tool.active());
+    QVERIFY(tool.creating());
     QVERIFY(!tool.finished());
 
     // 回退到空，继续回退应安全无副作用
     for (int i = 0; i < 4; ++i)
         tool.removeLastPoint();
     QCOMPARE(tool.points().size(), 0);
-    QVERIFY(!tool.active());
+    QVERIFY(!tool.creating());
 
     // 回退后仍可继续落点
     tool.addPoint(QPointF(20, 20));
@@ -88,7 +88,7 @@ void PlaneCreateToolTest::resetClearsState()
     PlaneCreateTool tool;
     tool.addPoint(QPointF(10, 10));
     tool.reset();
-    QVERIFY(!tool.active());
+    QVERIFY(!tool.creating());
     QCOMPARE(tool.points().size(), 0);
 }
 

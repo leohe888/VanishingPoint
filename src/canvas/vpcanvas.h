@@ -41,6 +41,7 @@ private:
     void updateViewTransform();
     void finishPlaneCreation();
     void cancelInteraction();
+    void deleteSelectedPlane();   // 删除当前选中的平面
     void reportCreateProgress();  // 状态栏提示创建进度
 
     CanvasDocument m_doc;

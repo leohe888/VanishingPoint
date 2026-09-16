@@ -158,7 +158,7 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
 void VpCanvas::hoverMoveEvent(QHoverEvent *event)
 {
     m_cursorPoint = widgetToImage(event->position());
-    if (m_tool == Tool::CreatePlane && m_createTool.active())
+    if (m_tool == Tool::CreatePlane && m_createTool.creating())
         update();
     QQuickPaintedItem::hoverMoveEvent(event);
 }
@@ -167,29 +167,27 @@ void VpCanvas::hoverMoveEvent(QHoverEvent *event)
 void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
 {
     m_cursorPoint = QPointF();
-    if (m_tool == Tool::CreatePlane && m_createTool.active())
+    if (m_tool == Tool::CreatePlane && m_createTool.creating())
         update();
     QQuickPaintedItem::hoverLeaveEvent(event);
 }
 
+// 删除键：创建平面时回退最后一个角点，其余情况删除当前选中的平面。
 void VpCanvas::keyPressEvent(QKeyEvent *event)
 {
-    if (m_createTool.active()) {    //  创建平面过程中：Backspace / Delete 回退最后一个角点。
-        switch (event->key()) {
-        case Qt::Key_Backspace:
-        case Qt::Key_Delete:
-            m_createTool.removeLastPoint();
-            reportCreateProgress();
-            break;
-        default:
-            QQuickPaintedItem::keyPressEvent(event);
-            return;
-        }
-        update();
-        event->accept();
+    const int key = event->key();
+    if (key != Qt::Key_Backspace && key != Qt::Key_Delete) {
+        QQuickPaintedItem::keyPressEvent(event);    // 其他键交给基类
         return;
     }
-    QQuickPaintedItem::keyPressEvent(event);
+    if (m_createTool.creating()) {
+        m_createTool.removeLastPoint();
+        reportCreateProgress();
+        update();
+    } else {
+        deleteSelectedPlane();
+    }
+    event->accept();
 }
 
 // 把控件坐标换算成图像坐标
@@ -237,6 +235,22 @@ void VpCanvas::cancelInteraction()
         m_editPlaneIndex = -1;
         m_doc.cancelEdit();
     }
+}
+
+// 删除当前选中的平面；没有选中时什么也不做。
+void VpCanvas::deleteSelectedPlane()
+{
+    if (m_editPlaneIndex >= 0) {
+        // 拖动编辑进行中：先丢弃这次拖动，否则后续鼠标事件会写回已经移位的平面下标。
+        m_editPlaneIndex = -1;
+        m_doc.cancelEdit();
+    }
+    const int index = m_doc.selectedPlane();
+    if (index < 0)
+        return;
+    m_doc.removePlane(index);
+    emit statusMessage(tr("已删除选中的平面。"));
+    update();
 }
 
 // 状态栏提示创建进度；角点被回退干净时给出独立提示。
