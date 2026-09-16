@@ -15,6 +15,7 @@ public:
     static constexpr int CornerCount = 4;
 
     void addPoint(const QPointF &point);           // 落下一个角点；已凑齐时忽略
+    void removeLastPoint();                        // 回退最后一个角点；已空时忽略
     void reset() { m_points.clear(); }             // 放弃本次创建
     bool active() const { return !m_points.isEmpty(); }
     bool complete() const { return m_points.size() == CornerCount; }

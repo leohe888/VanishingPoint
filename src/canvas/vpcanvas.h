@@ -37,10 +37,11 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    QPointF toImage(const QPointF &widgetPoint) const;
+    QPointF widgetToImage(const QPointF &widgetPoint) const;
     void updateViewTransform();
     void finishPlaneCreation();
     void cancelInteraction();
+    void reportCreateProgress();  // 状态栏提示创建进度
 
     CanvasDocument m_doc;
 

@@ -8,6 +8,12 @@ void PlaneCreateTool::addPoint(const QPointF &point)
         m_points.append(point);
 }
 
+void PlaneCreateTool::removeLastPoint()
+{
+    if (!m_points.isEmpty())
+        m_points.removeLast();
+}
+
 Plane PlaneCreateTool::makePlane(int surfaceGroup, const QString &name) const
 {
     Q_ASSERT(complete());

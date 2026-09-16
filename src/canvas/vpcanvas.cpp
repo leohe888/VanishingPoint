@@ -9,7 +9,7 @@
 #include <QPainter>
 
 namespace {
-constexpr qreal ViewMargin = 16.0; // 图像与控件边缘的留白（控件像素）
+constexpr qreal ViewMargin = 16.0; // 图像与画布边缘的留白
 }
 
 VpCanvas::VpCanvas(QQuickItem *parent)
@@ -77,7 +77,7 @@ void VpCanvas::paint(QPainter *painter)
 
 void VpCanvas::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
-    QQuickPaintedItem::geometryChange(newGeometry, oldGeometry);
+    QQuickPaintedItem::geometryChange(newGeometry, oldGeometry);    // 必须调用基类实现
     if (newGeometry.size() != oldGeometry.size())
         updateViewTransform();
 }
@@ -86,7 +86,7 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
 {
     forceActiveFocus(); // 获得键盘焦点
     event->accept();
-    const QPointF point = toImage(event->position());
+    const QPointF point = widgetToImage(event->position());
     if (m_tool == Tool::EditPlane) {
         const qreal tolerance = qMax(8.0 / qMax(m_scale, 1e-6), 4.0);
         int planeIndex = -1;
@@ -124,13 +124,10 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         return;
 
     m_createTool.addPoint(point);
-    if (m_createTool.complete()) {
+    if (m_createTool.complete())
         finishPlaneCreation();
-    } else {
-        emit statusMessage(tr("已设置 %1/%2 个角点")
-                               .arg(m_createTool.points().size())
-                               .arg(PlaneCreateTool::CornerCount));
-    }
+    else
+        reportCreateProgress();
     update();
 }
 
@@ -140,7 +137,7 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
     if (m_tool != Tool::EditPlane || m_editPlaneIndex < 0)
         return;
     Plane candidate;
-    if (m_editTool.update(toImage(event->position()), &candidate)) {
+    if (m_editTool.update(widgetToImage(event->position()), &candidate)) {
         m_doc.setPlane(m_editPlaneIndex, candidate);
         update();
     }
@@ -160,7 +157,7 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
 // 橡皮筋预览随光标移动持续重绘。
 void VpCanvas::hoverMoveEvent(QHoverEvent *event)
 {
-    m_cursorPoint = toImage(event->position());
+    m_cursorPoint = widgetToImage(event->position());
     if (m_tool == Tool::CreatePlane && m_createTool.active())
         update();
     QQuickPaintedItem::hoverMoveEvent(event);
@@ -175,11 +172,24 @@ void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
     QQuickPaintedItem::hoverLeaveEvent(event);
 }
 
+// 创建平面过程中：Esc 放弃本次创建，Backspace / Delete 回退最后一个角点。
 void VpCanvas::keyPressEvent(QKeyEvent *event)
 {
-    if (event->key() == Qt::Key_Escape && m_createTool.active()) {
-        cancelInteraction();
-        emit statusMessage(tr("已取消创建平面"));
+    if (m_createTool.active()) {
+        switch (event->key()) {
+        case Qt::Key_Escape:
+            cancelInteraction();
+            emit statusMessage(tr("已取消创建平面"));
+            break;
+        case Qt::Key_Backspace:
+        case Qt::Key_Delete:
+            m_createTool.removeLastPoint();
+            reportCreateProgress();
+            break;
+        default:
+            QQuickPaintedItem::keyPressEvent(event);
+            return;
+        }
         update();
         event->accept();
         return;
@@ -187,8 +197,8 @@ void VpCanvas::keyPressEvent(QKeyEvent *event)
     QQuickPaintedItem::keyPressEvent(event);
 }
 
-// 将
-QPointF VpCanvas::toImage(const QPointF &widgetPoint) const
+// 把控件坐标换算成图像坐标
+QPointF VpCanvas::widgetToImage(const QPointF &widgetPoint) const
 {
     return (widgetPoint - m_offset) / m_scale;
 }
@@ -200,11 +210,11 @@ void VpCanvas::updateViewTransform()
         return;
     const qreal sx = (width() - ViewMargin * 2) / background.width();   // 水平缩放比
     const qreal sy = (height() - ViewMargin * 2) / background.height(); // 垂直缩放比
-    m_scale = qMin(sx, sy);
+    m_scale = qMin(sx, sy); // 缩放比取水平缩放比和垂直缩放比的最小值
     if (m_scale <= 0)
         m_scale = 1.0;
-    const QSizeF shown = QSizeF(background.size()) * m_scale;
-    m_offset = QPointF((width() - shown.width()) / 2.0, (height() - shown.height()) / 2.0);
+    const QSizeF shown = QSizeF(background.size()) * m_scale;   // 计算缩放后图片尺寸
+    m_offset = QPointF((width() - shown.width()) / 2.0, (height() - shown.height()) / 2.0); // 计算偏移量，使图片在画布中居中
 }
 
 void VpCanvas::finishPlaneCreation()
@@ -233,4 +243,14 @@ void VpCanvas::cancelInteraction()
         m_editPlaneIndex = -1;
         m_doc.cancelEdit();
     }
+}
+
+// 状态栏提示创建进度；角点被回退干净时给出独立提示。
+void VpCanvas::reportCreateProgress()
+{
+    const int count = m_createTool.points().size();
+    if (count == 0)
+        emit statusMessage(tr("已回退全部角点，请重新点击"));
+    else
+        emit statusMessage(tr("已设置 %1/%2 个角点").arg(count).arg(PlaneCreateTool::CornerCount));
 }

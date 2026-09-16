@@ -10,6 +10,7 @@ private slots:
     void startsEmpty();
     void completesAfterFourPoints();
     void ignoresFifthPoint();
+    void removesLastPoint();
     void createsExpectedPlane();
     void resetClearsState();
 };
@@ -46,6 +47,28 @@ void PlaneCreateToolTest::ignoresFifthPoint()
     tool.addPoint(QPointF(200, 200));
     QCOMPARE(tool.points().size(), 4);
     QCOMPARE(tool.points().last(), QPointF(10, 80));
+}
+
+void PlaneCreateToolTest::removesLastPoint()
+{
+    PlaneCreateTool tool;
+    addRectangle(tool);
+
+    tool.removeLastPoint();
+    QCOMPARE(tool.points().size(), 3);
+    QVERIFY(tool.active());
+    QVERIFY(!tool.complete());
+
+    // 回退到空，继续回退应安全无副作用
+    for (int i = 0; i < 4; ++i)
+        tool.removeLastPoint();
+    QCOMPARE(tool.points().size(), 0);
+    QVERIFY(!tool.active());
+
+    // 回退后仍可继续落点
+    tool.addPoint(QPointF(20, 20));
+    QCOMPARE(tool.points().size(), 1);
+    QCOMPARE(tool.points().first(), QPointF(20, 20));
 }
 
 void PlaneCreateToolTest::createsExpectedPlane()
