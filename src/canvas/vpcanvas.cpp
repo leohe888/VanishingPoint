@@ -19,7 +19,7 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     setAcceptedMouseButtons(Qt::LeftButton); // 接受鼠标左键
     setActiveFocusOnTab(true);  // 允许通过 Tab 键获得焦点
     setAntialiasing(true);  // 开启抗锯齿
-    setCursor(Qt::CrossCursor); // 设置鼠标指针为十字光标
+    setCursor(Qt::ArrowCursor); // 光标统一用箭头
 
     constexpr auto DefaultBackgroundPath = R"(C:\Users\yixin\Pictures\3.jpg)";
     m_doc.loadImage(QString::fromUtf8(DefaultBackgroundPath));  // 启动时加载默认背景
@@ -53,7 +53,6 @@ void VpCanvas::setTool(Tool tool)
     }
     cancelInteraction();
     m_tool = tool;
-    setCursor(tool == Tool::EditPlane ? Qt::SizeAllCursor : Qt::CrossCursor);
     emit statusMessage(statusForTool());
     emit toolChanged();
     update();
@@ -116,7 +115,6 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         m_editPlaneIndex = planeIndex;
         m_editTool.begin(plane, point, handle, edge, false, m_doc.background().size());
         m_doc.beginEdit();
-        setCursor(handle >= 0 ? Qt::SizeAllCursor : Qt::OpenHandCursor);
         update();
         return;
     }
@@ -150,7 +148,6 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
         return;
     m_editPlaneIndex = -1;
     m_doc.commitEdit(true);
-    setCursor(Qt::SizeAllCursor);
     update();
 }
 
