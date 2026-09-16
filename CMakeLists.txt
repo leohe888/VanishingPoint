@@ -12,6 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Quick)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Quick)
 
+include(CTest)
+if(BUILD_TESTING)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test)
+endif()
+
 set(PROJECT_SOURCES
         src/main.cpp
         src/canvas/vpcanvas.cpp
@@ -95,4 +100,8 @@ install(TARGETS VanishingPoint
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_import_qml_plugins(VanishingPoint)
     qt_finalize_executable(VanishingPoint)
+endif()
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
 endif()

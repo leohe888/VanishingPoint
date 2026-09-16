@@ -21,9 +21,9 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     setAntialiasing(true);  // 开启抗锯齿
     setCursor(Qt::CrossCursor); // 设置鼠标指针为十字光标
 
-    // 启动时加载默认背景；加载失败时保持空文档。
     constexpr auto DefaultBackgroundPath = R"(C:\Users\yixin\Pictures\3.jpg)";
-    m_doc.loadImage(QString::fromUtf8(DefaultBackgroundPath));
+    m_doc.loadImage(QString::fromUtf8(DefaultBackgroundPath));  // 启动时加载默认背景
+
     updateViewTransform();
 }
 
@@ -84,12 +84,46 @@ void VpCanvas::geometryChange(const QRectF &newGeometry, const QRectF &oldGeomet
 
 void VpCanvas::mousePressEvent(QMouseEvent *event)
 {
-    forceActiveFocus();
+    forceActiveFocus(); // 获得键盘焦点
     event->accept();
+    const QPointF point = toImage(event->position());
+    if (m_tool == Tool::EditPlane) {
+        const qreal tolerance = qMax(8.0 / qMax(m_scale, 1e-6), 4.0);
+        int planeIndex = -1;
+        int handle = -1;
+        // 先查控制点，允许鼠标落在平面边界外的容差范围内。
+        for (int i = m_doc.planes().size() - 1; i >= 0; --i) {
+            const int candidateHandle = PlaneMath::handleAt(m_doc.planes()[i], point, tolerance);
+            if (candidateHandle >= 0) {
+                planeIndex = i;
+                handle = candidateHandle;
+                break;
+            }
+        }
+        if (planeIndex < 0)
+            planeIndex = PlaneMath::planeAt(m_doc.planes(), point);
+        if (planeIndex < 0) {
+            m_doc.setSelectedPlane(-1);
+            update();
+            return;
+        }
+
+        m_doc.setSelectedPlane(planeIndex);
+        const Plane &plane = m_doc.planes()[planeIndex];
+        if (handle < 0)
+            handle = PlaneMath::handleAt(plane, point, tolerance);
+        const int edge = handle >= 4 ? handle - 4 : -1;
+        m_editPlaneIndex = planeIndex;
+        m_editTool.begin(plane, point, handle, edge, false, m_doc.background().size());
+        m_doc.beginEdit();
+        setCursor(handle >= 0 ? Qt::SizeAllCursor : Qt::OpenHandCursor);
+        update();
+        return;
+    }
     if (m_tool != Tool::CreatePlane)
         return;
 
-    m_createTool.addPoint(toImage(event->position()));
+    m_createTool.addPoint(point);
     if (m_createTool.complete()) {
         finishPlaneCreation();
     } else {
@@ -97,6 +131,29 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
                                .arg(m_createTool.points().size())
                                .arg(PlaneCreateTool::CornerCount));
     }
+    update();
+}
+
+void VpCanvas::mouseMoveEvent(QMouseEvent *event)
+{
+    event->accept();
+    if (m_tool != Tool::EditPlane || m_editPlaneIndex < 0)
+        return;
+    Plane candidate;
+    if (m_editTool.update(toImage(event->position()), &candidate)) {
+        m_doc.setPlane(m_editPlaneIndex, candidate);
+        update();
+    }
+}
+
+void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
+{
+    event->accept();
+    if (m_tool != Tool::EditPlane || m_editPlaneIndex < 0)
+        return;
+    m_editPlaneIndex = -1;
+    m_doc.commitEdit(true);
+    setCursor(Qt::SizeAllCursor);
     update();
 }
 
@@ -130,6 +187,7 @@ void VpCanvas::keyPressEvent(QKeyEvent *event)
     QQuickPaintedItem::keyPressEvent(event);
 }
 
+// 将
 QPointF VpCanvas::toImage(const QPointF &widgetPoint) const
 {
     return (widgetPoint - m_offset) / m_scale;
@@ -140,8 +198,8 @@ void VpCanvas::updateViewTransform()
     const QImage &background = m_doc.background();
     if (background.isNull() || width() <= 0 || height() <= 0)
         return;
-    const qreal sx = (width() - ViewMargin * 2) / background.width();
-    const qreal sy = (height() - ViewMargin * 2) / background.height();
+    const qreal sx = (width() - ViewMargin * 2) / background.width();   // 水平缩放比
+    const qreal sy = (height() - ViewMargin * 2) / background.height(); // 垂直缩放比
     m_scale = qMin(sx, sy);
     if (m_scale <= 0)
         m_scale = 1.0;
@@ -171,4 +229,8 @@ void VpCanvas::finishPlaneCreation()
 void VpCanvas::cancelInteraction()
 {
     m_createTool.reset();
+    if (m_editPlaneIndex >= 0) {
+        m_editPlaneIndex = -1;
+        m_doc.cancelEdit();
+    }
 }
