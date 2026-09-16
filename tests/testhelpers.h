@@ -14,7 +14,6 @@ inline Plane makeTestPlane()
     plane.surfaceCorner[2] = QPointF(100, 70);
     plane.surfaceCorner[3] = QPointF(0, 70);
     plane.surfaceGroup = 0;
-    plane.name = QStringLiteral("测试平面");
     return plane;
 }
 

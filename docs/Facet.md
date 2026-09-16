@@ -81,7 +81,6 @@ surfaceCorner[3] ─── surfaceCorner[2]
 struct Plane : Facet {
     int surfaceGroup = -1;
     quint8 lockedEdges = 0;
-    QString name;
     int parentPlane = -1;
     int parentEdge = -1;
     qreal relativeAngle = 90.0;
@@ -92,7 +91,7 @@ struct Plane : Facet {
 因此两者的职责不同：
 
 - `Facet` 只描述四边形在两个坐标空间之间的几何映射。
-- `Plane` 在 `Facet` 的基础上增加名称、曲面分组、锁定边和父子平面关系等编辑状态。
+- `Plane` 在 `Facet` 的基础上增加曲面分组、锁定边和父子平面关系等编辑状态。
 
 可以将它们理解为：
 
@@ -103,7 +102,6 @@ Facet
 
 Plane
 ├── Facet 的全部几何数据
-├── 平面名称
 ├── 曲面分组
 ├── 锁定边
 └── 父子平面关系

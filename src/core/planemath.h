@@ -16,7 +16,6 @@ struct Facet {
 struct Plane : Facet {
     int surfaceGroup = -1;  // 所属的展开曲面分组（共享曲面的相邻平面同组）
     quint8 lockedEdges = 0; // 与相邻垂直平面共用、不可编辑的边（位掩码）
-    QString name;           // 显示用的平面名称
     int parentPlane = -1;   // 由哪个平面拖出；仅子平面可设置夹角
     int parentEdge = -1;    // 父平面上对应的共享边
     qreal relativeAngle = 90.0; // 与父平面的夹角（度）

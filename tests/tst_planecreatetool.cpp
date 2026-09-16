@@ -75,12 +75,11 @@ void PlaneCreateToolTest::createsExpectedPlane()
 {
     PlaneCreateTool tool;
     addRectangle(tool);
-    const Plane plane = tool.makePlane(3, QStringLiteral("测试平面"));
+    const Plane plane = tool.makePlane(3);
     QCOMPARE(plane.corner[0], QPointF(10, 10));
     QCOMPARE(plane.corner[2], QPointF(110, 80));
     QCOMPARE(plane.surfaceCorner[2], QPointF(100, 70));
     QCOMPARE(plane.surfaceGroup, 3);
-    QCOMPARE(plane.name, QStringLiteral("测试平面"));
     QVERIFY(PlaneMath::isValidPlane(plane));
 }
 

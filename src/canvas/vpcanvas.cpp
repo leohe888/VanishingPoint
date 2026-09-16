@@ -121,7 +121,7 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
     }
     case Tool::CreatePlane:
         m_createTool.addPoint(point);
-        if (m_createTool.complete())
+        if (m_createTool.finished())
             finishPlaneCreation();
         else
             reportCreateProgress();
@@ -214,8 +214,7 @@ void VpCanvas::updateViewTransform()
 
 void VpCanvas::finishPlaneCreation()
 {
-    const Plane plane = m_createTool.makePlane(
-        m_doc.nextSurfaceGroupId(), tr("平面 %1").arg(m_doc.planes().size() + 1));
+    const Plane plane = m_createTool.makePlane(m_doc.nextSurfaceGroupId());
     m_createTool.reset();
 
     if (!PlaneMath::isValidPlane(plane)) {

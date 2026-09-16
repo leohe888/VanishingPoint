@@ -14,7 +14,7 @@ void PlaneCreateTool::removeLastPoint()
         m_points.removeLast();
 }
 
-Plane PlaneCreateTool::makePlane(int surfaceGroup, const QString &name) const
+Plane PlaneCreateTool::makePlane(int surfaceGroup) const
 {
     Q_ASSERT(finished());
     Plane plane;
@@ -32,6 +32,5 @@ Plane PlaneCreateTool::makePlane(int surfaceGroup, const QString &name) const
     plane.surfaceCorner[2] = QPointF(surfaceWidth, surfaceHeight);
     plane.surfaceCorner[3] = QPointF(0, surfaceHeight);
     plane.surfaceGroup = surfaceGroup;
-    plane.name = name;
     return plane;
 }
