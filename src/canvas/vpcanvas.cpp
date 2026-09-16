@@ -86,7 +86,8 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
     forceActiveFocus(); // 获得键盘焦点
     event->accept();
     const QPointF point = widgetToImage(event->position());
-    if (m_tool == Tool::EditPlane) {
+    switch (m_tool) {
+    case Tool::EditPlane: {
         const qreal tolerance = qMax(8.0 / qMax(m_scale, 1e-6), 4.0);
         int planeIndex = -1;
         int handle = -1;
@@ -118,15 +119,17 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         update();
         return;
     }
-    if (m_tool != Tool::CreatePlane)
+    case Tool::CreatePlane:
+        m_createTool.addPoint(point);
+        if (m_createTool.complete())
+            finishPlaneCreation();
+        else
+            reportCreateProgress();
+        update();
         return;
-
-    m_createTool.addPoint(point);
-    if (m_createTool.complete())
-        finishPlaneCreation();
-    else
-        reportCreateProgress();
-    update();
+    default:
+        return; // 其余工具尚未实现
+    }
 }
 
 void VpCanvas::mouseMoveEvent(QMouseEvent *event)

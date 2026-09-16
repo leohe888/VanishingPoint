@@ -17,8 +17,6 @@ struct Facet {
     QPointF surfaceCorner[4];   // 展开曲面上的对应四边形
 };
 
-// 平面只描述透视规则，不持有任何内容——绘画烘焙在画布的绘画层上，
-// 浮动图像各自携带几何快照。平面可以被自由增删改而不波及内容。
 struct Plane : Facet {
     int surfaceGroup = -1;  // 所属的展开曲面分组（共享曲面的相邻平面同组）
     quint8 lockedEdges = 0; // 与相邻垂直平面共用、不可编辑的边（位掩码）
