@@ -41,8 +41,8 @@ set(PROJECT_SOURCES
         src/core/planecreatetool.h
         src/core/planemath.cpp
         src/core/planemath.h
-        src/core/projectivemapping.cpp
-        src/core/projectivemapping.h
+        src/core/perspectivetransform.cpp
+        src/core/perspectivetransform.h
         src/core/scenecontentcache.cpp
         src/core/scenecontentcache.h
         src/core/scenerenderer.cpp

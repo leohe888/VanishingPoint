@@ -110,7 +110,7 @@ void CloneTool::renderPreview(QPainter &painter, const QImage &source,
     const int index = PlaneMath::planeAt(planes, point);
     if (index < 0)
         return;
-    const ProjectiveMapping targetMapping = PlaneMath::surfaceMapping(planes[index]);
+    const PerspectiveTransform targetMapping = PlaneMath::surfaceMapping(planes[index]);
     QPointF position;
     if (!targetMapping.mapInverse(point, &position))
         return;
@@ -119,7 +119,7 @@ void CloneTool::renderPreview(QPainter &painter, const QImage &source,
     const QPointF offset = (!m_aligned || !m_hasOffset) ? (m_source - position) : m_offset;
     m_engine.setPreview(source, targetMapping.forward(),
                         m_sourceOnPlane ? m_sourceMapping.forward() : QTransform(),
-                        offset, position);
+                        offset);
     const QRect area = m_engine.dabRect(position);
     if (area.isEmpty())
         return;

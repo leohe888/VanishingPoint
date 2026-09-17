@@ -18,11 +18,10 @@ public:
     void endStroke() { m_source = QImage(); }
 
     // —— 光标预览支持 ——
-    // 把预览所需的源、变换与参考点写入引擎；不写 m_lastPosition、不进入
-    // 落笔状态，因此可与真实落笔共用同一台引擎而互不干扰。
+    // 把预览所需的源与变换写入引擎；不写 m_lastPosition、不进入落笔状态，
+    // 因此可与真实落笔共用同一台引擎而互不干扰。
     void setPreview(const QImage &source, const QTransform &targetToCanvas,
-                    const QTransform &sourceToCanvas, const QPointF &offset,
-                    const QPointF &position);
+                    const QTransform &sourceToCanvas, const QPointF &offset);
     // 计算 position 处一个笔触点对应的画布矩形（已裁到源图范围）。
     QRect dabRect(const QPointF &position) const;
     // 把 position 处一个笔触点的源采样写入 dab（dab 尺寸须等于 dabRect）。
@@ -34,6 +33,5 @@ private:
     QImage m_source;
     QTransform m_targetToCanvas, m_canvasToTarget, m_sourceToCanvas;
     QPointF m_offset, m_lastPosition;
-    QPointF m_targetReference, m_canvasReference, m_sourceReference;
     qreal m_diameter = 42, m_hardness = .75, m_opacity = 1;
 };

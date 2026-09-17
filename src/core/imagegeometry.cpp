@@ -39,7 +39,7 @@ ImageGeometry::ImageGeometry(const FloatingImage &image)
     QPainterPath imagePath;
     imagePath.addRect(QRectF(QPointF(0, 0), QSizeF(image.image.size())));
     auto append = [&](const QPolygonF &domain, const QPolygonF &canvas, const QPainterPath &clip) {
-        const ProjectiveMapping mapping(domain, canvas);
+        const PerspectiveTransform mapping(domain, canvas);
         if (!clip.isEmpty() && mapping.isValid())
             m_patches.append({mapping, clip, mapping.forward().map(clip)});
     };

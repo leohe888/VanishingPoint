@@ -5,7 +5,7 @@
 #include <QPolygonF>
 #include <QString>
 #include <QVector>
-#include "projectivemapping.h"
+#include "perspectivetransform.h"
 
 // 图片上一个带透视效果的四边形
 struct Facet {
@@ -24,8 +24,8 @@ struct Plane : Facet {
 
 // 平面几何与透视构造的纯函数集合：不持有状态，上下文一律由调用方传参，便于独立测试。
 namespace PlaneMath {
-ProjectiveMapping surfaceMapping(const Facet &facet);
-ProjectiveMapping uvMapping(const Facet &facet);
+PerspectiveTransform surfaceMapping(const Facet &facet);
+PerspectiveTransform uvMapping(const Facet &facet);
 
 constexpr qreal Epsilon = 1e-6; // 浮点比较用的极小量
 

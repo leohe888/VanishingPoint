@@ -1,5 +1,4 @@
 #include "clonestampengine.h"
-#include "projectivemapping.h"
 
 #include <QLineF>
 #include <QPainter>
@@ -41,9 +40,6 @@ QRect CloneStampEngine::beginStroke(QImage &layer, const QImage &source,
     m_targetToCanvas = targetToCanvas;
     m_sourceToCanvas = sourceToCanvas;
     m_offset = offset;
-    m_targetReference = position;
-    m_canvasReference = targetToCanvas.map(position);
-    m_sourceReference = position + offset;
     m_lastPosition = position;
     return applyDab(layer, position);
 }
@@ -63,8 +59,7 @@ QRect CloneStampEngine::drawStrokeTo(QImage &layer, const QPointF &position)
 }
 
 void CloneStampEngine::setPreview(const QImage &source, const QTransform &targetToCanvas,
-                                   const QTransform &sourceToCanvas, const QPointF &offset,
-                                   const QPointF &position)
+                                   const QTransform &sourceToCanvas, const QPointF &offset)
 {
     bool invertible = false;
     m_canvasToTarget = targetToCanvas.inverted(&invertible);
@@ -72,9 +67,6 @@ void CloneStampEngine::setPreview(const QImage &source, const QTransform &target
     m_targetToCanvas = targetToCanvas;
     m_sourceToCanvas = sourceToCanvas;
     m_offset = offset;
-    m_targetReference = position;
-    m_canvasReference = targetToCanvas.map(position);
-    m_sourceReference = position + offset;
     // 预览不写 m_lastPosition，也不进入落笔状态。
 }
 
@@ -84,10 +76,6 @@ QRect CloneStampEngine::dabRect(const QPointF &position) const
         return {};
     const qreal radius = m_diameter / 2;
     const QRectF bounds(position.x() - radius, position.y() - radius, m_diameter, m_diameter);
-    QPointF mapped;
-    for (const QPointF &corner : {bounds.topLeft(), bounds.topRight(), bounds.bottomLeft(), bounds.bottomRight()})
-        if (!ProjectiveMapping::mapVisible(m_targetToCanvas, corner, m_targetReference, &mapped))
-            return {};
     // 裁到源图（=画布）范围，避免采样到源图外的空区域。
     return m_targetToCanvas.mapRect(bounds).intersected(QRectF(m_source.rect())).toAlignedRect();
 }
@@ -101,12 +89,10 @@ bool CloneStampEngine::renderDab(QImage &dab, const QRect &area, const QPointF &
     for (int y = 0; y < area.height(); ++y) {
         auto *row = reinterpret_cast<QRgb *>(dab.scanLine(y));
         for (int x = 0; x < area.width(); ++x) {
-            QPointF target, source;
-            if (!ProjectiveMapping::mapVisible(m_canvasToTarget, QPointF(area.x() + x + .5, area.y() + y + .5), m_canvasReference, &target))
-                continue;
+            const QPointF target = m_canvasToTarget.map(QPointF(area.x() + x + .5, area.y() + y + .5));
             const qreal distance = QLineF(target, position).length() / radius;
-            if (distance >= 1 || !ProjectiveMapping::mapVisible(m_sourceToCanvas, target + m_offset, m_sourceReference, &source)
-                || source.x() < 0 || source.y() < 0
+            const QPointF source = m_sourceToCanvas.map(target + m_offset);
+            if (distance >= 1 || source.x() < 0 || source.y() < 0
                 || source.x() >= m_source.width() || source.y() >= m_source.height())
                 continue;
             const qreal mask = distance <= m_hardness ? 1 : (1 - distance) / (1 - m_hardness);
@@ -123,10 +109,6 @@ QRect CloneStampEngine::applyDab(QImage &layer, const QPointF &position)
         return {};
     const qreal radius = m_diameter / 2;
     const QRectF bounds(position.x() - radius, position.y() - radius, m_diameter, m_diameter);
-    QPointF mapped;
-    for (const QPointF &corner : {bounds.topLeft(), bounds.topRight(), bounds.bottomLeft(), bounds.bottomRight()})
-        if (!ProjectiveMapping::mapVisible(m_targetToCanvas, corner, m_targetReference, &mapped))
-            return {};
     // 先在浮点坐标中裁剪，避免接近消失线时整型溢出或分配巨大图像。
     const QRect area = m_targetToCanvas.mapRect(bounds).intersected(QRectF(layer.rect()))
                            .toAlignedRect().intersected(layer.rect());

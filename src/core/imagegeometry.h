@@ -5,7 +5,7 @@
 #include <QSharedPointer>
 
 struct ImagePatch {
-    ProjectiveMapping mapping;
+    PerspectiveTransform mapping;
     QPainterPath clip;       // 源位图坐标
     QPainterPath canvasClip;
 };

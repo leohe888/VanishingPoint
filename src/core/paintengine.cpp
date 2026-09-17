@@ -18,7 +18,7 @@ QRect PaintEngine::applyDab(QPainter &painter, const Facet &facet, const QPointF
                               QLineF(facet.corner[3], facet.corner[2]).length()) / 2.0;
     const qreal radiusUv = (m_diameter / 2.0) / qMax(40.0, planeWidth);
 
-    const ProjectiveMapping mapping = uvMapping(facet);
+    const PerspectiveTransform mapping = uvMapping(facet);
     const QTransform &uvToCanvas = mapping.forward();
     const QRectF bounds(uv.x() - radiusUv, uv.y() - radiusUv, radiusUv * 2, radiusUv * 2);
     QPointF mapped;

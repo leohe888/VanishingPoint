@@ -19,7 +19,7 @@ endfunction()
 
 set(VP_GEOMETRY_SOURCES
     ${PROJECT_SOURCE_DIR}/src/core/planemath.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/projectivemapping.cpp)
+    ${PROJECT_SOURCE_DIR}/src/core/perspectivetransform.cpp)
 
 add_vp_test(tst_planemath
     tst_planemath.cpp

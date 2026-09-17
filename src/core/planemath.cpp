@@ -119,12 +119,12 @@ bool projectPoint(const Vec3 &p, const CameraFrame &frame, QPointF *out)
 } // namespace
 
 namespace PlaneMath {
-ProjectiveMapping surfaceMapping(const Facet &facet)
+PerspectiveTransform surfaceMapping(const Facet &facet)
 {
     return {planePolygon(facet.surfaceCorner), planePolygon(facet.corner)};
 }
 
-ProjectiveMapping uvMapping(const Facet &facet)
+PerspectiveTransform uvMapping(const Facet &facet)
 {
     return {QPolygonF{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)}, planePolygon(facet.corner)};
 }
@@ -276,7 +276,7 @@ bool movePlaneOnSurface(const Plane &source, const QPointF &dragPoint,
     const QPointF drag = planeToSurface(source, dragPoint, &dragOk);
     if (!pressOk || !dragOk)
         return false;
-    const ProjectiveMapping projection = surfaceMapping(source);
+    const PerspectiveTransform projection = surfaceMapping(source);
     const QPointF delta = drag - press;
     Plane candidate = source;
     for (int i = 0; i < 4; ++i) {
@@ -351,7 +351,7 @@ Plane resizePlaneAlongEdge(const Plane &source, int edge,
     result.corner[next] = movedB;
 
     // 展开参数化必须原封不动：用改动前的映射反推新角点的曲面坐标，否则接缝处会错位。
-    const ProjectiveMapping projection = surfaceMapping(source);
+    const PerspectiveTransform projection = surfaceMapping(source);
     QPointF surface[2];
     for (int i = 0; i < 2; ++i) {
         const int corner = i == 0 ? edge : next;

@@ -29,7 +29,7 @@ public:
 
 private:
     CloneStampEngine m_engine;
-    ProjectiveMapping m_sourceMapping, m_targetMapping;
+    PerspectiveTransform m_sourceMapping, m_targetMapping;
     bool m_sourceOnPlane = false;
     bool m_hasSource = false, m_hasOffset = false, m_aligned = true, m_drawing = false;
     QPointF m_source, m_offset, m_marker;
