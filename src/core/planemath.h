@@ -27,8 +27,6 @@ namespace PlaneMath {
 ProjectiveMapping surfaceMapping(const Facet &facet);
 ProjectiveMapping uvMapping(const Facet &facet);
 
-// 纹理分辨率固定不变，使绘画质量与源图像尺寸及当前画布缩放级别无关。
-constexpr int TextureSize = 1024;
 constexpr qreal Epsilon = 1e-6; // 浮点比较用的极小量
 
 // —— 基础几何 ——

@@ -86,7 +86,7 @@ bool ImageGeometry::hitTest(const QPointF &point, QPointF *spaceOffset) const
 {
     for (auto it = m_patches.crbegin(); it != m_patches.crend(); ++it) {
         QPointF local;
-        if (!it->mapping.fromCanvas(point, &local) || !it->clip.contains(local))
+        if (!it->mapping.mapInverse(point, &local) || !it->clip.contains(local))
             continue;
         if (spaceOffset)
             *spaceOffset = m_imageToSpace.map(local) - m_position;

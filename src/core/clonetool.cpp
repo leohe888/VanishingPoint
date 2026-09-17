@@ -6,7 +6,7 @@ QPointF CloneTool::originalMarker() const
 {
     QPointF marker = m_source;
     if (m_sourceOnPlane)
-        m_sourceMapping.toCanvas(m_source, &marker);
+        m_sourceMapping.mapForward(m_source, &marker);
     return marker;
 }
 
@@ -32,7 +32,7 @@ bool CloneTool::pickSource(const QVector<Plane> &planes, const QPointF &point)
     m_source = point;
     if (m_sourceOnPlane) {
         m_sourceMapping = PlaneMath::surfaceMapping(planes[index]);
-        if (!m_sourceMapping.fromCanvas(point, &m_source))
+        if (!m_sourceMapping.mapInverse(point, &m_source))
             return false;
     }
     m_marker = point;
@@ -45,7 +45,7 @@ QRect CloneTool::begin(QImage &layer, const QImage &source, const Plane &target,
 {
     m_targetMapping = PlaneMath::surfaceMapping(target);
     QPointF position;
-    if (!m_hasSource || !m_targetMapping.fromCanvas(point, &position))
+    if (!m_hasSource || !m_targetMapping.mapInverse(point, &position))
         return {};
     if (!m_aligned || !m_hasOffset)
         m_offset = m_source - position;
@@ -57,7 +57,7 @@ QRect CloneTool::begin(QImage &layer, const QImage &source, const Plane &target,
 QRect CloneTool::move(QImage &layer, const QPointF &point)
 {
     QPointF position;
-    if (!m_drawing || !m_targetMapping.fromCanvas(point, &position))
+    if (!m_drawing || !m_targetMapping.mapInverse(point, &position))
         return {};
     return m_engine.drawStrokeTo(layer, position);
 }
@@ -75,11 +75,11 @@ void CloneTool::hover(const QVector<Plane> &planes, const QPointF &point)
             m_targetMapping = PlaneMath::surfaceMapping(planes[index]);
     }
     QPointF position;
-    if (!m_targetMapping.fromCanvas(point, &position))
+    if (!m_targetMapping.mapInverse(point, &position))
         return;
     const QPointF source = position + m_offset;
     if (m_sourceOnPlane)
-        m_sourceMapping.toCanvas(source, &m_marker);
+        m_sourceMapping.mapForward(source, &m_marker);
     else
         m_marker = source;
 }
@@ -112,7 +112,7 @@ void CloneTool::renderPreview(QPainter &painter, const QImage &source,
         return;
     const ProjectiveMapping targetMapping = PlaneMath::surfaceMapping(planes[index]);
     QPointF position;
-    if (!targetMapping.fromCanvas(point, &position))
+    if (!targetMapping.mapInverse(point, &position))
         return;
     // 与 begin() 保持一致的偏移计算：首笔（或非对齐模式）用当前落点重新锚定，
     // 对齐模式下已锁定偏移则沿用，从而保证预览与真实落笔的取样位置完全一致。

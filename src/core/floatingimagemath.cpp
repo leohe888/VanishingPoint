@@ -33,7 +33,7 @@ QPointF toCanvas(const FloatingImage &image, const QPointF &point, int *faceInde
     if (!image.attached || face < 0 || face >= image.faces.size())
         return point;
     QPointF result;
-    if (!PlaneMath::surfaceMapping(image.faces[face]).toCanvas(point, &result))
+    if (!PlaneMath::surfaceMapping(image.faces[face]).mapForward(point, &result))
         return QPointF(qQNaN(), qQNaN());
     return result;
 }

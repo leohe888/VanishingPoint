@@ -45,6 +45,7 @@ public:
     int appendPlane(const Plane &plane);           // 几何预览修改由 beginEdit/commitEdit 包围
     bool setPlane(int index, const Plane &plane);
     void lockPlaneEdge(int index, int edge);
+    bool isPlaneLinked(int index) const;           // 是否与相邻垂直平面共边
     int selectedPlane() const { return m_selectedPlane; }
     void setSelectedPlane(int index) { m_selectedPlane = index; }
     int nextSurfaceGroupId() const;                // 分配一个新的展开曲面分组号

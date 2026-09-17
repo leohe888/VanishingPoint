@@ -210,7 +210,7 @@ bool isValidPlane(const Facet &facet)
 QPointF uvToPlane(const Facet &facet, const QPointF &uv)
 {
     QPointF result;
-    uvMapping(facet).toCanvas(uv, &result);
+    uvMapping(facet).mapForward(uv, &result);
     return result;
 }
 
@@ -218,7 +218,7 @@ QPointF uvToPlane(const Facet &facet, const QPointF &uv)
 QPointF planeToUv(const Facet &facet, const QPointF &point, bool *ok)
 {
     QPointF result;
-    const bool valid = uvMapping(facet).fromCanvas(point, &result);
+    const bool valid = uvMapping(facet).mapInverse(point, &result);
     if (ok)
         *ok = valid;
     return result;
@@ -228,7 +228,7 @@ QPointF planeToUv(const Facet &facet, const QPointF &point, bool *ok)
 QPointF planeToSurface(const Facet &facet, const QPointF &point, bool *ok)
 {
     QPointF result;
-    const bool valid = surfaceMapping(facet).fromCanvas(point, &result);
+    const bool valid = surfaceMapping(facet).mapInverse(point, &result);
     if (ok)
         *ok = valid;
     return result;
@@ -281,7 +281,7 @@ bool movePlaneOnSurface(const Plane &source, const QPointF &dragPoint,
     Plane candidate = source;
     for (int i = 0; i < 4; ++i) {
         candidate.surfaceCorner[i] = source.surfaceCorner[i] + delta;
-        if (!projection.toCanvas(candidate.surfaceCorner[i], &candidate.corner[i]))
+        if (!projection.mapForward(candidate.surfaceCorner[i], &candidate.corner[i]))
             return false;
         const QPointF &corner = candidate.corner[i];
         if (!qIsFinite(corner.x()) || !qIsFinite(corner.y())
@@ -356,7 +356,7 @@ Plane resizePlaneAlongEdge(const Plane &source, int edge,
     for (int i = 0; i < 2; ++i) {
         const int corner = i == 0 ? edge : next;
         // 新角点落到极点线之外时无法保持展开参数化，此时宁可放弃这次改动。
-        if (!projection.fromCanvas(result.corner[corner], &surface[i]))
+        if (!projection.mapInverse(result.corner[corner], &surface[i]))
             return source;
     }
     result.surfaceCorner[edge] = surface[0];

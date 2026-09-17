@@ -66,7 +66,8 @@ void VpCanvas::paint(QPainter *painter)
     painter->translate(m_offset);
     painter->scale(m_scale, m_scale);
     SceneRenderer(m_doc).render(*painter, m_scale, /*showGuides*/ true,
-                                m_createTool.points(), nullptr,
+                                m_createTool.points(),
+                                m_extrudePreviewReady ? &m_extrudePreview : nullptr,
                                 /*editHandlesVisible*/ m_tool == Tool::EditPlane,
                                 /*hoveredPlane*/ -1, /*antsPhase*/ 0, /*drawContent*/ true,
                                 /*gridSize*/ 50.0,
@@ -84,14 +85,14 @@ void VpCanvas::geometryChange(const QRectF &newGeometry, const QRectF &oldGeomet
 void VpCanvas::mousePressEvent(QMouseEvent *event)
 {
     forceActiveFocus(); // 获得键盘焦点
-    event->accept();
+    event->accept();    // 标记事件已处理
     const QPointF point = widgetToImage(event->position());
     switch (m_tool) {
     case Tool::EditPlane: {
         const qreal tolerance = qMax(8.0 / qMax(m_scale, 1e-6), 4.0);
         int planeIndex = -1;
         int handle = -1;
-        // 先查控制点，允许鼠标落在平面边界外的容差范围内。
+        // 先检测控制点。后创建的平面在上层，先被检查
         for (int i = m_doc.planes().size() - 1; i >= 0; --i) {
             const int candidateHandle = PlaneMath::handleAt(m_doc.planes()[i], point, tolerance);
             if (candidateHandle >= 0) {
@@ -100,22 +101,35 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
                 break;
             }
         }
+        // 如果没点到控制点，再检测平面本体
         if (planeIndex < 0)
             planeIndex = PlaneMath::planeAt(m_doc.planes(), point);
+
+        // 什么都没点到，则取消选择
         if (planeIndex < 0) {
             m_doc.setSelectedPlane(-1);
             update();
             return;
         }
 
+        // 选中平面
         m_doc.setSelectedPlane(planeIndex);
+        // 与相邻平面共边的平面不能整体平移，否则共用边会被撕开
+        if (handle < 0 && m_doc.isPlaneLinked(planeIndex)) {
+            emit statusMessage(tr("该平面已与相邻平面共边，不能整体移动。"));
+            update();
+            return;
+        }
         const Plane &plane = m_doc.planes()[planeIndex];
-        if (handle < 0)
-            handle = PlaneMath::handleAt(plane, point, tolerance);
         const int edge = handle >= 4 ? handle - 4 : -1;
+        // Ctrl + 拖动边中点：从这条边拖出一个与之垂直的新平面
+        const bool extrude = edge >= 0 && (event->modifiers() & Qt::ControlModifier);
         m_editPlaneIndex = planeIndex;
-        m_editTool.begin(plane, point, handle, edge, false, m_doc.background().size());
+        m_extrudePreviewReady = false;
+        m_editTool.begin(plane, point, handle, edge, extrude, m_doc.background().size());
         m_doc.beginEdit();
+        if (extrude)
+            emit statusMessage(tr("拖动以拉出垂直平面，松开完成。"));
         update();
         return;
     }
@@ -138,10 +152,16 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
     if (m_tool != Tool::EditPlane || m_editPlaneIndex < 0)
         return;
     Plane candidate;
-    if (m_editTool.update(widgetToImage(event->position()), &candidate)) {
+    if (!m_editTool.update(widgetToImage(event->position()), &candidate))
+        return;
+    if (m_editTool.extruding()) {
+        // 拉出垂直平面时源平面保持不动，候选几何只作为预览绘制
+        m_extrudePreview = candidate;
+        m_extrudePreviewReady = true;
+    } else {
         m_doc.setPlane(m_editPlaneIndex, candidate);
-        update();
     }
+    update();
 }
 
 void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
@@ -149,8 +169,16 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
     event->accept();
     if (m_tool != Tool::EditPlane || m_editPlaneIndex < 0)
         return;
+    const bool extruding = m_editTool.extruding();
+    const int source = m_editPlaneIndex;
+    const int edge = m_editTool.edge();
     m_editPlaneIndex = -1;
-    m_doc.commitEdit(true);
+    // 普通拖动改的是源平面本身；拉出垂直平面则是新增一个平面
+    bool changed = true;
+    if (extruding)
+        changed = extrudePlane(source, edge);
+    m_extrudePreviewReady = false;
+    m_doc.commitEdit(changed);
     update();
 }
 
@@ -228,9 +256,26 @@ void VpCanvas::finishPlaneCreation()
     emit statusMessage(tr("平面已创建，已自动进入编辑平面工具。"));
 }
 
+// 把拖动预览落成一个与源平面垂直的新平面；返回是否真的产生了新平面。
+bool VpCanvas::extrudePlane(int sourcePlane, int edge)
+{
+    if (!m_extrudePreviewReady)
+        return false;
+    Plane plane = m_extrudePreview;
+    plane.parentPlane = sourcePlane; // 父子关系：删除平面时靠它解锁共用边
+    plane.parentEdge = edge;
+    if (m_doc.appendPlane(plane) < 0)
+        return false;
+    m_doc.setSelectedPlane(m_doc.planes().size() - 1);
+    m_doc.lockPlaneEdge(sourcePlane, edge); // 共用边在源平面上不能再编辑
+    emit statusMessage(tr("已拉出垂直平面。"));
+    return true;
+}
+
 void VpCanvas::cancelInteraction()
 {
     m_createTool.reset();
+    m_extrudePreviewReady = false; // 拖出垂直平面的预览随交互一起作废
     if (m_editPlaneIndex >= 0) {
         m_editPlaneIndex = -1;
         m_doc.cancelEdit();
@@ -240,11 +285,9 @@ void VpCanvas::cancelInteraction()
 // 删除当前选中的平面；没有选中时什么也不做。
 void VpCanvas::deleteSelectedPlane()
 {
-    if (m_editPlaneIndex >= 0) {
-        // 拖动编辑进行中：先丢弃这次拖动，否则后续鼠标事件会写回已经移位的平面下标。
-        m_editPlaneIndex = -1;
-        m_doc.cancelEdit();
-    }
+    // 拖动编辑进行中：先丢弃这次拖动，否则后续鼠标事件会写回已经移位的平面下标
+    if (m_editPlaneIndex >= 0)
+        cancelInteraction();
     const int index = m_doc.selectedPlane();
     if (index < 0)
         return;

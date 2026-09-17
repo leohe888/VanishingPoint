@@ -25,7 +25,7 @@ QRect PaintEngine::applyDab(QPainter &painter, const Facet &facet, const QPointF
     if (!mapping.isValid())
         return QRect();
     for (const QPointF &corner : {bounds.topLeft(), bounds.topRight(), bounds.bottomLeft(), bounds.bottomRight()})
-        if (!mapping.toCanvas(corner, &mapped))
+        if (!mapping.mapForward(corner, &mapped))
             return {};
 
     // 软边圆点在 UV 空间用径向渐变定义，随面片单应变换投影到画布。

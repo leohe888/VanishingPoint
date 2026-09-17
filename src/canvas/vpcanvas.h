@@ -40,6 +40,7 @@ private:
     QPointF widgetToImage(const QPointF &widgetPoint) const;
     void updateViewTransform();
     void finishPlaneCreation();
+    bool extrudePlane(int sourcePlane, int edge); // 把拖动预览落成新的垂直平面
     void cancelInteraction();
     void deleteSelectedPlane();   // 删除当前选中的平面
     void reportCreateProgress();  // 状态栏提示创建进度
@@ -53,6 +54,9 @@ private:
 
 
     int m_editPlaneIndex = -1; // 正在编辑的平面下标。-1 同时表示“没有进行中的平面编辑”。
+
+    Plane m_extrudePreview;             // 拖出垂直平面时的预览几何
+    bool m_extrudePreviewReady = false; // 预览几何是否可用
 
     QPointF m_cursorPoint;
 

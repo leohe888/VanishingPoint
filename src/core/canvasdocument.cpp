@@ -190,6 +190,20 @@ void CanvasDocument::lockPlaneEdge(int index, int edge)
         m_planes[index].lockedEdges |= quint8(1u << edge);
 }
 
+// 是否与相邻垂直平面共边：自己是子平面，或是别的平面的父平面。
+bool CanvasDocument::isPlaneLinked(int index) const
+{
+    if (index < 0 || index >= m_planes.size())
+        return false;
+    if (m_planes[index].parentPlane >= 0)
+        return true;
+    for (const Plane &plane : m_planes) {
+        if (plane.parentPlane == index)
+            return true;
+    }
+    return false;
+}
+
 // 删除浮动图像，并将选中项移动到删除位置上的下一张（若无则为上一张）。
 void CanvasDocument::removeFloatingImage(int index)
 {

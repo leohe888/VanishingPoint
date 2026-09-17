@@ -15,6 +15,7 @@ private slots:
     void loadingImageResetsDocument();
     void removesSelectedPlane();
     void removesPlaneReleasesSharedEdge();
+    void planeLinkageTracksSharedEdge();
 };
 
 void CanvasDocumentTest::rejectsInvalidPlane()
@@ -116,6 +117,28 @@ void CanvasDocumentTest::removesPlaneReleasesSharedEdge()
     QCOMPARE(document.planes().size(), 1);
     QCOMPARE(document.planes()[0].parentPlane, -1);
     QCOMPARE(int(document.planes()[0].lockedEdges), 0);
+}
+
+// 共边关系：父子平面互为共边，独立平面不算共边；删掉子平面后父平面解除共边。
+void CanvasDocumentTest::planeLinkageTracksSharedEdge()
+{
+    CanvasDocument document;
+    document.beginEdit();
+    document.appendPlane(makeTestPlane());       // 父平面：下标 0
+    Plane child = makeTestPlane();               // 子平面：下标 1
+    child.parentPlane = 0;
+    child.parentEdge = 1;
+    document.appendPlane(child);
+    document.appendPlane(makeTestPlane());       // 独立平面：下标 2
+    document.commitEdit(true);
+
+    QVERIFY(document.isPlaneLinked(0));
+    QVERIFY(document.isPlaneLinked(1));
+    QVERIFY(!document.isPlaneLinked(2));
+    QVERIFY(!document.isPlaneLinked(-1));
+
+    document.removePlane(1);                     // 父子关系随之解除
+    QVERIFY(!document.isPlaneLinked(0));
 }
 
 QTEST_APPLESS_MAIN(CanvasDocumentTest)
