@@ -7,7 +7,6 @@
 #include <QVector>
 #include "perspectivetransform.h"
 
-// 图片上一个带透视效果的四边形
 struct Facet {
     QPointF corner[4];  // 四个角点在画布上坐标，依次为左上 / 右上 / 右下 / 左下
     QPointF surfaceCorner[4];   // 四个角点在展开曲面上的坐标

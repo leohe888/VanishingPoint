@@ -25,6 +25,10 @@ add_vp_test(tst_planemath
     tst_planemath.cpp
     ${VP_GEOMETRY_SOURCES})
 
+add_vp_test(tst_perspectivetransform
+    tst_perspectivetransform.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/perspectivetransform.cpp)
+
 add_vp_test(tst_planecreatetool
     tst_planecreatetool.cpp
     ${PROJECT_SOURCE_DIR}/src/core/planecreatetool.cpp
