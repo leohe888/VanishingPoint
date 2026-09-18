@@ -3,6 +3,7 @@
 #include "core/brushtool.h"
 #include "core/canvasdocument.h"
 #include "core/clonetool.h"
+#include "core/imagetransformtool.h"
 #include "core/planecreatetool.h"
 #include "core/planeedittool.h"
 
@@ -54,6 +55,8 @@ public:
     bool cloneAligned() const;
     void setCloneAligned(bool aligned);
 
+    Q_INVOKABLE void pasteImage(); // 把剪贴板里的位图粘贴成一张浮动图像
+
     void paint(QPainter *painter) override;
 
 signals:
@@ -84,6 +87,17 @@ private:
     const QImage &cloneSource();  // 仿制取样的内容（按内容缓存）
     void drawCloneMarker(QPainter *painter); // 仿制源的绿色十字指示
 
+    // 浮动图像：按下/拖动/松开三处入口，命中测试与吸附动作。图像优先于工具——
+    // 点到图像就拖动它，点到别处则把当前选中的图像烘焙进绘画层。
+    bool beginImageInteraction(const QPointF &point);
+    void updateImageInteraction(const QPointF &point, Qt::KeyboardModifiers modifiers);
+    bool endImageInteraction();
+    bool floatingImageAt(const QPointF &point, int *index, QPointF *grabOffset) const;
+    void attachImageToPlane(int index, int planeIndex, const QPointF &point);
+    bool moveAttachedImage(int index, const QPointF &point);
+    void bakeSelectedImage();
+    void drawImageHandles(QPainter *painter); // 变换工具下的 8 个控制点
+
     CanvasDocument m_doc;
 
     PlaneCreateTool m_createTool;
@@ -102,6 +116,12 @@ private:
 
     QImage m_cloneSource;        // 仿制取样的内容快照
     QByteArray m_cloneSourceKey; // 快照对应的内容键
+
+    int m_antsPhase = 0; // 选中框虚线的相位，逐帧递增形成蚂蚁线
+
+    ImageTransformTool m_imageTool;  // 进行中的图像缩放/旋转
+    int m_draggingImage = -1;        // 正在拖动的浮动图像下标
+    bool m_imageChanged = false;     // 本次拖动是否真的改过图像几何
 
     qreal m_scale = 1.0;
     QPointF m_offset;

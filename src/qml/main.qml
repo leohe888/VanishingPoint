@@ -47,6 +47,12 @@ Window {
         }
     }
 
+    // 粘贴是窗口级快捷键：不必先点画布拿到焦点，也能直接粘贴。
+    Shortcut {
+        sequence: "Ctrl+V"
+        onActivated: workArea.canvas.pasteImage()
+    }
+
     // 画布可能自行切换工具（例如创建完平面后进入编辑工具），工具栏需跟随同步。
     Connections {
         target: workArea.canvas

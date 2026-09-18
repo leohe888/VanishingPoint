@@ -1,14 +1,18 @@
 #include "vpcanvas.h"
 
+#include "core/floatingimagemath.h"
 #include "core/imagegeometry.h"
 #include "core/scenerenderer.h"
 
+#include <QClipboard>
 #include <QCursor>
 #include <QDataStream>
+#include <QGuiApplication>
 #include <QHoverEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QTimer>
 
 namespace {
 constexpr qreal ViewMargin = 16.0; // 图像与画布边缘的留白
@@ -25,6 +29,17 @@ VpCanvas::VpCanvas(QQuickItem *parent)
 
     constexpr auto DefaultBackgroundPath = R"(C:\Users\yixin\Pictures\3.jpg)";
     m_doc.loadImage(QString::fromUtf8(DefaultBackgroundPath));  // 启动时加载默认背景
+
+    // 选中浮动图像时让虚线跑起来；没有选中就什么都不做，避免空转重绘。
+    auto *antsTimer = new QTimer(this);
+    antsTimer->setInterval(80);
+    connect(antsTimer, &QTimer::timeout, this, [this] {
+        if (!isVisible() || m_doc.selectedImage() < 0)
+            return;
+        m_antsPhase = (m_antsPhase + 1) % 8;
+        update();
+    });
+    antsTimer->start();
 
     updateViewTransform();
 }
@@ -198,7 +213,7 @@ void VpCanvas::paint(QPainter *painter)
                                 m_createTool.points(),
                                 m_extrudePreviewReady ? &m_extrudePreview : nullptr,
                                 /*editHandlesVisible*/ m_tool == Tool::EditPlane,
-                                /*hoveredPlane*/ -1, /*antsPhase*/ 0, /*drawContent*/ true,
+                                /*hoveredPlane*/ -1, m_antsPhase, /*drawContent*/ true,
                                 /*gridSize*/ 50.0,
                                 m_tool == Tool::CreatePlane ? m_cursorPoint : QPointF());
     // 光标离开画布时不画预览：空点 (0,0) 同时也是合法的图像坐标
@@ -211,6 +226,7 @@ void VpCanvas::paint(QPainter *painter)
                                       m_doc.background().size(), m_cursorPoint);
         drawCloneMarker(painter);
     }
+    drawImageHandles(painter);
     painter->restore();
 }
 
@@ -240,6 +256,8 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
     forceActiveFocus(); // 获得键盘焦点
     event->accept();    // 标记事件已处理
     const QPointF point = widgetToImage(event->position());
+    if (beginImageInteraction(point)) // 浮动图像浮在最上层，先于任何工具处理
+        return;
     switch (m_tool) {
     case Tool::EditPlane: {
         const qreal tolerance = qMax(8.0 / qMax(m_scale, 1e-6), 4.0);
@@ -336,6 +354,10 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
 {
     event->accept();
     updateCursorPoint(event->position());
+    if (m_draggingImage >= 0 && (event->buttons() & Qt::LeftButton)) {
+        updateImageInteraction(m_cursorPoint, event->modifiers());
+        return;
+    }
     switch (m_tool) {
     case Tool::EditPlane: {
         if (m_editPlaneIndex < 0)
@@ -373,6 +395,12 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
 void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
     event->accept();
+    // 缩放/旋转的最终几何取松开时的位置，避免漏掉最后一次移动；图像拖动
+    // 可以在任何工具下进行，所以先于工具分派收尾。
+    if (m_draggingImage >= 0 && m_imageTool.transforming())
+        updateImageInteraction(widgetToImage(event->position()), event->modifiers());
+    if (endImageInteraction())
+        return;
     switch (m_tool) {
     case Tool::EditPlane: {
         if (m_editPlaneIndex < 0)
@@ -435,7 +463,8 @@ void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
     QQuickPaintedItem::hoverLeaveEvent(event);
 }
 
-// 删除键：创建平面时回退最后一个角点，其余情况删除当前选中的平面。
+// 删除键按状态分派：创建平面时回退最后一个角点，否则删除选中的浮动图像，
+// 没有图像再退到删除选中的平面。
 void VpCanvas::keyPressEvent(QKeyEvent *event)
 {
     const int key = event->key();
@@ -446,11 +475,28 @@ void VpCanvas::keyPressEvent(QKeyEvent *event)
     if (m_createTool.creating()) {
         m_createTool.removeLastPoint();
         reportCreateProgress();
-        update();
+    } else if (m_doc.selectedImage() >= 0) {
+        m_doc.removeFloatingImage(m_doc.selectedImage());
+        emit statusMessage(tr("已删除选中的图像。"));
     } else {
         deleteSelectedPlane();
     }
+    update();
     event->accept();
+}
+
+// 粘贴剪贴板里的位图。落成浮动图像而不是烘焙进绘画层，才能随平面做透视变换。
+void VpCanvas::pasteImage()
+{
+    const QImage image = QGuiApplication::clipboard()->image();
+    if (image.isNull()) {
+        emit statusMessage(tr("剪贴板中没有可粘贴的图像。"));
+        return;
+    }
+    m_doc.addFloatingImage(image); // 追加到画布左上角，并自动选中
+    forceActiveFocus();            // 接管键盘焦点，随后的 Delete 才能删掉它
+    emit statusMessage(tr("已粘贴图像，按 Delete 键删除。"));
+    update();
 }
 
 // 把控件坐标换算成图像坐标
@@ -520,8 +566,12 @@ void VpCanvas::cancelInteraction()
         m_cloneTool.end();
         m_doc.commitHistory();
     }
-    if (m_editPlaneIndex >= 0) {
+    // 平面拖动与图像拖动都只改了结构，可以直接丢弃
+    if (m_editPlaneIndex >= 0 || m_draggingImage >= 0) {
         m_editPlaneIndex = -1;
+        m_imageTool.reset();
+        m_draggingImage = -1;
+        m_imageChanged = false;
         m_doc.cancelEdit();
     }
 }
@@ -558,4 +608,188 @@ void VpCanvas::reportCreateProgress()
         emit statusMessage(tr("已回退全部角点，请重新点击"));
     else
         emit statusMessage(tr("已设置 %1/%2 个角点").arg(count).arg(PlaneCreateTool::CornerCount));
+}
+
+// 按下时的图像处理。返回 true 表示这次按下已被图像消费，工具不再响应。
+// 顺序与 Photoshop 一致：先试控制点（仅变换工具），再试图像本体，最后才轮到烘焙。
+bool VpCanvas::beginImageInteraction(const QPointF &point)
+{
+    if (m_tool == Tool::Transform && m_doc.selectedImage() >= 0) {
+        const FloatingImage &image = m_doc.image(m_doc.selectedImage());
+        const int handle = ImageTransformTool::handleAt(image, point, m_scale);
+        const int corner = handle < 0 ? ImageTransformTool::rotationCornerAt(image, point, m_scale) : -1;
+        const auto mode = corner >= 0 ? ImageTransformTool::Mode::Rotate : ImageTransformTool::Mode::Scale;
+        if ((handle >= 0 || corner >= 0) && m_imageTool.begin(image, point, corner >= 0 ? corner : handle, mode)) {
+            m_draggingImage = m_doc.selectedImage();
+            m_doc.beginEdit();
+            update();
+            return true;
+        }
+    }
+
+    QPointF grabOffset;
+    int grabbed = -1;
+    const bool hitImage = m_doc.background().rect().contains(point.toPoint())
+                          && floatingImageAt(point, &grabbed, &grabOffset);
+    if (!hitImage && m_doc.selectedImage() >= 0) {
+        // 点到别处：把选中的图像烘焙进绘画层，之后不再是可操作对象。
+        // 这一下点击只用于确认烘焙，不再触发工具的其它动作，避免误落一笔。
+        bakeSelectedImage();
+        return true;
+    }
+    if (hitImage) {
+        m_draggingImage = grabbed;
+        m_doc.setSelectedImage(grabbed);
+        m_doc.beginEdit();
+        m_imageTool.beginMove(m_doc.image(grabbed), grabOffset);
+        update();
+        return true;
+    }
+    return false;
+}
+
+// 拖动中的图像：缩放/旋转交给工具自己算新几何；平移则沿快照曲面滑动（变换工具下
+// 已吸附的图像），或者按光标所在的平面吸附，落在平面外时脱离回画布坐标。
+// 越过极点线映射不出来时保持原位。
+void VpCanvas::updateImageInteraction(const QPointF &point, Qt::KeyboardModifiers modifiers)
+{
+    if (m_imageTool.transforming()) {
+        FloatingImage image;
+        if (m_imageTool.update(point, modifiers & Qt::ShiftModifier, modifiers & Qt::AltModifier, &image)) {
+            m_doc.setImage(m_draggingImage, image);
+            m_imageChanged = true;
+        }
+        update();
+        return;
+    }
+    const FloatingImage &start = m_imageTool.start();
+    if (m_tool == Tool::Transform && start.attached) {
+        QPointF surface;
+        if (FloatingImageMath::fromCanvas(start, point, &surface)) {
+            m_doc.setImagePosition(m_draggingImage, surface - m_imageTool.grabOffset());
+            m_imageChanged = true;
+        }
+    } else if (const int plane = PerspectivePlane::planeAt(m_doc.planes(), point); plane >= 0) {
+        attachImageToPlane(m_draggingImage, plane, point);
+        m_imageChanged = true;
+    } else if (!m_doc.image(m_draggingImage).attached || !moveAttachedImage(m_draggingImage, point)) {
+        m_doc.detachImage(m_draggingImage, point - m_imageTool.grabOffset());
+        m_imageChanged = true;
+    }
+    update();
+}
+
+// 结束拖动并提交；返回 false 表示当时没有图像在拖动。
+bool VpCanvas::endImageInteraction()
+{
+    if (m_draggingImage < 0)
+        return false;
+    m_imageTool.reset();
+    m_draggingImage = -1;
+    m_doc.commitEdit(m_imageChanged); // 只是点了一下、几何没变就不占一格历史
+    m_imageChanged = false;
+    update();
+    return true;
+}
+
+// 命中测试：判断画布坐标是否落在某张浮动图像上（从最上层开始），
+// 命中时返回该点相对图像左上角的抓取偏移。
+bool VpCanvas::floatingImageAt(const QPointF &point, int *index, QPointF *grabOffset) const
+{
+    for (int i = m_doc.images().size() - 1; i >= 0; --i) {
+        if (ImageGeometry::get(m_doc.image(i))->hitTest(point, grabOffset)) {
+            if (index)
+                *index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+// 把图像吸附到目标平面所在的曲面分组：拷贝该分组的全部面片几何作为严格快照，
+// 此后平面的增删改都不再影响它。
+void VpCanvas::attachImageToPlane(int index, int planeIndex, const QPointF &point)
+{
+    const Plane &host = m_doc.planes()[planeIndex];
+    QVector<Facet> faces;
+    int hostFace = -1;
+    for (int i = 0; i < m_doc.planes().size(); ++i) {
+        const Plane &plane = m_doc.planes()[i];
+        if (plane.surfaceGroup != host.surfaceGroup)
+            continue;
+        Facet face;
+        for (int c = 0; c < 4; ++c) {
+            face.corner[c] = plane.corner[c];
+            face.surfaceCorner[c] = plane.surfaceCorner[c];
+        }
+        if (i == planeIndex)
+            hostFace = faces.size();
+        faces.append(face);
+    }
+    bool ok = false;
+    const QPointF surfacePoint = PerspectivePlane::planeToSurface(host, point, &ok);
+    if (!ok)
+        return;
+    m_doc.attachImage(index, faces, hostFace, surfacePoint - m_imageTool.grabOffset());
+}
+
+// 已吸附的图像沿它的快照曲面移动：优先用包住光标的那个面片，都不包住时退回宿主面片
+// 外推；连外推都映射不出来（越过极点线）才返回 false。
+bool VpCanvas::moveAttachedImage(int index, const QPointF &point)
+{
+    const FloatingImage &image = m_doc.image(index);
+    auto moveOnFace = [this, index, &point](const Facet &face) {
+        bool ok = false;
+        const QPointF surfacePoint = PerspectivePlane::planeToSurface(face, point, &ok);
+        if (ok)
+            m_doc.setImagePosition(index, surfacePoint - m_imageTool.grabOffset());
+        return ok;
+    };
+    for (auto face = image.faces.crbegin(); face != image.faces.crend(); ++face) {
+        if (PerspectivePlane::planePolygon(face->corner).containsPoint(point, Qt::OddEvenFill)
+            && moveOnFace(*face))
+            return true;
+    }
+    return image.hostFace >= 0 && image.hostFace < image.faces.size()
+           && moveOnFace(image.faces[image.hostFace]);
+}
+
+// 把当前选中的浮动图像按当前几何画进绘画层并删除它：走的是与屏幕渲染完全相同的
+// 分段投影路径，因此肉眼看不到像素跳变。烘焙后内容并入绘画层，不再能单独操作。
+void VpCanvas::bakeSelectedImage()
+{
+    if (m_doc.selectedImage() < 0)
+        return;
+    const int index = m_doc.selectedImage();
+    const FloatingImage image = m_doc.image(index); // 拷贝：移除后仍要用它的几何算脏矩形
+    m_doc.beginPaintTransaction();
+    QPainter painter(&m_doc.paintLayer());
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    SceneRenderer(m_doc).renderFloatingImage(painter, image);
+    painter.end();
+    const QRect dirty = ImageGeometry::get(image)->outline().boundingRect().toAlignedRect()
+                            .adjusted(-2, -2, 2, 2).intersected(m_doc.paintLayer().rect());
+    m_doc.addPaintDirty(dirty);
+    // 删除会顺带取消选中，并在同一步历史里记录结构变化与绘画层增量，撤销时一起回退。
+    m_doc.removeFloatingImage(index);
+    m_imageTool.reset();
+    m_draggingImage = -1;
+    m_imageChanged = false;
+    emit statusMessage(tr("浮动图像已合并到绘画层。"));
+    update();
+}
+
+// 变换工具下画出浮动图像的 8 个控制点；尺寸与线宽按视图缩放换算，屏幕上恒定。
+void VpCanvas::drawImageHandles(QPainter *painter)
+{
+    if (m_tool != Tool::Transform || m_doc.selectedImage() < 0)
+        return;
+    const auto geometry = ImageGeometry::get(m_doc.image(m_doc.selectedImage()));
+    const qreal half = 4.0 / m_scale;
+    painter->save();
+    painter->setPen(QPen(QColor("#1769aa"), 1.0 / m_scale));
+    painter->setBrush(Qt::white);
+    for (const QPointF &control : geometry->controls())
+        painter->drawRect(QRectF(control.x() - half, control.y() - half, half * 2, half * 2));
+    painter->restore();
 }

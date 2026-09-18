@@ -16,6 +16,8 @@ private slots:
     void removesSelectedPlane();
     void removesPlaneReleasesSharedEdge();
     void planeLinkageTracksSharedEdge();
+    void pastesImageAsSelectedFloatingImage();
+    void removesSelectedFloatingImage();
 };
 
 void CanvasDocumentTest::rejectsInvalidPlane()
@@ -139,6 +141,43 @@ void CanvasDocumentTest::planeLinkageTracksSharedEdge()
 
     document.removePlane(1);                     // 父子关系随之解除
     QVERIFY(!document.isPlaneLinked(0));
+}
+
+// 粘贴：图像追加到画布左上角、未吸附，并自动成为选中项；可撤销。
+void CanvasDocumentTest::pastesImageAsSelectedFloatingImage()
+{
+    CanvasDocument document;
+    QImage image(32, 24, QImage::Format_ARGB32);
+    image.fill(Qt::red);
+
+    QCOMPARE(document.addFloatingImage(image), 0);
+    QCOMPARE(document.images().size(), 1);
+    QCOMPARE(document.selectedImage(), 0);
+    QCOMPARE(document.image(0).image.size(), QSize(32, 24));
+    QCOMPARE(document.image(0).position, QPointF(0, 0));
+    QVERIFY(!document.image(0).attached);
+
+    QVERIFY(document.undo());
+    QVERIFY(document.images().isEmpty());
+    QCOMPARE(document.selectedImage(), -1);
+}
+
+// 删除选中的浮动图像：选中项落到删除位置上的下一张，且可撤销。
+void CanvasDocumentTest::removesSelectedFloatingImage()
+{
+    CanvasDocument document;
+    QImage image(8, 8, QImage::Format_ARGB32);
+    image.fill(Qt::red);
+    document.addFloatingImage(image);
+    document.addFloatingImage(image);
+    document.setSelectedImage(0);
+
+    document.removeFloatingImage(0);
+    QCOMPARE(document.images().size(), 1);
+    QCOMPARE(document.selectedImage(), 0);
+
+    QVERIFY(document.undo());
+    QCOMPARE(document.images().size(), 2);
 }
 
 QTEST_APPLESS_MAIN(CanvasDocumentTest)
