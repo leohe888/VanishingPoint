@@ -10,7 +10,9 @@
 #include <QByteArray>
 #include <QColor>
 #include <QImage>
+#include <QPainterPath>
 #include <QPointF>
+#include <QRectF>
 #include <QQuickPaintedItem>
 
 class VpCanvas : public QQuickPaintedItem
@@ -98,6 +100,18 @@ private:
     void bakeSelectedImage();
     void drawImageHandles(QPainter *painter); // 变换工具下的 8 个控制点
 
+    // 选框：选区记在展开曲面上的一份面片快照里，因此可以跨越共享曲面的多个平面。
+    // Alt 拖动把选区内容复制成浮动图像；Ctrl 拖动把光标处的内容克隆进选区。
+    enum class SelectionAction { None, Create, Move, Fill };
+    void clearSelection();
+    bool pointToSelectionSurface(const QPointF &point, QPointF *surface) const;
+    QPainterPath selectionPath() const; // 选区在画面上的轮廓（已按面片分段投影）
+    void updateSelection(const QPointF &point, Qt::KeyboardModifiers modifiers);
+    int copySelectionToFloatingImage(const QPointF &point); // Alt 拖动：复制选区内容
+    int cloneSelectionToFloatingImage();                    // Ctrl 拖动：把克隆结果落成浮动图像
+    void fillSelectionFromPoint(const QPointF &point);
+    void drawSelectionOutline(QPainter *painter);
+
     CanvasDocument m_doc;
 
     PlaneCreateTool m_createTool;
@@ -122,6 +136,15 @@ private:
     ImageTransformTool m_imageTool;  // 进行中的图像缩放/旋转
     int m_draggingImage = -1;        // 正在拖动的浮动图像下标
     bool m_imageChanged = false;     // 本次拖动是否真的改过图像几何
+
+    QVector<Facet> m_selectionFaces;  // 选区所在曲面分组的几何快照（可跨多平面）
+    QRectF m_selectionRect;           // 展开曲面坐标下的矩形选区
+    QRectF m_selectionStartRect;      // 平移开始时的选区，避免逐帧累加误差
+    QPointF m_selectionPressSurface;  // 按下点在展开曲面上的位置
+    QPointF m_selectionFillOffset;    // Ctrl 克隆当前的取样偏移（展开曲面坐标）
+    SelectionAction m_selectionAction = SelectionAction::None;
+    QImage m_selectionSampleSource;   // Ctrl 克隆的取样源（按下时的文档合成）
+    QImage m_selectionPaintBefore;    // Ctrl 克隆拖动前的绘画层，每帧据此重建预览
 
     qreal m_scale = 1.0;
     QPointF m_offset;
