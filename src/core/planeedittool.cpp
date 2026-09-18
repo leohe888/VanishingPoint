@@ -29,7 +29,7 @@ bool PlaneEditTool::update(const QPointF &point, Plane *result)
         return false;
     Plane candidate = m_start;
     if (m_extrude)
-        candidate = PlaneMath::makePerpendicularPlane(m_start, m_edge, point, m_press, m_canvasSize);
+        candidate = PerspectivePlane::makePerpendicularPlane(m_start, m_edge, point, m_press, m_canvasSize);
     else if (m_rotate) {
         const int edge = m_rotationEdge;
         const QPointF seamMid = (m_start.corner[edge] + m_start.corner[(edge + 1) % 4]) / 2.0;
@@ -44,17 +44,17 @@ bool PlaneEditTool::update(const QPointF &point, Plane *result)
             delta += 2.0 * M_PI;
         m_accumulatedRotation += qRadiansToDegrees(delta);
         m_lastPointerAngle = currentAngle;
-        candidate = PlaneMath::rotateChildPlane(m_start, edge,
+        candidate = PerspectivePlane::rotateChildPlane(m_start, edge,
                                                  m_start.relativeAngle + m_accumulatedRotation,
                                                  m_canvasSize);
     }
     else if (m_handle >= 0 && m_handle < 4)
         candidate.corner[m_handle] = point;
     else if (m_handle >= 4)
-        candidate = PlaneMath::resizePlaneAlongEdge(m_start, m_handle - 4, point, m_press);
-    else if (!PlaneMath::movePlaneOnSurface(m_start, point, m_press, &candidate))
+        candidate = PerspectivePlane::resizePlaneAlongEdge(m_start, m_handle - 4, point, m_press);
+    else if (!PerspectivePlane::movePlaneOnSurface(m_start, point, m_press, &candidate))
         return false;
-    if (!PlaneMath::isValidPlane(candidate))
+    if (!PerspectivePlane::isValidPlane(candidate))
         return false;
     *result = candidate;
     return true;

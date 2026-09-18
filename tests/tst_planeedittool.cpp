@@ -34,7 +34,7 @@ void PlaneEditToolTest::resizesFromEdgeMidpoint()
     tool.begin(plane, midpoint, 4, 0, false, QSize(1200, 800));
     Plane result;
     QVERIFY(tool.update(QPointF(60, -10), &result));
-    QVERIFY(PlaneMath::isValidPlane(result));
+    QVERIFY(PerspectivePlane::isValidPlane(result));
     QVERIFY(result.corner[0] != plane.corner[0]);
     QVERIFY(result.corner[1] != plane.corner[1]);
     QCOMPARE(result.corner[2], plane.corner[2]);
@@ -73,7 +73,7 @@ void PlaneEditToolTest::extrudesPerpendicularPlaneFromEdgeMidpoint()
 
     Plane result;
     QVERIFY(tool.update(QPointF(60, -40), &result));
-    QVERIFY(PlaneMath::isValidPlane(result));
+    QVERIFY(PerspectivePlane::isValidPlane(result));
     QCOMPARE(result.corner[0], plane.corner[0]);       // 共用边原样继承
     QCOMPARE(result.corner[1], plane.corner[1]);
     QCOMPARE(result.surfaceCorner[0], plane.surfaceCorner[0]); // 接缝处曲面坐标相同

@@ -1,4 +1,4 @@
-#include "planemath.h"
+#include "perspectiveplane.h"
 
 #include <QtMath>
 
@@ -118,7 +118,7 @@ bool projectPoint(const Vec3 &p, const CameraFrame &frame, QPointF *out)
 
 } // namespace
 
-namespace PlaneMath {
+namespace PerspectivePlane {
 PerspectiveTransform surfaceMapping(const Facet &facet)
 {
     return {planePolygon(facet.surfaceCorner), planePolygon(facet.corner)};
@@ -640,4 +640,4 @@ Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
     return result;
 }
 
-} // namespace PlaneMath
+} // namespace PerspectivePlane

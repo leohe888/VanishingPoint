@@ -53,7 +53,7 @@ ImageGeometry::ImageGeometry(const FloatingImage &image)
         QPainterPath hostClip = imagePath;
         const QTransform inverse = m_imageToSpace.inverted();
         for (int i = 0; i < image.faces.size(); ++i) {
-            const QPolygonF polygon = inverse.map(PlaneMath::planePolygon(image.faces[i].surfaceCorner));
+            const QPolygonF polygon = inverse.map(PerspectivePlane::planePolygon(image.faces[i].surfaceCorner));
             sources.append(polygon);
             QPainterPath facePath;
             facePath.addPolygon(polygon);
@@ -63,10 +63,10 @@ ImageGeometry::ImageGeometry(const FloatingImage &image)
                 hostClip = hostClip.subtracted(facePath);
         }
         if (image.hostFace >= 0 && image.hostFace < image.faces.size())
-            append(sources[image.hostFace], PlaneMath::planePolygon(image.faces[image.hostFace].corner), hostClip);
+            append(sources[image.hostFace], PerspectivePlane::planePolygon(image.faces[image.hostFace].corner), hostClip);
         for (int i = 0; i < image.faces.size(); ++i)
             if (i != image.hostFace)
-                append(sources[i], PlaneMath::planePolygon(image.faces[i].corner), clips[i]);
+                append(sources[i], PerspectivePlane::planePolygon(image.faces[i].corner), clips[i]);
     }
     if (m_patches.size() == 1)
         m_outline = m_patches.first().canvasClip;

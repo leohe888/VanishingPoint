@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/planemath.h"
+#include "core/perspectiveplane.h"
 
 inline Plane makeTestPlane()
 {

@@ -23,7 +23,7 @@ QPointF toCanvas(const FloatingImage &image, const QPointF &point, int *faceInde
     int face = image.hostFace;
     if (image.attached) {
         for (int i = image.faces.size() - 1; i >= 0; --i)
-            if (PlaneMath::planePolygon(image.faces[i].surfaceCorner).containsPoint(point, Qt::OddEvenFill)) {
+            if (PerspectivePlane::planePolygon(image.faces[i].surfaceCorner).containsPoint(point, Qt::OddEvenFill)) {
                 face = i;
                 break;
             }
@@ -33,7 +33,7 @@ QPointF toCanvas(const FloatingImage &image, const QPointF &point, int *faceInde
     if (!image.attached || face < 0 || face >= image.faces.size())
         return point;
     QPointF result;
-    if (!PlaneMath::surfaceMapping(image.faces[face]).mapForward(point, &result))
+    if (!PerspectivePlane::surfaceMapping(image.faces[face]).mapForward(point, &result))
         return QPointF(qQNaN(), qQNaN());
     return result;
 }
@@ -46,14 +46,14 @@ bool fromCanvas(const FloatingImage &image, const QPointF &point, QPointF *resul
     }
     int face = fallbackFace >= 0 ? fallbackFace : image.hostFace;
     for (int i = image.faces.size() - 1; i >= 0; --i)
-        if (PlaneMath::planePolygon(image.faces[i].corner).containsPoint(point, Qt::OddEvenFill)) {
+        if (PerspectivePlane::planePolygon(image.faces[i].corner).containsPoint(point, Qt::OddEvenFill)) {
             face = i;
             break;
         }
     if (face < 0 || face >= image.faces.size())
         return false;
     bool ok = false;
-    *result = PlaneMath::planeToSurface(image.faces[face], point, &ok);
+    *result = PerspectivePlane::planeToSurface(image.faces[face], point, &ok);
     return ok && std::isfinite(result->x()) && std::isfinite(result->y());
 }
 

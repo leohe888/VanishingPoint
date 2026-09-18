@@ -58,6 +58,59 @@ void VpCanvas::setTool(Tool tool)
     update();
 }
 
+int VpCanvas::brushDiameter() const
+{
+    return m_brushTool.diameter();
+}
+
+// 越界值由引擎钳到合法区间
+void VpCanvas::setBrushDiameter(int value)
+{
+    if (m_brushTool.diameter() == value)
+        return;
+    m_brushTool.setDiameter(value);
+    emit brushChanged();
+}
+
+int VpCanvas::brushHardness() const
+{
+    return m_brushTool.hardness();
+}
+
+void VpCanvas::setBrushHardness(int value)
+{
+    if (m_brushTool.hardness() == value)
+        return;
+    m_brushTool.setHardness(value);
+    emit brushChanged();
+}
+
+int VpCanvas::brushOpacity() const
+{
+    return m_brushTool.opacity();
+}
+
+void VpCanvas::setBrushOpacity(int value)
+{
+    if (m_brushTool.opacity() == value)
+        return;
+    m_brushTool.setOpacity(value);
+    emit brushChanged();
+}
+
+QColor VpCanvas::brushColor() const
+{
+    return m_brushTool.color();
+}
+
+void VpCanvas::setBrushColor(const QColor &color)
+{
+    if (m_brushTool.color() == color)
+        return;
+    m_brushTool.setColor(color);
+    emit brushChanged();
+}
+
 void VpCanvas::paint(QPainter *painter)
 {
     painter->fillRect(boundingRect(), QColor("#4D4D4D"));
@@ -72,6 +125,8 @@ void VpCanvas::paint(QPainter *painter)
                                 /*hoveredPlane*/ -1, /*antsPhase*/ 0, /*drawContent*/ true,
                                 /*gridSize*/ 50.0,
                                 m_tool == Tool::CreatePlane ? m_cursorPoint : QPointF());
+    if (m_tool == Tool::Brush)
+        m_brushTool.renderPreview(*painter, m_doc.planes(), m_doc.background().size(), m_cursorPoint);
     painter->restore();
 }
 
@@ -94,7 +149,7 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         int handle = -1;
         // 先检测控制点。后创建的平面在上层，先被检查
         for (int i = m_doc.planes().size() - 1; i >= 0; --i) {
-            const int candidateHandle = PlaneMath::handleAt(m_doc.planes()[i], point, tolerance);
+            const int candidateHandle = PerspectivePlane::handleAt(m_doc.planes()[i], point, tolerance);
             if (candidateHandle >= 0) {
                 planeIndex = i;
                 handle = candidateHandle;
@@ -103,7 +158,7 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         }
         // 如果没点到控制点，再检测平面本体
         if (planeIndex < 0)
-            planeIndex = PlaneMath::planeAt(m_doc.planes(), point);
+            planeIndex = PerspectivePlane::planeAt(m_doc.planes(), point);
 
         // 什么都没点到，则取消选择
         if (planeIndex < 0) {
@@ -141,6 +196,17 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
             reportCreateProgress();
         update();
         return;
+    case Tool::Brush: {
+        // 事务要先开，否则撤销基线会带上第一个笔触点
+        m_doc.beginPaintTransaction();
+        const QRect dirty = m_brushTool.begin(m_doc.paintLayer(), m_doc.planes(),
+                                              m_doc.background().size(), point);
+        if (!m_brushTool.drawing())
+            return; // 没锚定到可绘制面片：事务保持为空，提交时不会记录绘画变更
+        m_doc.addPaintDirty(dirty);
+        update();
+        return;
+    }
     default:
         return; // 其余工具尚未实现
     }
@@ -149,53 +215,81 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
 void VpCanvas::mouseMoveEvent(QMouseEvent *event)
 {
     event->accept();
-    if (m_tool != Tool::EditPlane || m_editPlaneIndex < 0)
+    switch (m_tool) {
+    case Tool::EditPlane: {
+        if (m_editPlaneIndex < 0)
+            return;
+        Plane candidate;
+        if (!m_editTool.update(widgetToImage(event->position()), &candidate))
+            return;
+        if (m_editTool.extruding()) {
+            // 拉出垂直平面时源平面保持不动，候选几何只作为预览绘制
+            m_extrudePreview = candidate;
+            m_extrudePreviewReady = true;
+        } else {
+            m_doc.setPlane(m_editPlaneIndex, candidate);
+        }
+        update();
         return;
-    Plane candidate;
-    if (!m_editTool.update(widgetToImage(event->position()), &candidate))
-        return;
-    if (m_editTool.extruding()) {
-        // 拉出垂直平面时源平面保持不动，候选几何只作为预览绘制
-        m_extrudePreview = candidate;
-        m_extrudePreviewReady = true;
-    } else {
-        m_doc.setPlane(m_editPlaneIndex, candidate);
     }
-    update();
+    case Tool::Brush:
+        if (m_brushTool.drawing()) {
+            m_doc.addPaintDirty(m_brushTool.move(m_doc.paintLayer(),
+                                                 widgetToImage(event->position())));
+            update();
+        }
+        return;
+    default:
+        return;
+    }
 }
 
 void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
     event->accept();
-    if (m_tool != Tool::EditPlane || m_editPlaneIndex < 0)
+    switch (m_tool) {
+    case Tool::EditPlane: {
+        if (m_editPlaneIndex < 0)
+            return;
+        const bool extruding = m_editTool.extruding();
+        const int source = m_editPlaneIndex;
+        const int edge = m_editTool.edge();
+        m_editPlaneIndex = -1;
+        // 普通拖动改的是源平面本身；拉出垂直平面则是新增一个平面
+        bool changed = true;
+        if (extruding)
+            changed = extrudePlane(source, edge);
+        m_extrudePreviewReady = false;
+        m_doc.commitEdit(changed);
+        update();
         return;
-    const bool extruding = m_editTool.extruding();
-    const int source = m_editPlaneIndex;
-    const int edge = m_editTool.edge();
-    m_editPlaneIndex = -1;
-    // 普通拖动改的是源平面本身；拉出垂直平面则是新增一个平面
-    bool changed = true;
-    if (extruding)
-        changed = extrudePlane(source, edge);
-    m_extrudePreviewReady = false;
-    m_doc.commitEdit(changed);
-    update();
+    }
+    case Tool::Brush:
+        if (m_brushTool.drawing()) {
+            m_brushTool.end();
+            m_doc.commitHistory(); // 一笔落成，提交为一格历史
+            update();
+        }
+        return;
+    default:
+        return;
+    }
 }
 
-// 橡皮筋预览随光标移动持续重绘。
+// 橡皮筋与笔刷轮廓都随光标移动持续重绘。
 void VpCanvas::hoverMoveEvent(QHoverEvent *event)
 {
     m_cursorPoint = widgetToImage(event->position());
-    if (m_tool == Tool::CreatePlane && m_createTool.creating())
+    if (cursorPreviewVisible())
         update();
     QQuickPaintedItem::hoverMoveEvent(event);
 }
 
-// 离开画布时清掉光标预览，避免橡皮筋停在最后位置。
+// 离开画布时清掉光标预览，避免预览停在最后位置。
 void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
 {
     m_cursorPoint = QPointF();
-    if (m_tool == Tool::CreatePlane && m_createTool.creating())
+    if (cursorPreviewVisible())
         update();
     QQuickPaintedItem::hoverLeaveEvent(event);
 }
@@ -243,7 +337,7 @@ void VpCanvas::finishPlaneCreation()
     const Plane plane = m_createTool.makePlane(m_doc.nextSurfaceGroupId());
     m_createTool.reset();
 
-    if (!PlaneMath::isValidPlane(plane)) {
+    if (!PerspectivePlane::isValidPlane(plane)) {
         emit statusMessage(tr("无法创建：四个点必须依次组成非交叉的凸四边形，请重新设置。"));
         return;
     }
@@ -276,10 +370,23 @@ void VpCanvas::cancelInteraction()
 {
     m_createTool.reset();
     m_extrudePreviewReady = false; // 拖出垂直平面的预览随交互一起作废
+    // 进行中的笔触已经烘焙进绘画层，无法回退，只能提交
+    if (m_brushTool.drawing()) {
+        m_brushTool.end();
+        m_doc.commitHistory();
+    }
     if (m_editPlaneIndex >= 0) {
         m_editPlaneIndex = -1;
         m_doc.cancelEdit();
     }
+}
+
+// 是否需要画光标预览（创建平面的橡皮筋、画笔的轮廓）
+bool VpCanvas::cursorPreviewVisible() const
+{
+    if (m_tool == Tool::Brush)
+        return true;
+    return m_tool == Tool::CreatePlane && m_createTool.creating();
 }
 
 // 删除当前选中的平面；没有选中时什么也不做。

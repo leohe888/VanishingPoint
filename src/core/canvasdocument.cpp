@@ -86,7 +86,7 @@ void CanvasDocument::addPaintDirty(const QRect &rect)
 // 追加一个平面并返回其下标；几何非法时不追加，返回 -1。
 int CanvasDocument::appendPlane(const Plane &plane)
 {
-    if (!PlaneMath::isValidPlane(plane))
+    if (!PerspectivePlane::isValidPlane(plane))
         return -1;
     m_planes.append(plane);
     return m_planes.size() - 1;
@@ -94,7 +94,7 @@ int CanvasDocument::appendPlane(const Plane &plane)
 
 bool CanvasDocument::setPlane(int index, const Plane &plane)
 {
-    if (index < 0 || index >= m_planes.size() || !PlaneMath::isValidPlane(plane))
+    if (index < 0 || index >= m_planes.size() || !PerspectivePlane::isValidPlane(plane))
         return false;
     m_planes[index] = plane;
     return true;

@@ -7,16 +7,24 @@
 #include <QTransform>
 #include <QtMath>
 
-using namespace PlaneMath;
+using namespace PerspectivePlane;
+
+namespace {
+// 把直径换算到归一化 UV：以面片的平均水平边长作为 UV -> 画布的局部尺度，
+// 这样同一个笔触点在透视下保持一致的视觉粗细。
+qreal uvRadius(const Facet &facet, qreal diameter)
+{
+    const qreal planeWidth = (QLineF(facet.corner[0], facet.corner[1]).length() +
+                              QLineF(facet.corner[3], facet.corner[2]).length()) / 2.0;
+    return (diameter / 2.0) / qMax(40.0, planeWidth);
+}
+}
 
 // 在面片透视下于 UV 位置落下一个软边笔触点，返回画布脏矩形。
 QRect PaintEngine::applyDab(QPainter &painter, const Facet &facet, const QPointF &uv) const
 {
-    // 把画笔直径换算到归一化 UV 空间：用面片的平均水平边长估计
-    // UV -> 画布 的局部尺度。这样同一个笔触点在透视下保持一致的视觉粗细。
-    const qreal planeWidth = (QLineF(facet.corner[0], facet.corner[1]).length() +
-                              QLineF(facet.corner[3], facet.corner[2]).length()) / 2.0;
-    const qreal radiusUv = (m_diameter / 2.0) / qMax(40.0, planeWidth);
+    const qreal radiusUv = uvRadius(facet, m_diameter);
+    const qreal hardness = m_hardness / 100.0; // 半径内完全不透明的比例
 
     const PerspectiveTransform mapping = uvMapping(facet);
     const QTransform &uvToCanvas = mapping.forward();
@@ -29,13 +37,12 @@ QRect PaintEngine::applyDab(QPainter &painter, const Facet &facet, const QPointF
             return {};
 
     // 软边圆点在 UV 空间用径向渐变定义，随面片单应变换投影到画布。
-    // 硬度的含义沿用旧实现：半径 softStart 以内完全不透明，向外平滑淡出。
     QRadialGradient gradient(uv, radiusUv);
     QColor core = m_brushColor;
-    core.setAlphaF(m_opacity);
+    core.setAlphaF(m_opacity / 100.0);
     gradient.setColorAt(0.0, core);
-    if (m_hardness < 1.0) {
-        gradient.setColorAt(qBound(0.0, m_hardness, 1.0), core);
+    if (hardness < 1.0) {
+        gradient.setColorAt(hardness, core);
         QColor edge = m_brushColor;
         edge.setAlphaF(0.0);
         gradient.setColorAt(1.0, edge);
@@ -69,9 +76,7 @@ QRect PaintEngine::beginStroke(QImage &paintLayer, const Facet &facet, const QPo
 // 从上一 UV 位置向目标 UV 插值补间，沿笔迹均匀落下一串笔触点。
 QRect PaintEngine::drawStrokeTo(QImage &paintLayer, const Facet &facet, const QPointF &uv)
 {
-    const qreal planeWidth = (QLineF(facet.corner[0], facet.corner[1]).length() +
-                              QLineF(facet.corner[3], facet.corner[2]).length()) / 2.0;
-    const qreal radiusUv = (m_diameter / 2.0) / qMax(40.0, planeWidth);
+    const qreal radiusUv = uvRadius(facet, m_diameter);
     // 步长约为笔刷半径的 1/3，保证快速拖动时笔迹连续无断点。
     const qreal step = qMax(0.001, radiusUv * 0.35);
     const qreal distance = QLineF(m_lastUv, uv).length();

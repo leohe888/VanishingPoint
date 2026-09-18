@@ -1,6 +1,6 @@
 #pragma once
 
-#include "planemath.h"
+#include "perspectiveplane.h"
 
 #include <QColor>
 #include <QImage>
@@ -16,11 +16,14 @@ class QPainter;
 class PaintEngine
 {
 public:
-    // —— 笔刷参数 ——
-    void setDiameter(int value) { m_diameter = value; }          // 直径（图像像素）
-    void setHardness(int value) { m_hardness = value / 100.0; }  // 硬度（0~100 -> 0~1）
-    void setOpacity(int value) { m_opacity = value / 100.0; }    // 不透明度（0~100 -> 0~1）
+    // —— 笔刷参数（取值区间与 ToolOptionsBar 一致，越界值会被钳住） ——
+    void setDiameter(int value) { m_diameter = qBound(1, value, 500); }  // 直径 1~500（图像像素）
+    void setHardness(int value) { m_hardness = qBound(0, value, 100); }  // 硬度 0~100（百分比）
+    void setOpacity(int value) { m_opacity = qBound(1, value, 100); }    // 不透明度 1~100（百分比）
     void setColor(const QColor &color) { m_brushColor = color; }
+    int diameter() const { return m_diameter; }
+    int hardness() const { return m_hardness; }
+    int opacity() const { return m_opacity; }
     QColor color() const { return m_brushColor; }
 
     // 在指定面片上从给定 UV 位置开始一笔，并立即落下第一个笔触点。
@@ -38,9 +41,9 @@ public:
     QRect applyDab(QPainter &painter, const Facet &facet, const QPointF &uv) const;
 
 private:
-    QPointF m_lastUv;                          // 最近一次笔迹的 UV 坐标
-    QColor m_brushColor = QColor("#e85d4a");   // 画笔颜色
-    qreal m_diameter = 42;                     // 笔刷直径（图像像素）
-    qreal m_hardness = .75;                    // 笔刷硬度（0~1）
-    qreal m_opacity = 1.0;                     // 笔刷不透明度（0~1）
+    QPointF m_lastUv;                         // 最近一次笔迹的 UV 坐标
+    QColor m_brushColor = QColor("#e85d4a");  // 画笔颜色
+    int m_diameter = 42;                      // 笔刷直径（图像像素）
+    int m_hardness = 75;                      // 笔刷硬度（百分比）
+    int m_opacity = 100;                      // 笔刷不透明度（百分比）
 };

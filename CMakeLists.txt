@@ -23,6 +23,8 @@ set(PROJECT_SOURCES
         src/canvas/vpcanvas.h
         src/core/canvasdocument.cpp
         src/core/canvasdocument.h
+        src/core/brushtool.cpp
+        src/core/brushtool.h
         src/core/clonestampengine.cpp
         src/core/clonestampengine.h
         src/core/clonetool.cpp
@@ -39,8 +41,8 @@ set(PROJECT_SOURCES
         src/core/planeedittool.h
         src/core/planecreatetool.cpp
         src/core/planecreatetool.h
-        src/core/planemath.cpp
-        src/core/planemath.h
+        src/core/perspectiveplane.cpp
+        src/core/perspectiveplane.h
         src/core/perspectivetransform.cpp
         src/core/perspectivetransform.h
         src/core/scenecontentcache.cpp

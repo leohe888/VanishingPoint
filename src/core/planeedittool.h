@@ -1,6 +1,6 @@
 #pragma once
 
-#include "planemath.h"
+#include "perspectiveplane.h"
 
 class PlaneEditTool
 {

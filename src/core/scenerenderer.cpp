@@ -9,7 +9,7 @@
 #include <QPainterPathStroker>
 #include <QLineF>
 
-using namespace PlaneMath;
+using namespace PerspectivePlane;
 
 // 控制点（创建平面的角点标记、平面编辑的角点与边缘中心点）统一的半边长，
 // 单位为画布像素，绘制时再按视图缩放换算。

@@ -21,9 +21,11 @@ struct Plane : Facet {
     bool angleAdjusted = false; // 用户是否手动调整过夹角
 };
 
-// 平面几何与透视构造的纯函数集合：不持有状态，上下文一律由调用方传参，便于独立测试。
-namespace PlaneMath {
+namespace PerspectivePlane {
+// 同一面片的两种参数化，目标都是 facet.corner，区别只在源坐标系与是否带尺度。
+// 展开图坐标 ↔ 画面坐标；坐标是真实像素，位移与拼缝才能在相邻平面之间对齐。
 PerspectiveTransform surfaceMapping(const Facet &facet);
+// 归一化 UV ↔ 画面坐标；源恒为单位正方形，因而与面片尺寸无关，画笔按 UV 落笔用它。
 PerspectiveTransform uvMapping(const Facet &facet);
 
 constexpr qreal Epsilon = 1e-6; // 浮点比较用的极小量
@@ -67,4 +69,4 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
 Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
                        const QSize &backgroundSize);
 
-} // namespace PlaneMath
+} // namespace PerspectivePlane

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "clonestampengine.h"
-#include "planemath.h"
+#include "perspectiveplane.h"
 
 class QPainter;
 

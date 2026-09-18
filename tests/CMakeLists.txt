@@ -18,11 +18,11 @@ function(add_vp_test test_name)
 endfunction()
 
 set(VP_GEOMETRY_SOURCES
-    ${PROJECT_SOURCE_DIR}/src/core/planemath.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/perspectiveplane.cpp
     ${PROJECT_SOURCE_DIR}/src/core/perspectivetransform.cpp)
 
-add_vp_test(tst_planemath
-    tst_planemath.cpp
+add_vp_test(tst_perspectiveplane
+    tst_perspectiveplane.cpp
     ${VP_GEOMETRY_SOURCES})
 
 add_vp_test(tst_perspectivetransform
@@ -42,4 +42,11 @@ add_vp_test(tst_planeedittool
 add_vp_test(tst_canvasdocument
     tst_canvasdocument.cpp
     ${PROJECT_SOURCE_DIR}/src/core/canvasdocument.cpp
+    ${VP_GEOMETRY_SOURCES})
+
+add_vp_test(tst_brushtool
+    tst_brushtool.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/canvasdocument.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/brushtool.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/paintengine.cpp
     ${VP_GEOMETRY_SOURCES})

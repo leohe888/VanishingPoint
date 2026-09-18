@@ -1,7 +1,7 @@
 # Facet 是什么
 
 `Facet` 是 VanishingPoint 中表示“四边形映射面”的基础几何结构，定义在
-`src/core/planemath.h` 中：
+`src/core/perspectiveplane.h` 中：
 
 ```cpp
 struct Facet {

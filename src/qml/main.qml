@@ -28,6 +28,7 @@ Window {
             Layout.fillHeight: true
 
             ToolOptionsBar {
+                canvas: workArea.canvas
                 Layout.fillWidth: true
                 Layout.preferredHeight: 38
             }

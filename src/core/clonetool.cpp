@@ -27,11 +27,11 @@ void CloneTool::setAligned(bool aligned)
 
 bool CloneTool::pickSource(const QVector<Plane> &planes, const QPointF &point)
 {
-    const int index = PlaneMath::planeAt(planes, point);
+    const int index = PerspectivePlane::planeAt(planes, point);
     m_sourceOnPlane = index >= 0;
     m_source = point;
     if (m_sourceOnPlane) {
-        m_sourceMapping = PlaneMath::surfaceMapping(planes[index]);
+        m_sourceMapping = PerspectivePlane::surfaceMapping(planes[index]);
         if (!m_sourceMapping.mapInverse(point, &m_source))
             return false;
     }
@@ -43,7 +43,7 @@ bool CloneTool::pickSource(const QVector<Plane> &planes, const QPointF &point)
 
 QRect CloneTool::begin(QImage &layer, const QImage &source, const Plane &target, const QPointF &point)
 {
-    m_targetMapping = PlaneMath::surfaceMapping(target);
+    m_targetMapping = PerspectivePlane::surfaceMapping(target);
     QPointF position;
     if (!m_hasSource || !m_targetMapping.mapInverse(point, &position))
         return {};
@@ -70,9 +70,9 @@ void CloneTool::hover(const QVector<Plane> &planes, const QPointF &point)
     if (!m_hasOffset || (!m_drawing && !m_aligned))
         return;
     if (!m_drawing) {
-        const int index = PlaneMath::planeAt(planes, point);
+        const int index = PerspectivePlane::planeAt(planes, point);
         if (index >= 0)
-            m_targetMapping = PlaneMath::surfaceMapping(planes[index]);
+            m_targetMapping = PerspectivePlane::surfaceMapping(planes[index]);
     }
     QPointF position;
     if (!m_targetMapping.mapInverse(point, &position))
@@ -107,10 +107,10 @@ void CloneTool::renderPreview(QPainter &painter, const QImage &source,
 {
     if (!m_hasSource)
         return;
-    const int index = PlaneMath::planeAt(planes, point);
+    const int index = PerspectivePlane::planeAt(planes, point);
     if (index < 0)
         return;
-    const PerspectiveTransform targetMapping = PlaneMath::surfaceMapping(planes[index]);
+    const PerspectiveTransform targetMapping = PerspectivePlane::surfaceMapping(planes[index]);
     QPointF position;
     if (!targetMapping.mapInverse(point, &position))
         return;

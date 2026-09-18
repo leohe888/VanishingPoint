@@ -80,7 +80,7 @@ void PlaneCreateToolTest::createsExpectedPlane()
     QCOMPARE(plane.corner[2], QPointF(110, 80));
     QCOMPARE(plane.surfaceCorner[2], QPointF(100, 70));
     QCOMPARE(plane.surfaceGroup, 3);
-    QVERIFY(PlaneMath::isValidPlane(plane));
+    QVERIFY(PerspectivePlane::isValidPlane(plane));
 }
 
 void PlaneCreateToolTest::resetClearsState()
