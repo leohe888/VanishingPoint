@@ -3,6 +3,7 @@
 #include <QImage>
 #include <QPointF>
 #include <QPolygonF>
+#include <QSize>
 #include <QString>
 #include <QVector>
 #include "perspectivetransform.h"
@@ -50,6 +51,10 @@ QPointF planeToSurface(const Facet &facet, const QPointF &point,      // 图像�
 int planeAt(const QVector<Plane> &planes, const QPointF &point);        // 点所在的最上层平面
 int handleAt(const Facet &facet, const QPointF &point, qreal tolerance); // 控制点索引
 int edgeAt(const Facet &facet, const QPointF &point, qreal tolerance);   // 边缘索引
+// 点所属的可绘制面片：平面内用该平面，平面外以整张图像为基准面——此时展开
+// 坐标与画面坐标重合，surfaceMapping 退化为恒等。画布尺寸为空时返回 false。
+bool resolveFacet(const QVector<Plane> &planes, const QSize &canvasSize,
+                  const QPointF &point, Facet *facet);
 
 // —— 平面构造算法（pressPoint 为本次拖动的按下起点） ——
 // 平移四边形并同步移动展开坐标；越过地平线或退化时返回 false，调用方保留最后有效位置。

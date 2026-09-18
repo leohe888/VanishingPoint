@@ -244,6 +244,29 @@ int planeAt(const QVector<Plane> &planes, const QPointF &point)
     return -1;
 }
 
+// 点所属的可绘制面片：平面内用该平面，平面外以整张图像为基准面。
+bool resolveFacet(const QVector<Plane> &planes, const QSize &canvasSize,
+                  const QPointF &point, Facet *facet)
+{
+    if (!facet)
+        return false;
+    const int index = planeAt(planes, point);
+    if (index >= 0) {
+        *facet = planes[index];
+        return true;
+    }
+    if (canvasSize.isEmpty())
+        return false;
+    // 基准面的展开坐标与画面坐标重合，surfaceMapping 因此是恒等的
+    const QPointF topLeft(0, 0);
+    const QPointF bottomRight(canvasSize.width(), canvasSize.height());
+    facet->corner[0] = facet->surfaceCorner[0] = topLeft;
+    facet->corner[1] = facet->surfaceCorner[1] = QPointF(bottomRight.x(), topLeft.y());
+    facet->corner[2] = facet->surfaceCorner[2] = bottomRight;
+    facet->corner[3] = facet->surfaceCorner[3] = QPointF(topLeft.x(), bottomRight.y());
+    return true;
+}
+
 // 命中测试：返回距离点最近的控制点索引，无命中返回 -1
 int handleAt(const Facet &facet, const QPointF &point, qreal tolerance)
 {

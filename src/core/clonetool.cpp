@@ -2,56 +2,76 @@
 
 #include <QPainter>
 
+using namespace PerspectivePlane;
+
 QPointF CloneTool::originalMarker() const
 {
-    QPointF marker = m_source;
-    if (m_sourceOnPlane)
-        m_sourceMapping.mapForward(m_source, &marker);
-    return marker;
+    QPointF marker;
+    if (m_hasSource && m_sourceMapping.mapForward(m_source, &marker))
+        return marker;
+    return m_marker;
 }
 
-void CloneTool::resetSource()
+void CloneTool::setAligned(bool value)
 {
-    cancel();
-    m_hasSource = m_hasOffset = false;
-}
-
-void CloneTool::setAligned(bool aligned)
-{
-    m_aligned = aligned;
+    if (m_aligned == value)
+        return;
+    m_aligned = value;
+    // 未落笔时立即换语义：偏移作废，源点先回到原位，等下次落笔再重新锚定
     if (!m_drawing) {
         m_hasOffset = false;
         m_marker = originalMarker();
     }
 }
 
-bool CloneTool::pickSource(const QVector<Plane> &planes, const QPointF &point)
+bool CloneTool::pickSource(const QVector<Plane> &planes, const QSize &canvasSize, const QPointF &point)
 {
-    const int index = PerspectivePlane::planeAt(planes, point);
-    m_sourceOnPlane = index >= 0;
-    m_source = point;
-    if (m_sourceOnPlane) {
-        m_sourceMapping = PerspectivePlane::surfaceMapping(planes[index]);
-        if (!m_sourceMapping.mapInverse(point, &m_source))
-            return false;
-    }
+    Facet facet;
+    if (!resolveFacet(planes, canvasSize, point, &facet))
+        return false;
+    m_sourceMapping = surfaceMapping(facet);
+    QPointF surface;
+    if (!m_sourceMapping.mapInverse(point, &surface))
+        return false;
+    m_source = surface;
     m_marker = point;
     m_hasSource = true;
-    m_hasOffset = false;
+    m_hasOffset = false; // 换了源点，落点偏移需要重新锚定
     return true;
 }
 
-QRect CloneTool::begin(QImage &layer, const QImage &source, const Plane &target, const QPointF &point)
+PerspectiveTransform CloneTool::targetAt(const QVector<Plane> &planes, const QSize &canvasSize,
+                                        const QPointF &point) const
 {
-    m_targetMapping = PerspectivePlane::surfaceMapping(target);
-    QPointF position;
-    if (!m_hasSource || !m_targetMapping.mapInverse(point, &position))
+    if (m_drawing)
+        return m_targetMapping;
+    Facet facet;
+    if (!resolveFacet(planes, canvasSize, point, &facet))
         return {};
-    if (!m_aligned || !m_hasOffset)
-        m_offset = m_source - position;
+    return surfaceMapping(facet);
+}
+
+// 对齐模式下偏移一经锁定就跨笔保留，源点于是跟着光标走
+QPointF CloneTool::anchoredOffset(const QPointF &position) const
+{
+    if (m_aligned && m_hasOffset)
+        return m_offset;
+    return m_source - position;
+}
+
+QRect CloneTool::begin(QImage &layer, const QImage &source, const QVector<Plane> &planes,
+                       const QSize &canvasSize, const QPointF &point)
+{
+    if (!m_hasSource || layer.isNull())
+        return {};
+    m_targetMapping = targetAt(planes, canvasSize, point);
+    QPointF position;
+    if (!m_targetMapping.mapInverse(point, &position))
+        return {};
+    m_offset = anchoredOffset(position);
     m_hasOffset = m_drawing = true;
-    return m_engine.beginStroke(layer, source, m_targetMapping.forward(),
-                                m_sourceOnPlane ? m_sourceMapping.forward() : QTransform(), m_offset, position);
+    return m_engine.beginStroke(layer, source, m_targetMapping.forward(), m_sourceMapping.forward(),
+                                m_offset, position);
 }
 
 QRect CloneTool::move(QImage &layer, const QPointF &point)
@@ -62,64 +82,45 @@ QRect CloneTool::move(QImage &layer, const QPointF &point)
     return m_engine.drawStrokeTo(layer, position);
 }
 
-void CloneTool::hover(const QVector<Plane> &planes, const QPointF &point)
+void CloneTool::end()
 {
-    if (!m_hasSource)
-        return;
-    m_marker = originalMarker();
-    if (!m_hasOffset || (!m_drawing && !m_aligned))
-        return;
-    if (!m_drawing) {
-        const int index = PerspectivePlane::planeAt(planes, point);
-        if (index >= 0)
-            m_targetMapping = PerspectivePlane::surfaceMapping(planes[index]);
+    m_engine.endStroke();
+    m_drawing = false;
+    if (!m_aligned) {
+        m_hasOffset = false;
+        m_marker = originalMarker();
     }
-    QPointF position;
-    if (!m_targetMapping.mapInverse(point, &position))
-        return;
-    const QPointF source = position + m_offset;
-    if (m_sourceOnPlane)
-        m_sourceMapping.mapForward(source, &m_marker);
-    else
-        m_marker = source;
 }
 
-void CloneTool::end(const QVector<Plane> &planes, const QPointF &point)
-{
-    m_engine.endStroke();
-    m_drawing = false;
-    if (!m_aligned)
-        m_hasOffset = false;
-    hover(planes, point);
-}
-
-void CloneTool::cancel()
-{
-    m_engine.endStroke();
-    m_drawing = false;
-    if (!m_aligned)
-        m_hasOffset = false;
-    m_marker = originalMarker();
-}
-
-void CloneTool::renderPreview(QPainter &painter, const QImage &source,
-                              const QVector<Plane> &planes, const QPointF &point)
+void CloneTool::hover(const QVector<Plane> &planes, const QSize &canvasSize, const QPointF &point)
 {
     if (!m_hasSource)
         return;
-    const int index = PerspectivePlane::planeAt(planes, point);
-    if (index < 0)
+    m_marker = originalMarker();
+    // 非对齐模式尚未落笔：源点停在原位，不做偏移推算
+    if (!m_hasOffset)
         return;
-    const PerspectiveTransform targetMapping = PerspectivePlane::surfaceMapping(planes[index]);
+    QPointF position;
+    if (!targetAt(planes, canvasSize, point).mapInverse(point, &position))
+        return;
+    QPointF marker;
+    if (m_sourceMapping.mapForward(position + m_offset, &marker))
+        m_marker = marker;
+}
+
+void CloneTool::renderPreview(QPainter &painter, const QImage &source, const QVector<Plane> &planes,
+                              const QSize &canvasSize, const QPointF &point)
+{
+    if (!m_hasSource)
+        return;
+    const PerspectiveTransform targetMapping = targetAt(planes, canvasSize, point);
     QPointF position;
     if (!targetMapping.mapInverse(point, &position))
         return;
-    // 与 begin() 保持一致的偏移计算：首笔（或非对齐模式）用当前落点重新锚定，
-    // 对齐模式下已锁定偏移则沿用，从而保证预览与真实落笔的取样位置完全一致。
-    const QPointF offset = (!m_aligned || !m_hasOffset) ? (m_source - position) : m_offset;
-    m_engine.setPreview(source, targetMapping.forward(),
-                        m_sourceOnPlane ? m_sourceMapping.forward() : QTransform(),
-                        offset);
+    // 落笔期间沿用锁定的偏移——非对齐模式这一笔的源点也在跟着光标走；
+    // 抬笔后按当前落点算下一笔的偏移。两种情况取样位置都正好落在源点十字上。
+    const QPointF offset = m_drawing ? m_offset : anchoredOffset(position);
+    m_engine.setPreview(source, targetMapping.forward(), m_sourceMapping.forward(), offset);
     const QRect area = m_engine.dabRect(position);
     if (area.isEmpty())
         return;

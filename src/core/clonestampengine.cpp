@@ -6,7 +6,7 @@
 #include <cmath>
 
 namespace {
-// 双线性插值使用预乘 alpha，透明边缘不会带入黑色。
+// 双线性取样。源图已转成预乘 alpha，按权重平均即可，透明边缘不会带入黑色。
 QRgb sample(const QImage &image, const QPointF &point, qreal coverage)
 {
     const qreal x = point.x() - .5, y = point.y() - .5;
@@ -30,9 +30,9 @@ QRgb sample(const QImage &image, const QPointF &point, qreal coverage)
 }
 
 QRect CloneStampEngine::beginStroke(QImage &layer, const QImage &source,
-                                   const QTransform &targetToCanvas,
-                                   const QTransform &sourceToCanvas,
-                                   const QPointF &offset, const QPointF &position)
+                                    const QTransform &targetToCanvas,
+                                    const QTransform &sourceToCanvas,
+                                    const QPointF &offset, const QPointF &position)
 {
     bool invertible = false;
     m_canvasToTarget = targetToCanvas.inverted(&invertible);
@@ -49,7 +49,7 @@ QRect CloneStampEngine::drawStrokeTo(QImage &layer, const QPointF &position)
     const qreal distance = QLineF(m_lastPosition, position).length();
     if (!std::isfinite(distance) || distance < 1e-6)
         return {};
-    // 防止鼠标越过透视极点时产生无限量补点。
+    // 防止鼠标越过地平线时产生无限量补点。
     const int count = int(qMin(10000.0, std::ceil(distance / qMax(.5, m_diameter * .12))));
     QRect dirty;
     for (int i = 1; i <= count; ++i)
@@ -59,7 +59,7 @@ QRect CloneStampEngine::drawStrokeTo(QImage &layer, const QPointF &position)
 }
 
 void CloneStampEngine::setPreview(const QImage &source, const QTransform &targetToCanvas,
-                                   const QTransform &sourceToCanvas, const QPointF &offset)
+                                  const QTransform &sourceToCanvas, const QPointF &offset)
 {
     bool invertible = false;
     m_canvasToTarget = targetToCanvas.inverted(&invertible);
@@ -67,36 +67,41 @@ void CloneStampEngine::setPreview(const QImage &source, const QTransform &target
     m_targetToCanvas = targetToCanvas;
     m_sourceToCanvas = sourceToCanvas;
     m_offset = offset;
-    // 预览不写 m_lastPosition，也不进入落笔状态。
+    // 预览不写 m_lastPosition，也不进入落笔状态
 }
 
 QRect CloneStampEngine::dabRect(const QPointF &position) const
 {
-    if (m_source.isNull() || m_opacity <= 0)
+    if (m_source.isNull())
         return {};
-    const qreal radius = m_diameter / 2;
+    const qreal radius = m_diameter / 2.0;
     const QRectF bounds(position.x() - radius, position.y() - radius, m_diameter, m_diameter);
-    // 裁到源图（=画布）范围，避免采样到源图外的空区域。
+    // 裁到源图（画布同尺寸）范围，画面之外的部分不留笔触
     return m_targetToCanvas.mapRect(bounds).intersected(QRectF(m_source.rect())).toAlignedRect();
 }
 
 bool CloneStampEngine::renderDab(QImage &dab, const QRect &area, const QPointF &position) const
 {
-    if (m_source.isNull() || m_opacity <= 0 || dab.isNull() || area.isEmpty())
+    if (m_source.isNull() || dab.isNull() || area.isEmpty())
         return false;
-    const qreal radius = m_diameter / 2;
+    const qreal radius = m_diameter / 2.0;
+    const qreal hardness = m_hardness / 100.0; // 半径内完全不透明的比例
+    const qreal opacity = m_opacity / 100.0;
     bool changed = false;
     for (int y = 0; y < area.height(); ++y) {
         auto *row = reinterpret_cast<QRgb *>(dab.scanLine(y));
         for (int x = 0; x < area.width(); ++x) {
             const QPointF target = m_canvasToTarget.map(QPointF(area.x() + x + .5, area.y() + y + .5));
             const qreal distance = QLineF(target, position).length() / radius;
-            const QPointF source = m_sourceToCanvas.map(target + m_offset);
-            if (distance >= 1 || source.x() < 0 || source.y() < 0
-                || source.x() >= m_source.width() || source.y() >= m_source.height())
+            if (!(distance < 1)) // NaN 也在此处被挡下
                 continue;
-            const qreal mask = distance <= m_hardness ? 1 : (1 - distance) / (1 - m_hardness);
-            row[x] = sample(m_source, source, mask * m_opacity);
+            const QPointF source = m_sourceToCanvas.map(target + m_offset);
+            // 取反的合取式同时排除了坐标非有限的情形
+            if (!(source.x() >= 0 && source.y() >= 0 &&
+                  source.x() < m_source.width() && source.y() < m_source.height()))
+                continue;
+            const qreal mask = distance <= hardness ? 1 : (1 - distance) / (1 - hardness);
+            row[x] = sample(m_source, source, mask * opacity);
             changed |= qAlpha(row[x]) > 0;
         }
     }
@@ -105,13 +110,7 @@ bool CloneStampEngine::renderDab(QImage &dab, const QRect &area, const QPointF &
 
 QRect CloneStampEngine::applyDab(QImage &layer, const QPointF &position)
 {
-    if (m_source.isNull() || m_opacity <= 0)
-        return {};
-    const qreal radius = m_diameter / 2;
-    const QRectF bounds(position.x() - radius, position.y() - radius, m_diameter, m_diameter);
-    // 先在浮点坐标中裁剪，避免接近消失线时整型溢出或分配巨大图像。
-    const QRect area = m_targetToCanvas.mapRect(bounds).intersected(QRectF(layer.rect()))
-                           .toAlignedRect().intersected(layer.rect());
+    const QRect area = dabRect(position);
     if (area.isEmpty())
         return {};
     QImage dab(area.size(), QImage::Format_ARGB32_Premultiplied);

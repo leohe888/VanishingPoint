@@ -4,24 +4,13 @@
 
 using namespace PerspectivePlane;
 
-// 平面内用该平面，平面外以整张图像为基准面。
+// 面片由几何层解析，这里只补上笔触所需的归一化 UV。
 bool BrushTool::resolveTarget(const QVector<Plane> &planes, const QSize &canvasSize,
                               const QPointF &point, Facet *facet, QPointF *uv)
 {
     Facet target;
-    const int index = planeAt(planes, point);
-    if (index >= 0) {
-        target = planes[index];
-    } else {
-        if (canvasSize.isEmpty())
-            return false;
-        // uvMapping 只读 corner，surfaceCorner 无需填写
-        const QRectF canvas(QPointF(0, 0), QSizeF(canvasSize));
-        target.corner[0] = canvas.topLeft();
-        target.corner[1] = canvas.topRight();
-        target.corner[2] = canvas.bottomRight();
-        target.corner[3] = canvas.bottomLeft();
-    }
+    if (!resolveFacet(planes, canvasSize, point, &target))
+        return false;
     bool valid = false;
     const QPointF position = planeToUv(target, point, &valid);
     if (!valid)

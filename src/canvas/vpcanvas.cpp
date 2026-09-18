@@ -1,8 +1,10 @@
 #include "vpcanvas.h"
 
+#include "core/imagegeometry.h"
 #include "core/scenerenderer.h"
 
 #include <QCursor>
+#include <QDataStream>
 #include <QHoverEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -40,7 +42,7 @@ void VpCanvas::setTool(Tool tool)
         case Tool::CreatePlane: return QObject::tr("依次单击四个角点以创建平面");
         case Tool::EditPlane: return QObject::tr("拖动控制点或边缘以编辑平面");
         case Tool::Marquee: return QObject::tr("拖动以框选画布区域");
-        case Tool::CloneStamp: return QObject::tr("选择源区域并在目标位置绘制");
+        case Tool::CloneStamp: return QObject::tr("按住 Alt 单击设置仿制源，再在目标位置绘制");
         case Tool::Brush: return QObject::tr("拖动以绘制笔触");
         case Tool::Transform: return QObject::tr("拖动控制点以变换图像");
         }
@@ -111,6 +113,80 @@ void VpCanvas::setBrushColor(const QColor &color)
     emit brushChanged();
 }
 
+int VpCanvas::cloneDiameter() const
+{
+    return m_cloneTool.diameter();
+}
+
+// 越界值由引擎钳到合法区间
+void VpCanvas::setCloneDiameter(int value)
+{
+    if (m_cloneTool.diameter() == value)
+        return;
+    m_cloneTool.setDiameter(value);
+    emit cloneChanged();
+}
+
+int VpCanvas::cloneHardness() const
+{
+    return m_cloneTool.hardness();
+}
+
+void VpCanvas::setCloneHardness(int value)
+{
+    if (m_cloneTool.hardness() == value)
+        return;
+    m_cloneTool.setHardness(value);
+    emit cloneChanged();
+}
+
+int VpCanvas::cloneOpacity() const
+{
+    return m_cloneTool.opacity();
+}
+
+void VpCanvas::setCloneOpacity(int value)
+{
+    if (m_cloneTool.opacity() == value)
+        return;
+    m_cloneTool.setOpacity(value);
+    emit cloneChanged();
+}
+
+bool VpCanvas::cloneAligned() const
+{
+    return m_cloneTool.aligned();
+}
+
+void VpCanvas::setCloneAligned(bool aligned)
+{
+    if (m_cloneTool.aligned() == aligned)
+        return;
+    m_cloneTool.setAligned(aligned);
+    emit cloneChanged();
+    update();
+}
+
+// 仿制取样的内容 = 背景 + 绘画层 + 浮动图像，即画面上看到的全部内容。
+// 按内容键缓存；落笔期间冻结，使整笔都取自同一份快照，也免得每次移动都重铺一遍。
+const QImage &VpCanvas::cloneSource()
+{
+    QByteArray key;
+    QDataStream stream(&key, QIODevice::WriteOnly);
+    stream << m_doc.background().cacheKey() << m_doc.paintLayer().cacheKey()
+           << qint64(m_doc.images().size());
+    for (const FloatingImage &image : m_doc.images())
+        stream << image.image.cacheKey() << ImageGeometry::key(image);
+    if (m_cloneTool.drawing() || (key == m_cloneSourceKey && !m_cloneSource.isNull()))
+        return m_cloneSource;
+    m_cloneSourceKey = key;
+    m_cloneSource = QImage(m_doc.background().size(), QImage::Format_ARGB32_Premultiplied);
+    m_cloneSource.fill(Qt::transparent);
+    QPainter painter(&m_cloneSource);
+    SceneRenderer(m_doc).render(painter, 1.0, /*showGuides*/ false);
+    return m_cloneSource;
+}
+
 void VpCanvas::paint(QPainter *painter)
 {
     painter->fillRect(boundingRect(), QColor("#4D4D4D"));
@@ -125,8 +201,30 @@ void VpCanvas::paint(QPainter *painter)
                                 /*hoveredPlane*/ -1, /*antsPhase*/ 0, /*drawContent*/ true,
                                 /*gridSize*/ 50.0,
                                 m_tool == Tool::CreatePlane ? m_cursorPoint : QPointF());
-    if (m_tool == Tool::Brush)
+    // 光标离开画布时不画预览：空点 (0,0) 同时也是合法的图像坐标
+    const bool cursorOnCanvas = !m_cursorPoint.isNull();
+    if (cursorOnCanvas && m_tool == Tool::Brush)
         m_brushTool.renderPreview(*painter, m_doc.planes(), m_doc.background().size(), m_cursorPoint);
+    if (m_tool == Tool::CloneStamp) {
+        if (cursorOnCanvas)
+            m_cloneTool.renderPreview(*painter, cloneSource(), m_doc.planes(),
+                                      m_doc.background().size(), m_cursorPoint);
+        drawCloneMarker(painter);
+    }
+    painter->restore();
+}
+
+// 仿制源用绿色十字标出，线宽与臂长都按视图缩放换算，屏幕上尺寸恒定
+void VpCanvas::drawCloneMarker(QPainter *painter)
+{
+    if (!m_cloneTool.hasSource())
+        return;
+    const QPointF marker = m_cloneTool.marker();
+    const qreal arm = 7.0 / m_scale;
+    painter->save();
+    painter->setPen(QPen(QColor("#00e676"), 1.0 / m_scale));
+    painter->drawLine(QPointF(marker.x() - arm, marker.y()), QPointF(marker.x() + arm, marker.y()));
+    painter->drawLine(QPointF(marker.x(), marker.y() - arm), QPointF(marker.x(), marker.y() + arm));
     painter->restore();
 }
 
@@ -207,6 +305,28 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         update();
         return;
     }
+    case Tool::CloneStamp: {
+        // Alt+单击只取源点，不落笔
+        if (event->modifiers() & Qt::AltModifier) {
+            const bool picked = m_cloneTool.pickSource(m_doc.planes(), m_doc.background().size(), point);
+            emit statusMessage(picked ? tr("已设置仿制源，按住 Alt 可重新取样")
+                                      : tr("此处无法作为仿制源。"));
+            update();
+            return;
+        }
+        if (!m_cloneTool.hasSource()) {
+            emit statusMessage(tr("请先按住 Alt 单击，设置仿制源。"));
+            return;
+        }
+        m_doc.beginPaintTransaction();
+        const QRect dirty = m_cloneTool.begin(m_doc.paintLayer(), cloneSource(), m_doc.planes(),
+                                              m_doc.background().size(), point);
+        if (!m_cloneTool.drawing())
+            return; // 没锚定到可绘制面片：事务保持为空，提交时不会记录绘画变更
+        m_doc.addPaintDirty(dirty);
+        update();
+        return;
+    }
     default:
         return; // 其余工具尚未实现
     }
@@ -215,12 +335,13 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
 void VpCanvas::mouseMoveEvent(QMouseEvent *event)
 {
     event->accept();
+    updateCursorPoint(event->position());
     switch (m_tool) {
     case Tool::EditPlane: {
         if (m_editPlaneIndex < 0)
             return;
         Plane candidate;
-        if (!m_editTool.update(widgetToImage(event->position()), &candidate))
+        if (!m_editTool.update(m_cursorPoint, &candidate))
             return;
         if (m_editTool.extruding()) {
             // 拉出垂直平面时源平面保持不动，候选几何只作为预览绘制
@@ -234,8 +355,13 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
     }
     case Tool::Brush:
         if (m_brushTool.drawing()) {
-            m_doc.addPaintDirty(m_brushTool.move(m_doc.paintLayer(),
-                                                 widgetToImage(event->position())));
+            m_doc.addPaintDirty(m_brushTool.move(m_doc.paintLayer(), m_cursorPoint));
+            update();
+        }
+        return;
+    case Tool::CloneStamp:
+        if (m_cloneTool.drawing()) {
+            m_doc.addPaintDirty(m_cloneTool.move(m_doc.paintLayer(), m_cursorPoint));
             update();
         }
         return;
@@ -271,17 +397,32 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
             update();
         }
         return;
+    case Tool::CloneStamp:
+        if (m_cloneTool.drawing()) {
+            m_cloneTool.end();
+            m_doc.commitHistory(); // 一笔落成，提交为一格历史
+            update();
+        }
+        return;
     default:
         return;
     }
 }
 
-// 橡皮筋与笔刷轮廓都随光标移动持续重绘。
-void VpCanvas::hoverMoveEvent(QHoverEvent *event)
+// 记录光标位置；仿制源的取样指示与光标预览都依赖它，拖动期间同样要更新。
+void VpCanvas::updateCursorPoint(const QPointF &widgetPoint)
 {
-    m_cursorPoint = widgetToImage(event->position());
+    m_cursorPoint = widgetToImage(widgetPoint);
+    if (m_tool == Tool::CloneStamp)
+        m_cloneTool.hover(m_doc.planes(), m_doc.background().size(), m_cursorPoint);
     if (cursorPreviewVisible())
         update();
+}
+
+// 橡皮筋、笔刷轮廓与仿制预览都随光标移动持续重绘。
+void VpCanvas::hoverMoveEvent(QHoverEvent *event)
+{
+    updateCursorPoint(event->position());
     QQuickPaintedItem::hoverMoveEvent(event);
 }
 
@@ -375,17 +516,23 @@ void VpCanvas::cancelInteraction()
         m_brushTool.end();
         m_doc.commitHistory();
     }
+    if (m_cloneTool.drawing()) {
+        m_cloneTool.end();
+        m_doc.commitHistory();
+    }
     if (m_editPlaneIndex >= 0) {
         m_editPlaneIndex = -1;
         m_doc.cancelEdit();
     }
 }
 
-// 是否需要画光标预览（创建平面的橡皮筋、画笔的轮廓）
+// 是否需要画光标预览（创建平面的橡皮筋、画笔与图章的光标预览）
 bool VpCanvas::cursorPreviewVisible() const
 {
     if (m_tool == Tool::Brush)
         return true;
+    if (m_tool == Tool::CloneStamp)
+        return m_cloneTool.hasSource();
     return m_tool == Tool::CreatePlane && m_createTool.creating();
 }
 

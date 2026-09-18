@@ -50,3 +50,10 @@ add_vp_test(tst_brushtool
     ${PROJECT_SOURCE_DIR}/src/core/brushtool.cpp
     ${PROJECT_SOURCE_DIR}/src/core/paintengine.cpp
     ${VP_GEOMETRY_SOURCES})
+
+add_vp_test(tst_clonetool
+    tst_clonetool.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/canvasdocument.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/clonetool.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/clonestampengine.cpp
+    ${VP_GEOMETRY_SOURCES})
