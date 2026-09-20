@@ -8,6 +8,7 @@
 #include <QCursor>
 #include <QDataStream>
 #include <QGuiApplication>
+#include <QFile>
 #include <QHoverEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -15,8 +16,7 @@
 #include <QTimer>
 
 namespace {
-constexpr qreal ViewMargin = 16.0;        // 图像与画布边缘的留白
-constexpr qreal SelectionGridSize = 50.0; // 选区平移时 Shift 吸附的网格边长（与平面网格一致）
+constexpr qreal ViewMargin = 16.0; // 图像与画布边缘的留白
 }
 
 VpCanvas::VpCanvas(QQuickItem *parent)
@@ -42,6 +42,14 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     });
     antsTimer->start();
 
+    // 选中消失（烘焙进绘画层、被删除）后变换工具已无从操作，自动退回编辑平面工具；
+    // setTool 内部会放弃进行中的交互，toolChanged 负责把 QML 工具栏一起带回去。
+    connect(&m_doc, &CanvasDocument::imageSelectionChanged, this, [this](bool selected) {
+        if (!selected && m_tool == Tool::Transform)
+            setTool(Tool::EditPlane);
+        update();
+    });
+
     updateViewTransform();
 }
 
@@ -53,14 +61,22 @@ VpCanvas::Tool VpCanvas::tool() const
 // 切换工具：放弃进行中的交互，更新光标与提示。
 void VpCanvas::setTool(Tool tool)
 {
+    // 变换工具必须有选中的浮动图像，否则切过去也无从操作。拒绝时补发一次
+    // toolChanged：QML 工具栏在点击那一刻就已经点亮了按钮，不补发就会和画布脱节。
+    if (tool == Tool::Transform && m_doc.selectedImage() < 0) {
+        emit statusMessage(QObject::tr("请先选中一张浮动图像（粘贴或框选生成），再使用变换工具。"));
+        emit toolChanged();
+        return;
+    }
+
     const auto statusForTool = [tool]() {
         switch (tool) {
         case Tool::CreatePlane: return QObject::tr("依次单击四个角点以创建平面");
-        case Tool::EditPlane: return QObject::tr("拖动控制点或边缘以编辑平面");
+        case Tool::EditPlane: return QObject::tr("拖动内部平移平面，拖动控制点调整形状；Ctrl 从边缘拖出垂直平面；Alt 拖动共享边对边的中点调整夹角");
         case Tool::Marquee: return QObject::tr("拖动创建透视选区；Shift 正方形；Alt 拖动复制内容；Ctrl 拖动克隆为浮动图像");
         case Tool::CloneStamp: return QObject::tr("按住 Alt 单击设置仿制源，再在目标位置绘制");
         case Tool::Brush: return QObject::tr("拖动以绘制笔触");
-        case Tool::Transform: return QObject::tr("拖动控制点以变换图像");
+        case Tool::Transform: return QObject::tr("拖动控制点缩放，角点外侧拖动旋转；Shift 等比缩放 / 15° 旋转；Alt 中心缩放");
         }
         return QString();
     };
@@ -72,6 +88,7 @@ void VpCanvas::setTool(Tool tool)
     cancelInteraction();
     m_tool = tool;
     emit statusMessage(statusForTool());
+    emit planeAngleChanged(); // 选项栏随工具显隐，夹角一行的可用态要跟着刷
     emit toolChanged();
     update();
 }
@@ -183,6 +200,82 @@ void VpCanvas::setCloneAligned(bool aligned)
     update();
 }
 
+int VpCanvas::gridSize() const
+{
+    return m_gridSize;
+}
+
+// 网格既是平面的绘制辅助，也是选区平移时 Shift 吸附的步长，改完必须重绘
+void VpCanvas::setGridSize(int value)
+{
+    value = qBound(1, value, 1000);
+    if (m_gridSize == value)
+        return;
+    m_gridSize = value;
+    emit gridSizeChanged();
+    update();
+}
+
+qreal VpCanvas::planeAngle() const
+{
+    const int index = m_doc.selectedPlane();
+    if (index < 0 || index >= m_doc.planes().size())
+        return 90.0;
+    return m_doc.planes()[index].relativeAngle;
+}
+
+// 只有从别的平面拖出的子平面才有夹角；若它自己又有子平面被手动调过角度，
+// 它作为父平面的朝向就已经被锁定，再改会连带重新解释整条共享曲面链。
+bool VpCanvas::canSetSelectedPlaneAngle() const
+{
+    const int index = m_doc.selectedPlane();
+    if (index < 0 || index >= m_doc.planes().size() || m_doc.planes()[index].parentPlane < 0)
+        return false;
+    for (const Plane &child : m_doc.planes()) {
+        if (child.parentPlane == index && child.angleAdjusted)
+            return false;
+    }
+    return true;
+}
+
+bool VpCanvas::planeAngleEditable() const
+{
+    return canSetSelectedPlaneAngle();
+}
+
+QString VpCanvas::planeAngleLockReason() const
+{
+    const int index = m_doc.selectedPlane();
+    if (index < 0 || index >= m_doc.planes().size())
+        return tr("请先选中一个平面。");
+    if (m_doc.planes()[index].parentPlane < 0)
+        return tr("只有从别的平面拖出的子平面才有夹角，当前平面是独立平面。");
+    for (const Plane &child : m_doc.planes()) {
+        if (child.parentPlane == index && child.angleAdjusted)
+            return tr("它的子平面调整过夹角，父平面角度已锁定，避免整条共享曲面链被重新解释。");
+    }
+    return QString();
+}
+
+// 改夹角 = 绕共用边把子平面转过去再重投影。共用边固定是子平面的第 0 条边
+// （makePerpendicularPlane 的约定，见它设的 lockedEdges）。
+void VpCanvas::setPlaneAngle(qreal angle)
+{
+    if (!canSetSelectedPlaneAngle() || !qIsFinite(angle))
+        return;
+    const int index = m_doc.selectedPlane();
+    const Plane candidate = PerspectivePlane::rotateChildPlane(
+        m_doc.planes()[index], 0, angle, m_doc.background().size());
+    m_doc.beginEdit();
+    if (m_doc.setPlane(index, candidate)) {
+        m_doc.commitEdit(true);
+        emit planeAngleChanged();
+        update();
+    } else {
+        m_doc.cancelEdit();
+    }
+}
+
 // 仿制取样的内容 = 背景 + 绘画层 + 浮动图像，即画面上看到的全部内容。
 // 按内容键缓存；落笔期间冻结，使整笔都取自同一份快照，也免得每次移动都重铺一遍。
 const QImage &VpCanvas::cloneSource()
@@ -215,7 +308,7 @@ void VpCanvas::paint(QPainter *painter)
                                 m_extrudePreviewReady ? &m_extrudePreview : nullptr,
                                 /*editHandlesVisible*/ m_tool == Tool::EditPlane,
                                 /*hoveredPlane*/ -1, m_antsPhase, /*drawContent*/ true,
-                                /*gridSize*/ 50.0,
+                                /*gridSize*/ m_gridSize,
                                 m_tool == Tool::CreatePlane ? m_cursorPoint : QPointF());
     // 光标离开画布时不画预览：空点 (0,0) 同时也是合法的图像坐标
     const bool cursorOnCanvas = !m_cursorPoint.isNull();
@@ -281,12 +374,14 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         // 什么都没点到，则取消选择
         if (planeIndex < 0) {
             m_doc.setSelectedPlane(-1);
+            emit planeAngleChanged(); // 没有选中平面，夹角回到不可调
             update();
             return;
         }
 
         // 选中平面
         m_doc.setSelectedPlane(planeIndex);
+        emit planeAngleChanged();
         // 与相邻平面共边的平面不能整体平移，否则共用边会被撕开
         if (handle < 0 && m_doc.isPlaneLinked(planeIndex)) {
             emit statusMessage(tr("该平面已与相邻平面共边，不能整体移动。"));
@@ -297,12 +392,18 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         const int edge = handle >= 4 ? handle - 4 : -1;
         // Ctrl + 拖动边中点：从这条边拖出一个与之垂直的新平面
         const bool extrude = edge >= 0 && (event->modifiers() & Qt::ControlModifier);
+        // Alt + 拖动共用边对面的边中点：绕共用边旋转这个子平面，即改它与父平面的夹角
+        const bool rotate = (event->modifiers() & Qt::AltModifier) && plane.parentPlane >= 0
+                            && handle == 4 + 2;
         m_editPlaneIndex = planeIndex;
         m_extrudePreviewReady = false;
-        m_editTool.begin(plane, point, handle, edge, extrude, m_doc.background().size());
+        m_editTool.begin(plane, point, handle, edge, extrude, m_doc.background().size(),
+                         rotate, rotate ? 0 : -1);
         m_doc.beginEdit();
         if (extrude)
             emit statusMessage(tr("拖动以拉出垂直平面，松开完成。"));
+        else if (rotate)
+            emit statusMessage(tr("拖动以调整与父平面的夹角，松开完成。"));
         update();
         return;
     }
@@ -446,6 +547,8 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
             m_extrudePreviewReady = true;
         } else {
             m_doc.setPlane(m_editPlaneIndex, candidate);
+            if (m_editTool.rotating())
+                emit planeAngleChanged(); // 角度滑杆随拖动实时跟走
         }
         update();
         return;
@@ -633,6 +736,7 @@ void VpCanvas::finishPlaneCreation()
     m_doc.commitEdit(true);
 
     setTool(Tool::EditPlane);
+    emit planeAngleChanged(); // 新平面是独立平面，夹角滑杆转为不可调
     emit statusMessage(tr("平面已创建，已自动进入编辑平面工具。"));
 }
 
@@ -642,12 +746,19 @@ bool VpCanvas::extrudePlane(int sourcePlane, int edge)
     if (!m_extrudePreviewReady)
         return false;
     Plane plane = m_extrudePreview;
+    // 拖出的面积太小当成误操作，不落盘
+    const QRectF bounds = PerspectivePlane::planePolygon(plane.corner).boundingRect();
+    if (qAbs(bounds.width() * bounds.height()) <= 100.0)
+        return false;
     plane.parentPlane = sourcePlane; // 父子关系：删除平面时靠它解锁共用边
     plane.parentEdge = edge;
+    plane.relativeAngle = 90.0;      // 新平面与父平面垂直，尚未被手动调过夹角
+    plane.angleAdjusted = false;
     if (m_doc.appendPlane(plane) < 0)
         return false;
     m_doc.setSelectedPlane(m_doc.planes().size() - 1);
     m_doc.lockPlaneEdge(sourcePlane, edge); // 共用边在源平面上不能再编辑
+    emit planeAngleChanged(); // 选中项变成新的子平面，夹角滑杆转为可用
     emit statusMessage(tr("已拉出垂直平面。"));
     return true;
 }
@@ -697,6 +808,7 @@ void VpCanvas::deleteSelectedPlane()
     if (index < 0)
         return;
     m_doc.removePlane(index);
+    emit planeAngleChanged(); // 删除会改变选中项，也可能解开上一级父平面的夹角锁定
     emit statusMessage(tr("已删除选中的平面。"));
     update();
 }
@@ -762,7 +874,10 @@ void VpCanvas::updateImageInteraction(const QPointF &point, Qt::KeyboardModifier
         FloatingImage image;
         if (m_imageTool.update(point, modifiers & Qt::ShiftModifier, modifiers & Qt::AltModifier, &image)) {
             m_doc.setImage(m_draggingImage, image);
-            m_imageChanged = true;
+            // 与起始几何比对后才算改动：按住控制点原地松手不该占一格历史
+            const FloatingImage &start = m_imageTool.start();
+            m_imageChanged = image.position != start.position || image.scale != start.scale
+                             || image.rotation != start.rotation;
         }
         update();
         return;
@@ -772,7 +887,8 @@ void VpCanvas::updateImageInteraction(const QPointF &point, Qt::KeyboardModifier
         QPointF surface;
         if (FloatingImageMath::fromCanvas(start, point, &surface)) {
             m_doc.setImagePosition(m_draggingImage, surface - m_imageTool.grabOffset());
-            m_imageChanged = true;
+            // 沿曲面滑动可能原地不动（越过极点线时保持原位），不算一次改动
+            m_imageChanged = m_doc.image(m_draggingImage).position != start.position;
         }
     } else if (const int plane = PerspectivePlane::planeAt(m_doc.planes(), point); plane >= 0) {
         attachImageToPlane(m_draggingImage, plane, point);
@@ -990,8 +1106,8 @@ void VpCanvas::updateSelection(const QPointF &point, Qt::KeyboardModifiers modif
                 delta.setY(0);
             else
                 delta.setX(0);
-            delta.setX(qRound(delta.x() / SelectionGridSize) * SelectionGridSize);
-            delta.setY(qRound(delta.y() / SelectionGridSize) * SelectionGridSize);
+            delta.setX(qRound(delta.x() / m_gridSize) * m_gridSize);
+            delta.setY(qRound(delta.y() / m_gridSize) * m_gridSize);
         }
         m_selectionRect = m_selectionStartRect.translated(delta);
     } else if (m_selectionAction == SelectionAction::Fill) {

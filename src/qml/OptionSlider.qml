@@ -15,6 +15,9 @@ RowLayout {
 
     spacing: 8
 
+    // 不可用时整行压暗；Item.enabled 本身已经会挡掉滑杆上的鼠标事件
+    opacity: root.enabled ? 1.0 : 0.45
+
     // 把候选取值收进 [from, to]，变化时才通知外部
     function commit(candidate) {
         const clamped = Math.max(root.from, Math.min(root.to, Math.round(candidate)))

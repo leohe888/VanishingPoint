@@ -1,5 +1,7 @@
 #include <QtTest>
 
+#include <limits>
+
 #include "testhelpers.h"
 
 class PerspectivePlaneTest : public QObject
@@ -11,6 +13,9 @@ private slots:
     void rejectsSelfIntersection();
     void findsHandles();
     void selectsTopmostPlane();
+    void rejectsNonFinitePlane();
+    void rejectsInvalidHitTestInput();
+    void ignoresInvalidEdgeIndex();
 };
 
 void PerspectivePlaneTest::validatesConvexPlane()
@@ -40,6 +45,29 @@ void PerspectivePlaneTest::selectsTopmostPlane()
     QCOMPARE(PerspectivePlane::planeAt({lower, upper}, QPointF(50, 40)), 1);
     QCOMPARE(PerspectivePlane::planeAt({lower, upper}, QPointF(15, 15)), 0);
     QCOMPARE(PerspectivePlane::planeAt({lower, upper}, QPointF(500, 500)), -1);
+}
+
+void PerspectivePlaneTest::rejectsNonFinitePlane()
+{
+    Plane plane = makeTestPlane();
+    plane.corner[2].setX(std::numeric_limits<qreal>::quiet_NaN());
+    QVERIFY(!PerspectivePlane::isValidPlane(plane));
+}
+
+void PerspectivePlaneTest::rejectsInvalidHitTestInput()
+{
+    const Plane plane = makeTestPlane();
+    QCOMPARE(PerspectivePlane::handleAt(plane, QPointF(10, 10), -1.0), -1);
+    QCOMPARE(PerspectivePlane::edgeAt(plane, QPointF(60, 10), -1.0), -1);
+}
+
+void PerspectivePlaneTest::ignoresInvalidEdgeIndex()
+{
+    const Plane plane = makeTestPlane();
+    const Plane result = PerspectivePlane::resizePlaneAlongEdge(
+        plane, -1, QPointF(60, -10), QPointF(60, 10));
+    QCOMPARE(result.corner, plane.corner);
+    QCOMPARE(result.surfaceCorner, plane.surfaceCorner);
 }
 
 QTEST_APPLESS_MAIN(PerspectivePlaneTest)

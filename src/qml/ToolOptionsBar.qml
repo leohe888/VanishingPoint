@@ -17,6 +17,9 @@ Rectangle {
                                                 && root.canvas.tool === VpCanvas.Brush
     readonly property bool cloneOptionsVisible: root.canvas !== null
                                                 && root.canvas.tool === VpCanvas.CloneStamp
+    readonly property bool planeOptionsVisible: root.canvas !== null
+                                                && (root.canvas.tool === VpCanvas.CreatePlane
+                                                    || root.canvas.tool === VpCanvas.EditPlane)
 
     RowLayout {
         anchors.fill: parent
@@ -146,6 +149,43 @@ Rectangle {
                     onClicked: root.canvas.cloneAligned = !root.canvas.cloneAligned
                 }
             }
+        }
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10
+        spacing: 18
+        visible: root.planeOptionsVisible
+
+        OptionSlider {
+            label: qsTr("网格大小")
+            from: 1
+            to: 1000
+            value: root.canvas ? root.canvas.gridSize : 50
+            onMoved: (value) => root.canvas.gridSize = value
+        }
+
+        OptionSlider {
+            label: qsTr("角度")
+            from: 0
+            to: 360
+            suffix: "°"
+            enabled: root.canvas ? root.canvas.planeAngleEditable : false
+            value: root.canvas ? Math.round(root.canvas.planeAngle) : 90
+            onMoved: (value) => root.canvas.planeAngle = value
+        }
+
+        // 夹角不可调时把原因直接写在旁边，比 tooltip 更容易发现
+        Text {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.fillWidth: true
+            elide: Text.ElideRight
+            color: "#9a9a9a"
+            font.pixelSize: 11
+            visible: root.canvas ? !root.canvas.planeAngleEditable : false
+            text: root.canvas ? root.canvas.planeAngleLockReason : ""
         }
     }
 }

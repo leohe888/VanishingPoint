@@ -1,16 +1,25 @@
 #pragma once
 
-#include <QImage>
 #include <QPointF>
 #include <QPolygonF>
 #include <QSize>
-#include <QString>
 #include <QVector>
+
+#include <array>
+
 #include "perspectivetransform.h"
 
+namespace PerspectivePlane {
+
+inline constexpr int CornerCount = 4;
+inline constexpr int EdgeCount = CornerCount;
+inline constexpr int HandleCount = CornerCount + EdgeCount;
+
+using Quad = std::array<QPointF, CornerCount>;
+
 struct Facet {
-    QPointF corner[4];  // 四个角点在画布上坐标，依次为左上 / 右上 / 右下 / 左下
-    QPointF surfaceCorner[4];   // 四个角点在展开曲面上的坐标
+    Quad corner{};        // 画布坐标：左上 / 右上 / 右下 / 左下
+    Quad surfaceCorner{}; // 展开曲面坐标，与 corner 一一对应
 };
 
 struct Plane : Facet {
@@ -22,17 +31,14 @@ struct Plane : Facet {
     bool angleAdjusted = false; // 用户是否手动调整过夹角
 };
 
-namespace PerspectivePlane {
 // 同一面片的两种参数化，目标都是 facet.corner，区别只在源坐标系与是否带尺度。
 // 展开图坐标 ↔ 画面坐标；坐标是真实像素，位移与拼缝才能在相邻平面之间对齐。
 PerspectiveTransform surfaceMapping(const Facet &facet);
 // 归一化 UV ↔ 画面坐标；源恒为单位正方形，因而与面片尺寸无关，画笔按 UV 落笔用它。
 PerspectiveTransform uvMapping(const Facet &facet);
 
-constexpr qreal Epsilon = 1e-6; // 浮点比较用的极小量
-
 // —— 基础几何 ——
-QPolygonF planePolygon(const QPointF corner[4]);   // 把 4 个角点组装为多边形
+QPolygonF planePolygon(const Quad &corner);        // 把 4 个角点组装为多边形
 QVector<QPointF> handles(const Facet &facet);      // 面片的 4 个角点 + 4 个边中点
 // 计算点 p 到线段 ab 的距离；t 返回最近点在线段上的参数化位置（0~1）
 qreal distanceToSegment(const QPointF &p, const QPointF &a,
@@ -75,3 +81,8 @@ Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
                        const QSize &backgroundSize);
 
 } // namespace PerspectivePlane
+
+// 兼容现有调用方；新代码优先使用 PerspectivePlane::Facet / Plane。
+// 待上层模块逐步迁移后，可以单独删除这两个全局别名。
+using Facet = PerspectivePlane::Facet;
+using Plane = PerspectivePlane::Plane;

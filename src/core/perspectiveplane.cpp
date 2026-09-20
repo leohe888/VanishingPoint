@@ -1,10 +1,6 @@
 #include "perspectiveplane.h"
 
-#include <QtMath>
-
-#include <QImage>
 #include <QLineF>
-#include <QSize>
 #include <QTransform>
 #include <QtMath>
 
@@ -13,6 +9,13 @@
 // —— 内部工具：双精度三维向量与相机模型 ——
 // 图像坐标可达数千，叉乘中间量超出 float 有效位数，故不用 QVector3D。
 namespace {
+
+constexpr qreal Epsilon = 1e-6;
+
+bool isValidEdgeIndex(int edge)
+{
+    return edge >= 0 && edge < PerspectivePlane::EdgeCount;
+}
 
 struct Vec3 {
     double x = 0.0;
@@ -130,7 +133,7 @@ PerspectiveTransform uvMapping(const Facet &facet)
 }
 
 
-QPolygonF planePolygon(const QPointF corner[4])
+QPolygonF planePolygon(const Quad &corner)
 {
     // 角点顺序原样保留，调用方须给出不自交的顺时针或逆时针四点。
     return QPolygonF{corner[0], corner[1], corner[2], corner[3]};
@@ -165,10 +168,14 @@ bool isValidPlane(const Facet &facet)
     // 必须在 quadToQuad() 前拒绝凹形、自交叉与近乎退化的配置，否则极点可能穿过平面。
     qreal windingSign = 0.0;
     qreal twiceArea = 0.0;
-    for (int i = 0; i < 4; ++i) {
+    for (const QPointF &corner : facet.corner) {
+        if (!qIsFinite(corner.x()) || !qIsFinite(corner.y()))
+            return false;
+    }
+    for (int i = 0; i < CornerCount; ++i) {
         const QPointF a = facet.corner[i];
-        const QPointF b = facet.corner[(i + 1) % 4];
-        const QPointF c = facet.corner[(i + 2) % 4];
+        const QPointF b = facet.corner[(i + 1) % CornerCount];
+        const QPointF c = facet.corner[(i + 2) % CornerCount];
         if (QLineF(a, b).length() < 8.0)
             return false;
         const QPointF ab = b - a;
@@ -270,6 +277,9 @@ bool resolveFacet(const QVector<Plane> &planes, const QSize &canvasSize,
 // 命中测试：返回距离点最近的控制点索引，无命中返回 -1
 int handleAt(const Facet &facet, const QPointF &point, qreal tolerance)
 {
+    if (!qIsFinite(point.x()) || !qIsFinite(point.y()) ||
+        !qIsFinite(tolerance) || tolerance < 0.0)
+        return -1;
     const QVector<QPointF> hs = handles(facet);
     for (int i = 0; i < hs.size(); ++i) {
         if (QLineF(hs[i], point).length() <= tolerance)
@@ -281,8 +291,12 @@ int handleAt(const Facet &facet, const QPointF &point, qreal tolerance)
 // 命中测试：返回点靠近的边缘索引（0~3），无命中返回 -1
 int edgeAt(const Facet &facet, const QPointF &point, qreal tolerance)
 {
-    for (int i = 0; i < 4; ++i) {
-        if (distanceToSegment(point, facet.corner[i], facet.corner[(i + 1) % 4]) <= tolerance)
+    if (!qIsFinite(point.x()) || !qIsFinite(point.y()) ||
+        !qIsFinite(tolerance) || tolerance < 0.0)
+        return -1;
+    for (int i = 0; i < EdgeCount; ++i) {
+        if (distanceToSegment(point, facet.corner[i],
+                              facet.corner[(i + 1) % CornerCount]) <= tolerance)
             return i;
     }
     return -1;
@@ -322,9 +336,13 @@ Plane resizePlaneAlongEdge(const Plane &source, int edge,
                            const QPointF &dragPoint, const QPointF &pressPoint)
 {
     Plane result = source;
-    const int next = (edge + 1) % 4;
-    const int oppositeNext = (edge + 2) % 4;
-    const int previous = (edge + 3) % 4;
+    if (!isValidEdgeIndex(edge) ||
+        !qIsFinite(dragPoint.x()) || !qIsFinite(dragPoint.y()) ||
+        !qIsFinite(pressPoint.x()) || !qIsFinite(pressPoint.y()))
+        return result;
+    const int next = (edge + 1) % CornerCount;
+    const int oppositeNext = (edge + 2) % CornerCount;
+    const int previous = (edge + 3) % CornerCount;
     const QPointF a = source.corner[edge];
     const QPointF b = source.corner[next];
     const QPointF oppositeA = source.corner[oppositeNext];
@@ -454,14 +472,18 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
                              const QSize &backgroundSize)
 {
     Plane result;
+    if (!isValidEdgeIndex(edge) || backgroundSize.isEmpty() ||
+        !qIsFinite(dragPoint.x()) || !qIsFinite(dragPoint.y()) ||
+        !qIsFinite(pressPoint.x()) || !qIsFinite(pressPoint.y()))
+        return result;
     result.surfaceGroup = source.surfaceGroup;
     result.lockedEdges = 1u; // 新平面的第 0 条边就是与源平面共用的边
     result.surfaceCorner[0] = source.surfaceCorner[edge];
-    result.surfaceCorner[1] = source.surfaceCorner[(edge + 1) % 4];
+    result.surfaceCorner[1] = source.surfaceCorner[(edge + 1) % CornerCount];
     result.surfaceCorner[2] = result.surfaceCorner[1];
     result.surfaceCorner[3] = result.surfaceCorner[0];
     const QPointF a = source.corner[edge];
-    const QPointF b = source.corner[(edge + 1) % 4];
+    const QPointF b = source.corner[(edge + 1) % CornerCount];
     const QPointF midpoint = (a + b) / 2.0;
     QPointF perpendicularAtMidpoint;
     if (!perpendicularDirection(source, midpoint, backgroundSize, &perpendicularAtMidpoint))
@@ -481,8 +503,8 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
     }
 
     // 共享边与外侧边在 3D 中同向，故交于原边线族的消失点。
-    const QPointF oppositeA = source.corner[(edge + 2) % 4];
-    const QPointF oppositeB = source.corner[(edge + 3) % 4];
+    const QPointF oppositeA = source.corner[(edge + 2) % CornerCount];
+    const QPointF oppositeB = source.corner[(edge + 3) % CornerCount];
     QPointF edgeVanishingPoint;
     const QLineF::IntersectionType vpType =
         QLineF(a, b).intersects(QLineF(oppositeA, oppositeB), &edgeVanishingPoint);
@@ -565,12 +587,12 @@ Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
                        const QSize &backgroundSize)
 {
     Plane result = source;
-    if (edge < 0 || edge >= 4 || !qIsFinite(targetAngle) || backgroundSize.isEmpty())
+    if (!isValidEdgeIndex(edge) || !qIsFinite(targetAngle) || backgroundSize.isEmpty())
         return result;
 
-    const int next = (edge + 1) % 4;
-    const int farB = (edge + 2) % 4; // 外侧角点，与共享边的 next 端点相连
-    const int farA = (edge + 3) % 4; // 外侧角点，与共享边的 edge 端点相连
+    const int next = (edge + 1) % CornerCount;
+    const int farB = (edge + 2) % CornerCount; // 外侧角点，与共享边的 next 端点相连
+    const int farA = (edge + 3) % CornerCount; // 外侧角点，与共享边的 edge 端点相连
     const QPointF seamA = source.corner[edge];
     const QPointF seamB = source.corner[next];
 
