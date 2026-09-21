@@ -1,6 +1,6 @@
 #include "scenecontentcache.h"
 #include "canvasdocument.h"
-#include "imagegeometry.h"
+#include "floatingimageprojection.h"
 #include "scenerenderer.h"
 
 #include <QDataStream>
@@ -14,9 +14,9 @@ const QPixmap &SceneContentCache::get(const CanvasDocument &document, const QSiz
     QByteArray key;
     QDataStream stream(&key, QIODevice::WriteOnly);
     stream << viewport << deviceRatio << scale << offset << document.background().cacheKey()
-           << document.paintLayer().cacheKey() << qint64(document.images().size());
-    for (const FloatingImage &image : document.images())
-        stream << image.image.cacheKey() << ImageGeometry::key(image);
+           << document.paintLayer().cacheKey() << qint64(document.floatingImages().size());
+    for (const FloatingImage &image : document.floatingImages())
+        stream << image.bitmap.cacheKey() << FloatingImageProjection::cacheKey(image);
     if (key == m_key && !m_pixels.isNull())
         return m_pixels;
     m_key = key;

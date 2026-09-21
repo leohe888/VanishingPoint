@@ -29,12 +29,12 @@ set(PROJECT_SOURCES
         src/core/clonestampengine.h
         src/core/clonetool.cpp
         src/core/clonetool.h
-        src/core/floatingimagemath.cpp
-        src/core/floatingimagemath.h
-        src/core/imagegeometry.cpp
-        src/core/imagegeometry.h
-        src/core/imagetransformtool.cpp
-        src/core/imagetransformtool.h
+        src/core/floatingimage.cpp
+        src/core/floatingimage.h
+        src/core/floatingimageprojection.cpp
+        src/core/floatingimageprojection.h
+        src/core/floatingimagetransformtool.cpp
+        src/core/floatingimagetransformtool.h
         src/core/paintengine.cpp
         src/core/paintengine.h
         src/core/planeedittool.cpp

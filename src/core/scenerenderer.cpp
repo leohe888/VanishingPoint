@@ -1,7 +1,7 @@
 #include "scenerenderer.h"
 
 #include "canvasdocument.h"
-#include "imagegeometry.h"
+#include "floatingimageprojection.h"
 
 #include <QFont>
 #include <QPainter>
@@ -49,7 +49,7 @@ void SceneRenderer::render(QPainter &painter, qreal viewScale, bool showGuides,
 
     // 浮动图像：每张各自按吸附瞬间的几何快照渲染。
     if (drawContent)
-        for (const FloatingImage &image : m_doc.images())
+        for (const FloatingImage &image : m_doc.floatingImages())
             renderFloatingImage(painter, image);
 
     if (!showGuides)
@@ -94,9 +94,11 @@ void SceneRenderer::render(QPainter &painter, qreal viewScale, bool showGuides,
     const QTransform view = painter.worldTransform();
     painter.resetTransform();
     painter.setBrush(Qt::NoBrush);
-    const int selectedImage = m_doc.selectedImage();
-    if (selectedImage >= 0 && selectedImage < m_doc.images().size()) {
-        const QPainterPath outline = view.map(floatingImageOutline(m_doc.image(selectedImage)));
+    const int selectedFloatingImage = m_doc.selectedFloatingImage();
+    if (selectedFloatingImage >= 0
+        && selectedFloatingImage < m_doc.floatingImages().size()) {
+        const QPainterPath outline = view.map(
+            floatingImageOutline(m_doc.floatingImage(selectedFloatingImage)));
         QPen pen(Qt::white, 1);
         pen.setJoinStyle(Qt::MiterJoin);
         painter.setPen(pen);
@@ -112,14 +114,14 @@ void SceneRenderer::render(QPainter &painter, qreal viewScale, bool showGuides,
 
 QPainterPath SceneRenderer::floatingImageOutline(const FloatingImage &image)
 {
-    return ImageGeometry::get(image)->outline();
+    return FloatingImageProjection::forImage(image)->canvasOutline();
 }
 
 // 渲染一张浮动图像：未吸附时直接绘制；已吸附时按几何快照分段投影。
 void SceneRenderer::renderFloatingImage(QPainter &painter, const FloatingImage &image) const
 {
-    const auto geometry = ImageGeometry::get(image);
-    for (const ImagePatch &patch : geometry->patches()) {
+    const auto projection = FloatingImageProjection::forImage(image);
+    for (const ProjectedImagePatch &patch : projection->patches()) {
         painter.save();
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
         // 在共同的画布坐标中裁剪，避免旋转后各面独立栅格化源裁剪路径
@@ -129,8 +131,8 @@ void SceneRenderer::renderFloatingImage(QPainter &painter, const FloatingImage &
         seamTolerance.setWidth(.04 / qMax(m_viewScale, 1e-6));
         seamTolerance.setJoinStyle(Qt::MiterJoin);
         painter.setClipPath(projectedClip.united(seamTolerance.createStroke(projectedClip)), Qt::IntersectClip);
-        painter.setWorldTransform(patch.mapping.forward(), true);
-        painter.drawImage(QPointF(0, 0), image.image);
+        painter.setWorldTransform(patch.bitmapToCanvas.forward(), true);
+        painter.drawImage(QPointF(0, 0), image.bitmap);
         painter.restore();
     }
 }

@@ -149,15 +149,15 @@ void CanvasDocumentTest::pastesImageAsSelectedFloatingImage()
     image.fill(Qt::red);
 
     QCOMPARE(document.addFloatingImage(image), 0);
-    QCOMPARE(document.images().size(), 1);
-    QCOMPARE(document.selectedImage(), 0);
-    QCOMPARE(document.image(0).image.size(), QSize(32, 24));
-    QCOMPARE(document.image(0).position, QPointF(0, 0));
-    QVERIFY(!document.image(0).attached);
+    QCOMPARE(document.floatingImages().size(), 1);
+    QCOMPARE(document.selectedFloatingImage(), 0);
+    QCOMPARE(document.floatingImage(0).bitmap.size(), QSize(32, 24));
+    QCOMPARE(document.floatingImage(0).placementOrigin, QPointF(0, 0));
+    QVERIFY(!document.floatingImage(0).surfaceAttached);
 
     QVERIFY(document.undo());
-    QVERIFY(document.images().isEmpty());
-    QCOMPARE(document.selectedImage(), -1);
+    QVERIFY(document.floatingImages().isEmpty());
+    QCOMPARE(document.selectedFloatingImage(), -1);
 }
 
 // 删除选中的浮动图像：选中项落到删除位置上的下一张，且可撤销。
@@ -168,14 +168,14 @@ void CanvasDocumentTest::removesSelectedFloatingImage()
     image.fill(Qt::red);
     document.addFloatingImage(image);
     document.addFloatingImage(image);
-    document.setSelectedImage(0);
+    document.setSelectedFloatingImage(0);
 
     document.removeFloatingImage(0);
-    QCOMPARE(document.images().size(), 1);
-    QCOMPARE(document.selectedImage(), 0);
+    QCOMPARE(document.floatingImages().size(), 1);
+    QCOMPARE(document.selectedFloatingImage(), 0);
 
     QVERIFY(document.undo());
-    QCOMPARE(document.images().size(), 2);
+    QCOMPARE(document.floatingImages().size(), 2);
 }
 
 QTEST_APPLESS_MAIN(CanvasDocumentTest)

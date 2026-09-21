@@ -1,5 +1,6 @@
 #pragma once
 
+#include "floatingimage.h"
 #include "perspectiveplane.h"
 
 #include <QImage>
@@ -7,20 +8,6 @@
 #include <QPointF>
 #include <QRect>
 #include <QVector>
-
-// 浮动图像：一张可独立移动、可吸附到透视曲面的位图。
-// 吸附瞬间会把所在曲面分组的几何拷贝成快照（faces），之后平面的增删改
-// 都不会影响它——这正是内容与平面解耦的关键。
-struct FloatingImage {
-    QImage image;              // 位图
-    QPointF position;          // 位置：未吸附=画布坐标；已吸附=展开曲面坐标
-    QPointF scale = QPointF(1, 1); // 非破坏性缩放，保留原始位图
-    qreal rotation = 0; // 在画布/展开曲面中绕图片中心旋转，单位为度
-    QSizeF displayedSize() const { return QSizeF(image.width() * scale.x(), image.height() * scale.y()); }
-    bool attached = false;     // 是否已吸附到某个展开曲面
-    QVector<PerspectiveFacet> faces;      // 吸附瞬间曲面分组的几何快照（严格快照）
-    int hostFace = -1;         // 宿主面在 faces 中的索引（-1 表示无）
-};
 
 // 文档模型：管理背景图像、全部透视平面、绘画层、浮动图像数组以及
 // 撤销/重做历史。它是纯数据与历史的集合体，不涉及视图、渲染或交互细节。
@@ -60,20 +47,21 @@ public:
     void addPaintDirty(const QRect &rect);         // 累积绘画脏矩形
 
     // —— 浮动图像 ——
-    const QVector<FloatingImage> &images() const { return m_images; }
-    const FloatingImage &image(int index) const { return m_images[index]; }
-    bool setImage(int index, const FloatingImage &image);
-    int selectedImage() const { return m_selectedImage; }
-    void setSelectedImage(int index);
+    const QVector<FloatingImage> &floatingImages() const { return m_floatingImages; }
+    const FloatingImage &floatingImage(int index) const { return m_floatingImages[index]; }
+    bool setFloatingImage(int index, const FloatingImage &image);
+    int selectedFloatingImage() const { return m_selectedFloatingImage; }
+    void setSelectedFloatingImage(int index);
     int addFloatingImage(const QImage &image);     // 追加到左上角，返回索引
-    int addFloatingImageOnSurface(const QImage &image, const QVector<PerspectiveFacet> &faces,
-                                  int hostFace, const QPointF &surfacePosition);
+    int addFloatingImageOnSurface(const QImage &image,
+                                  const QVector<PerspectiveFacet> &surfaceFacets,
+                                  int hostFacetIndex, const QPointF &surfaceOrigin);
     void removeFloatingImage(int index);          // 删除指定浮动图像
-    void setImagePosition(int index, const QPointF &position); // 仅移动位置
+    void setFloatingImageOrigin(int index, const QPointF &placementOrigin); // 仅移动位置
     // 把图像吸附到一组几何快照上（surfacePosition 为展开曲面坐标）
-    void attachImage(int index, const QVector<PerspectiveFacet> &faces, int hostFace,
-                     const QPointF &surfacePosition);
-    void detachImage(int index, const QPointF &canvasPosition); // 脱离曲面回到画布坐标
+    void attachFloatingImage(int index, const QVector<PerspectiveFacet> &surfaceFacets,
+                             int hostFacetIndex, const QPointF &surfaceOrigin);
+    void detachFloatingImage(int index, const QPointF &canvasOrigin);
 
     // —— 历史 ——
     bool undo();                                   // 回退到上一状态，返回是否发生了撤销
@@ -101,8 +89,8 @@ private:
     struct HistoryEntry {
         QVector<PerspectivePlane> planes;
         int selectedPlane = -1;
-        QVector<FloatingImage> images;
-        int selectedImage = -1;
+        QVector<FloatingImage> floatingImages;
+        int selectedFloatingImage = -1;
         QRect paintRect;              // 绘画层脏区域（空=本次无绘画变更）
         QImage paintBefore;           // 脏区域旧像素
         QImage paintAfter;            // 脏区域新像素
@@ -115,8 +103,8 @@ private:
     QVector<PerspectivePlane> m_planes;            // 全部透视平面
     int m_selectedPlane = -1;           // 当前选中的平面索引
     QImage m_paintLayer;                // 绘画层（画布同尺寸）
-    QVector<FloatingImage> m_images;    // 全部浮动图像
-    int m_selectedImage = -1;           // 当前操作的浮动图像索引
+    QVector<FloatingImage> m_floatingImages;    // 全部浮动图像
+    int m_selectedFloatingImage = -1;           // 当前操作的浮动图像索引
     QImage m_paintBefore;               // 绘画事务开始时的绘画层浅拷贝
     QRect m_paintDirtyRect;             // 当前绘画事务累积的脏矩形
     bool m_paintTransactionActive = false; // 是否存在进行中的绘画事务

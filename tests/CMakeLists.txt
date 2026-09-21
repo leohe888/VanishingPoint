@@ -59,8 +59,9 @@ add_vp_test(tst_clonetool
     ${PROJECT_SOURCE_DIR}/src/core/clonestampengine.cpp
     ${VP_GEOMETRY_SOURCES})
 
-add_vp_test(tst_imagegeometry
-    tst_imagegeometry.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/imagegeometry.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/floatingimagemath.cpp
+add_vp_test(tst_floatingimageprojection
+    tst_floatingimageprojection.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/floatingimage.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/floatingimageprojection.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/floatingimagetransformtool.cpp
     ${VP_GEOMETRY_SOURCES})

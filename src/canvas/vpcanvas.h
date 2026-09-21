@@ -3,7 +3,7 @@
 #include "core/brushtool.h"
 #include "core/canvasdocument.h"
 #include "core/clonetool.h"
-#include "core/imagetransformtool.h"
+#include "core/floatingimagetransformtool.h"
 #include "core/planecreatetool.h"
 #include "core/planeedittool.h"
 
@@ -106,14 +106,14 @@ private:
 
     // 浮动图像：按下/拖动/松开三处入口，命中测试与吸附动作。图像优先于工具——
     // 点到图像就拖动它，点到别处则把当前选中的图像烘焙进绘画层。
-    bool beginImageInteraction(const QPointF &point);
-    void updateImageInteraction(const QPointF &point, Qt::KeyboardModifiers modifiers);
-    bool endImageInteraction();
+    bool beginFloatingImageInteraction(const QPointF &point);
+    void updateFloatingImageInteraction(const QPointF &point, Qt::KeyboardModifiers modifiers);
+    bool endFloatingImageInteraction();
     bool floatingImageAt(const QPointF &point, int *index, QPointF *grabOffset) const;
-    void attachImageToPlane(int index, int planeIndex, const QPointF &point);
-    bool moveAttachedImage(int index, const QPointF &point);
-    void bakeSelectedImage();
-    void drawImageHandles(QPainter *painter); // 变换工具下的 8 个控制点
+    void attachFloatingImageToPlane(int index, int planeIndex, const QPointF &point);
+    bool moveSurfaceAttachedImage(int index, const QPointF &point);
+    void bakeSelectedFloatingImage();
+    void drawFloatingImageHandles(QPainter *painter); // 变换工具下的 8 个控制点
 
     // 选框：选区记在展开曲面上的一份面片快照里，因此可以跨越共享曲面的多个平面。
     // Alt 拖动把选区内容复制成浮动图像；Ctrl 拖动把光标处的内容克隆进选区。
@@ -150,9 +150,9 @@ private:
 
     int m_antsPhase = 0; // 选中框虚线的相位，逐帧递增形成蚂蚁线
 
-    ImageTransformTool m_imageTool;  // 进行中的图像缩放/旋转
-    int m_draggingImage = -1;        // 正在拖动的浮动图像下标
-    bool m_imageChanged = false;     // 本次拖动是否真的改过图像几何
+    FloatingImageTransformTool m_floatingImageTransform; // 进行中的图像移动/缩放/旋转
+    int m_draggedFloatingImageIndex = -1;
+    bool m_floatingImageChanged = false;
 
     QVector<PerspectiveFacet> m_selectionFaces;  // 选区所在曲面分组的几何快照（可跨多平面）
     QRectF m_selectionRect;           // 展开曲面坐标下的矩形选区

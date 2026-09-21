@@ -22,9 +22,9 @@ bool CanvasDocument::loadImage(const QString &fileName)
     m_background = image.convertToFormat(QImage::Format_ARGB32);
     emit documentAvailabilityChanged(true);
     m_planes.clear();
-    m_images.clear();
+    m_floatingImages.clear();
     m_selectedPlane = -1;
-    setSelectedImage(-1);
+    setSelectedFloatingImage(-1);
     m_paintLayer = QImage(m_background.size(), QImage::Format_ARGB32);
     m_paintLayer.fill(Qt::transparent);
     m_paintTransactionActive = false;
@@ -100,14 +100,15 @@ bool CanvasDocument::setPlane(int index, const PerspectivePlane &plane)
     return true;
 }
 
-bool CanvasDocument::setImage(int index, const FloatingImage &image)
+bool CanvasDocument::setFloatingImage(int index, const FloatingImage &image)
 {
-    if (index < 0 || index >= m_images.size() || image.image.isNull()
-        || !qIsFinite(image.position.x()) || !qIsFinite(image.position.y())
-        || !qIsFinite(image.rotation) || !qIsFinite(image.scale.x()) || !qIsFinite(image.scale.y())
-        || image.scale.x() <= 0 || image.scale.y() <= 0)
+    if (index < 0 || index >= m_floatingImages.size() || image.bitmap.isNull()
+        || !qIsFinite(image.placementOrigin.x()) || !qIsFinite(image.placementOrigin.y())
+        || !qIsFinite(image.rotationDegrees)
+        || !qIsFinite(image.scaleFactors.x()) || !qIsFinite(image.scaleFactors.y())
+        || image.scaleFactors.x() <= 0 || image.scaleFactors.y() <= 0)
         return false;
-    m_images[index] = image;
+    m_floatingImages[index] = image;
     return true;
 }
 
@@ -153,33 +154,35 @@ void CanvasDocument::removePlane(int index)
 int CanvasDocument::addFloatingImage(const QImage &image)
 {
     FloatingImage floating;
-    floating.image = image.convertToFormat(QImage::Format_ARGB32);
-    floating.position = QPointF(0, 0);
-    floating.attached = false;
-    floating.hostFace = -1;
-    m_images.append(floating);
-    setSelectedImage(m_images.size() - 1);
+    floating.bitmap = image.convertToFormat(QImage::Format_ARGB32);
+    floating.placementOrigin = QPointF(0, 0);
+    floating.surfaceAttached = false;
+    floating.hostFacetIndex = -1;
+    m_floatingImages.append(floating);
+    setSelectedFloatingImage(m_floatingImages.size() - 1);
     commitHistory();
-    return m_selectedImage;
+    return m_selectedFloatingImage;
 }
 
 int CanvasDocument::addFloatingImageOnSurface(const QImage &image,
-                                               const QVector<PerspectiveFacet> &faces,
-                                               int hostFace,
-                                               const QPointF &surfacePosition)
+                                               const QVector<PerspectiveFacet> &surfaceFacets,
+                                               int hostFacetIndex,
+                                               const QPointF &surfaceOrigin)
 {
-    if (image.isNull() || faces.isEmpty() || hostFace < 0 || hostFace >= faces.size())
+    if (image.isNull() || surfaceFacets.isEmpty()
+        || hostFacetIndex < 0 || hostFacetIndex >= surfaceFacets.size()) {
         return -1;
+    }
     FloatingImage floating;
-    floating.image = image.convertToFormat(QImage::Format_ARGB32);
-    floating.position = surfacePosition;
-    floating.attached = true;
-    floating.faces = faces;
-    floating.hostFace = hostFace;
-    m_images.append(floating);
-    setSelectedImage(m_images.size() - 1);
+    floating.bitmap = image.convertToFormat(QImage::Format_ARGB32);
+    floating.placementOrigin = surfaceOrigin;
+    floating.surfaceAttached = true;
+    floating.surfaceFacets = surfaceFacets;
+    floating.hostFacetIndex = hostFacetIndex;
+    m_floatingImages.append(floating);
+    setSelectedFloatingImage(m_floatingImages.size() - 1);
     commitHistory();
-    return m_selectedImage;
+    return m_selectedFloatingImage;
 }
 
 void CanvasDocument::lockPlaneEdge(int index, int edge)
@@ -205,59 +208,60 @@ bool CanvasDocument::isPlaneLinked(int index) const
 // 删除浮动图像，并将选中项移动到删除位置上的下一张（若无则为上一张）。
 void CanvasDocument::removeFloatingImage(int index)
 {
-    if (index < 0 || index >= m_images.size())
+    if (index < 0 || index >= m_floatingImages.size())
         return;
 
-    m_images.removeAt(index);
-    int nextSelection = m_selectedImage;
-    if (m_selectedImage == index)
-        nextSelection = m_images.isEmpty() ? -1 : qMin(index, m_images.size() - 1);
-    else if (m_selectedImage > index)
+    m_floatingImages.removeAt(index);
+    int nextSelection = m_selectedFloatingImage;
+    if (m_selectedFloatingImage == index)
+        nextSelection = m_floatingImages.isEmpty() ? -1 : qMin(index, m_floatingImages.size() - 1);
+    else if (m_selectedFloatingImage > index)
         --nextSelection;
-    setSelectedImage(nextSelection);
+    setSelectedFloatingImage(nextSelection);
     commitHistory();
 }
 
 // 仅移动图像位置（不改变吸附状态）
-void CanvasDocument::setSelectedImage(int index)
+void CanvasDocument::setSelectedFloatingImage(int index)
 {
-    index = index >= 0 && index < m_images.size() ? index : -1;
-    if (m_selectedImage == index)
+    index = index >= 0 && index < m_floatingImages.size() ? index : -1;
+    if (m_selectedFloatingImage == index)
         return;
-    m_selectedImage = index;
+    m_selectedFloatingImage = index;
     emit imageSelectionChanged(index >= 0);
 }
 
-void CanvasDocument::setImagePosition(int index, const QPointF &position)
+void CanvasDocument::setFloatingImageOrigin(int index, const QPointF &placementOrigin)
 {
-    if (index < 0 || index >= m_images.size())
+    if (index < 0 || index >= m_floatingImages.size())
         return;
-    m_images[index].position = position;
+    m_floatingImages[index].placementOrigin = placementOrigin;
 }
 
 // 把图像吸附到一组几何快照上（严格快照：此后平面增删改不再影响它）
-void CanvasDocument::attachImage(int index, const QVector<PerspectiveFacet> &faces, int hostFace,
-                                 const QPointF &surfacePosition)
+void CanvasDocument::attachFloatingImage(int index,
+                                         const QVector<PerspectiveFacet> &surfaceFacets,
+                                         int hostFacetIndex, const QPointF &surfaceOrigin)
 {
-    if (index < 0 || index >= m_images.size())
+    if (index < 0 || index >= m_floatingImages.size())
         return;
-    FloatingImage &img = m_images[index];
-    img.faces = faces;
-    img.hostFace = hostFace;
-    img.position = surfacePosition;
-    img.attached = true;
+    FloatingImage &image = m_floatingImages[index];
+    image.surfaceFacets = surfaceFacets;
+    image.hostFacetIndex = hostFacetIndex;
+    image.placementOrigin = surfaceOrigin;
+    image.surfaceAttached = true;
 }
 
 // 让图像脱离曲面，回到画布坐标
-void CanvasDocument::detachImage(int index, const QPointF &canvasPosition)
+void CanvasDocument::detachFloatingImage(int index, const QPointF &canvasOrigin)
 {
-    if (index < 0 || index >= m_images.size())
+    if (index < 0 || index >= m_floatingImages.size())
         return;
-    FloatingImage &img = m_images[index];
-    img.faces.clear();
-    img.hostFace = -1;
-    img.position = canvasPosition;
-    img.attached = false;
+    FloatingImage &image = m_floatingImages[index];
+    image.surfaceFacets.clear();
+    image.hostFacetIndex = -1;
+    image.placementOrigin = canvasOrigin;
+    image.surfaceAttached = false;
 }
 
 // 撤销：回退到上一状态（结构 + 绘画层脏矩形反演）
@@ -300,8 +304,8 @@ void CanvasDocument::resetHistory()
     HistoryEntry initial;
     initial.planes = m_planes;
     initial.selectedPlane = m_selectedPlane;
-    initial.images = m_images;
-    initial.selectedImage = m_selectedImage;
+    initial.floatingImages = m_floatingImages;
+    initial.selectedFloatingImage = m_selectedFloatingImage;
     m_history.append(initial);
     m_historyIndex = 0;
     m_paintTransactionActive = false;
@@ -318,8 +322,8 @@ void CanvasDocument::beginEdit()
         return;
     m_editBefore.planes = m_planes;
     m_editBefore.selectedPlane = m_selectedPlane;
-    m_editBefore.images = m_images;
-    m_editBefore.selectedImage = m_selectedImage;
+    m_editBefore.floatingImages = m_floatingImages;
+    m_editBefore.selectedFloatingImage = m_selectedFloatingImage;
     m_editPaintBefore = m_paintLayer;
     m_editActive = true;
 }
@@ -364,8 +368,8 @@ void CanvasDocument::commitHistory()
     HistoryEntry entry;
     entry.planes = m_planes;
     entry.selectedPlane = m_selectedPlane;
-    entry.images = m_images;
-    entry.selectedImage = m_selectedImage;
+    entry.floatingImages = m_floatingImages;
+    entry.selectedFloatingImage = m_selectedFloatingImage;
 
     // 绘画层只记录本次变动的脏矩形前后像素
     if (m_paintTransactionActive && !m_paintDirtyRect.isEmpty()) {
@@ -395,8 +399,8 @@ void CanvasDocument::restoreStructure(const HistoryEntry &entry)
 {
     m_planes = entry.planes;
     m_selectedPlane = entry.selectedPlane;
-    m_images = entry.images;
-    setSelectedImage(entry.selectedImage);
+    m_floatingImages = entry.floatingImages;
+    setSelectedFloatingImage(entry.selectedFloatingImage);
 }
 
 // 把像素直接覆盖回绘画层的指定矩形（用于脏矩形的撤销/重做）
