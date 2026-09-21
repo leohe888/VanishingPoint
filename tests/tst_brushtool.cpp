@@ -72,7 +72,7 @@ void BrushToolTest::refusesToStart()
 void BrushToolTest::paintsOnPlane()
 {
     QImage layer = makeLayer();
-    const QVector<Plane> planes{makeTestPlane()};
+    const QVector<PerspectivePlane> planes{makeTestPlane()};
     BrushTool tool;
     tool.setDiameter(20);
     tool.setHardness(100);

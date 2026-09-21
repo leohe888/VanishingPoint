@@ -27,26 +27,26 @@ public:
     bool drawing() const { return m_drawing; }
     QPointF marker() const { return m_marker; } // 当前的取样位置指示（画面坐标）
     // 取源点：解析点所在面片并记下它在展开曲面上的位置。
-    bool pickSource(const QVector<Plane> &planes, const QSize &canvasSize, const QPointF &point);
+    bool pickSource(const QVector<PerspectivePlane> &planes, const QSize &canvasSize, const QPointF &point);
 
     // 起笔：解析落点面片，按对齐模式确定偏移并落下第一个笔触点，返回画布脏矩形。
     // 未取源、面片不可解析或绘画层无效时返回空矩形，且不进入落笔状态。
-    QRect begin(QImage &layer, const QImage &source, const QVector<Plane> &planes,
+    QRect begin(QImage &layer, const QImage &source, const QVector<PerspectivePlane> &planes,
                 const QSize &canvasSize, const QPointF &point);
     // 续笔：从上一位置向目标位置补间落点，返回画布脏矩形。
     QRect move(QImage &layer, const QPointF &point);
     void end();
 
     // 光标移动：更新取样位置指示。源点已归位时只显示它本身。
-    void hover(const QVector<Plane> &planes, const QSize &canvasSize, const QPointF &point);
+    void hover(const QVector<PerspectivePlane> &planes, const QSize &canvasSize, const QPointF &point);
     // 在光标处预览即将仿制过来的内容（所见即所得）：复用引擎的逐像素取样，
     // 与真实落笔完全一致，取样位置始终落在源点十字上，但不改变源点与落笔状态。
-    void renderPreview(QPainter &painter, const QImage &source, const QVector<Plane> &planes,
+    void renderPreview(QPainter &painter, const QImage &source, const QVector<PerspectivePlane> &planes,
                        const QSize &canvasSize, const QPointF &point);
 
 private:
     // 目标面片的展开映射：落笔期间沿用锚定面片，否则取光标所在面片。
-    PerspectiveTransform targetAt(const QVector<Plane> &planes, const QSize &canvasSize,
+    PerspectiveTransform targetAt(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
                                  const QPointF &point) const;
     // 本次落笔应有的偏移：对齐模式沿用已锁定的偏移，其余按落点重新锚定。
     QPointF anchoredOffset(const QPointF &position) const;

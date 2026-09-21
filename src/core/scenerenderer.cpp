@@ -9,8 +9,6 @@
 #include <QPainterPathStroker>
 #include <QLineF>
 
-using namespace PerspectivePlane;
-
 // 控制点（创建平面的角点标记、平面编辑的角点与边缘中心点）统一的半边长，
 // 单位为画布像素，绘制时再按视图缩放换算。
 constexpr qreal HandleHalfSize = 4.0;
@@ -23,7 +21,7 @@ SceneRenderer::SceneRenderer(const CanvasDocument &doc)
 // 渲染完整场景。showGuides 为 true 时额外绘制编辑辅助元素。
 void SceneRenderer::render(QPainter &painter, qreal viewScale, bool showGuides,
                            const QVector<QPointF> &creationPoints,
-                           const Plane *extrudePreview, bool editHandlesVisible,
+                           const PerspectivePlane *extrudePreview, bool editHandlesVisible,
                            int hoveredPlane, qreal antsPhase, bool drawContent, qreal gridSize,
                            const QPointF &cursorPoint)
 {
@@ -139,7 +137,7 @@ void SceneRenderer::renderFloatingImage(QPainter &painter, const FloatingImage &
 
 // 绘制面片的编辑辅助元素：外框、内部网格，以及选中且处于编辑
 // 工具时的控制点方块。
-void SceneRenderer::drawPlaneGuides(QPainter &painter, const Facet &facet, bool selected,
+void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveFacet &facet, bool selected,
                                     bool hovered, bool showHandles, qreal gridSize,
                                     int planeIndex) const
 {
@@ -150,12 +148,12 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const Facet &facet, bool 
                                              : QColor(70, 155, 210, 160));
     painter.setPen(QPen(color, lineWidth));
     painter.setBrush(Qt::NoBrush);
-    painter.drawPolygon(planePolygon(facet.corner));
+    painter.drawPolygon(facet.canvasPolygon());
 
     if (selected) {
         painter.save();
         QPainterPath planeClip;
-        planeClip.addPolygon(planePolygon(facet.corner));
+        planeClip.addPolygon(facet.canvasPolygon());
         planeClip.closeSubpath();
         painter.setClipPath(planeClip, Qt::IntersectClip);
         painter.setPen(QPen(QColor(65, 182, 235, 145), 0.8 / m_viewScale));
@@ -163,58 +161,61 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const Facet &facet, bool 
         // Derive cell counts from current projected edge lengths so resizing
         // a plane changes the number of cells instead of stretching them.
         const qreal horizontalLength =
-            (QLineF(facet.corner[0], facet.corner[1]).length()
-             + QLineF(facet.corner[3], facet.corner[2]).length()) * 0.5;
+            (QLineF(facet.canvasCorners()[0], facet.canvasCorners()[1]).length()
+             + QLineF(facet.canvasCorners()[3], facet.canvasCorners()[2]).length()) * 0.5;
         const qreal verticalLength =
-            (QLineF(facet.corner[0], facet.corner[3]).length()
-             + QLineF(facet.corner[1], facet.corner[2]).length()) * 0.5;
+            (QLineF(facet.canvasCorners()[0], facet.canvasCorners()[3]).length()
+             + QLineF(facet.canvasCorners()[1], facet.canvasCorners()[2]).length()) * 0.5;
         const int horizontalDivisions = qMax(1, qRound(horizontalLength / safeGridSize));
         const int verticalDivisions = qMax(1, qRound(verticalLength / safeGridSize));
         for (int i = 1; i < horizontalDivisions; ++i) {
             const qreal t = qreal(i) / horizontalDivisions;
-            painter.drawLine(uvToPlane(facet, QPointF(t, 0)), uvToPlane(facet, QPointF(t, 1)));
+            painter.drawLine(facet.mapUvToCanvas(QPointF(t, 0)),
+                             facet.mapUvToCanvas(QPointF(t, 1)));
         }
         for (int i = 1; i < verticalDivisions; ++i) {
             const qreal t = qreal(i) / verticalDivisions;
-            painter.drawLine(uvToPlane(facet, QPointF(0, t)), uvToPlane(facet, QPointF(1, t)));
+            painter.drawLine(facet.mapUvToCanvas(QPointF(0, t)),
+                             facet.mapUvToCanvas(QPointF(1, t)));
         }
         painter.restore();
     }
 
     if (selected && showHandles) {
-        const QVector<QPointF> hs = handles(facet);
-        quint8 sharedEdges = 0;
+        const QVector<QPointF> points = facet.controlPoints();
+        quint8 unavailableEdgeMask = 0;
         if (planeIndex >= 0) {
-            const Plane &plane = m_doc.planes()[planeIndex];
+            const PerspectivePlane &plane = m_doc.planes()[planeIndex];
             for (int edge = 0; edge < 4; ++edge)
-                if (plane.lockedEdges & quint8(1u << edge)) sharedEdges |= quint8(1u << edge);
+                if (plane.lockedEdgeMask() & quint8(1u << edge))
+                    unavailableEdgeMask |= quint8(1u << edge);
             for (int edge = 0; edge < 4; ++edge) {
-                const QPointF a = facet.corner[edge];
-                const QPointF b = facet.corner[(edge + 1) % 4];
+                const QPointF a = facet.canvasCorners()[edge];
+                const QPointF b = facet.canvasCorners()[(edge + 1) % 4];
                 for (int other = 0; other < m_doc.planes().size(); ++other) {
                     if (other == planeIndex)
                         continue;
                     for (int oe = 0; oe < 4; ++oe) {
-                        const QPointF oa = m_doc.planes()[other].corner[oe];
-                        const QPointF ob = m_doc.planes()[other].corner[(oe + 1) % 4];
+                        const QPointF oa = m_doc.planes()[other].canvasCorners()[oe];
+                        const QPointF ob = m_doc.planes()[other].canvasCorners()[(oe + 1) % 4];
                         if ((QLineF(a, oa).length() < 0.01 && QLineF(b, ob).length() < 0.01) ||
                             (QLineF(a, ob).length() < 0.01 && QLineF(b, oa).length() < 0.01)) {
-                            sharedEdges |= quint8(1u << edge);
+                            unavailableEdgeMask |= quint8(1u << edge);
                             break;
                         }
                     }
                 }
             }
         }
-        for (int i = 0; i < hs.size(); ++i) {
-            if ((i < 4 && ((sharedEdges & quint8(1u << i)) ||
-                           (sharedEdges & quint8(1u << ((i + 3) % 4))))) ||
-                (i >= 4 && (sharedEdges & quint8(1u << (i - 4)))))
+        for (int i = 0; i < points.size(); ++i) {
+            if ((i < 4 && ((unavailableEdgeMask & quint8(1u << i)) ||
+                           (unavailableEdgeMask & quint8(1u << ((i + 3) % 4))))) ||
+                (i >= 4 && (unavailableEdgeMask & quint8(1u << (i - 4)))))
                 continue;
             const qreal radius = HandleHalfSize / m_viewScale;
             painter.setPen(QPen(QColor("#0e526e"), 1.0 / m_viewScale));
             painter.setBrush(QColor("#f3f8fa"));
-            painter.drawRect(QRectF(hs[i].x() - radius, hs[i].y() - radius,
+            painter.drawRect(QRectF(points[i].x() - radius, points[i].y() - radius,
                                     radius * 2, radius * 2));
         }
     }

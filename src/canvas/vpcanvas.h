@@ -138,7 +138,7 @@ private:
 
     int m_editPlaneIndex = -1; // 正在编辑的平面下标。-1 同时表示“没有进行中的平面编辑”。
 
-    Plane m_extrudePreview;             // 拖出垂直平面时的预览几何
+    PerspectivePlane m_extrudePreview;             // 拖出垂直平面时的预览几何
     bool m_extrudePreviewReady = false; // 预览几何是否可用
 
     int m_gridSize = 50; // 平面网格边长（图像像素），单位与展开曲面坐标一致
@@ -154,7 +154,7 @@ private:
     int m_draggingImage = -1;        // 正在拖动的浮动图像下标
     bool m_imageChanged = false;     // 本次拖动是否真的改过图像几何
 
-    QVector<Facet> m_selectionFaces;  // 选区所在曲面分组的几何快照（可跨多平面）
+    QVector<PerspectiveFacet> m_selectionFaces;  // 选区所在曲面分组的几何快照（可跨多平面）
     QRectF m_selectionRect;           // 展开曲面坐标下的矩形选区
     QRectF m_selectionStartRect;      // 平移开始时的选区，避免逐帧累加误差
     QPointF m_selectionPressSurface;  // 按下点在展开曲面上的位置

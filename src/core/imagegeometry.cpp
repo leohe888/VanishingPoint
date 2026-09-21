@@ -12,9 +12,9 @@ QByteArray ImageGeometry::key(const FloatingImage &image)
     QDataStream stream(&key, QIODevice::WriteOnly);
     stream << image.image.size() << image.position << image.scale << image.rotation
            << image.attached << image.hostFace << qint64(image.faces.size());
-    for (const Facet &face : image.faces)
+    for (const PerspectiveFacet &face : image.faces)
         for (int i = 0; i < 4; ++i)
-            stream << face.corner[i] << face.surfaceCorner[i];
+            stream << face.canvasCorners()[i] << face.surfaceCorners()[i];
     return key;
 }
 
@@ -53,7 +53,7 @@ ImageGeometry::ImageGeometry(const FloatingImage &image)
         QPainterPath hostClip = imagePath;
         const QTransform inverse = m_imageToSpace.inverted();
         for (int i = 0; i < image.faces.size(); ++i) {
-            const QPolygonF polygon = inverse.map(PerspectivePlane::planePolygon(image.faces[i].surfaceCorner));
+            const QPolygonF polygon = inverse.map(image.faces[i].surfacePolygon());
             sources.append(polygon);
             QPainterPath facePath;
             facePath.addPolygon(polygon);
@@ -63,10 +63,10 @@ ImageGeometry::ImageGeometry(const FloatingImage &image)
                 hostClip = hostClip.subtracted(facePath);
         }
         if (image.hostFace >= 0 && image.hostFace < image.faces.size())
-            append(sources[image.hostFace], PerspectivePlane::planePolygon(image.faces[image.hostFace].corner), hostClip);
+            append(sources[image.hostFace], image.faces[image.hostFace].canvasPolygon(), hostClip);
         for (int i = 0; i < image.faces.size(); ++i)
             if (i != image.hostFace)
-                append(sources[i], PerspectivePlane::planePolygon(image.faces[i].corner), clips[i]);
+                append(sources[i], image.faces[i].canvasPolygon(), clips[i]);
     }
     if (m_patches.size() == 1)
         m_outline = m_patches.first().canvasClip;

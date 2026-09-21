@@ -18,7 +18,7 @@ struct FloatingImage {
     qreal rotation = 0; // 在画布/展开曲面中绕图片中心旋转，单位为度
     QSizeF displayedSize() const { return QSizeF(image.width() * scale.x(), image.height() * scale.y()); }
     bool attached = false;     // 是否已吸附到某个展开曲面
-    QVector<Facet> faces;      // 吸附瞬间曲面分组的几何快照（严格快照）
+    QVector<PerspectiveFacet> faces;      // 吸附瞬间曲面分组的几何快照（严格快照）
     int hostFace = -1;         // 宿主面在 faces 中的索引（-1 表示无）
 };
 
@@ -41,9 +41,9 @@ public:
     bool hasLoadedImage() const { return !m_background.isNull(); }
 
     // —— 平面 ——
-    const QVector<Plane> &planes() const { return m_planes; }
-    int appendPlane(const Plane &plane);           // 几何预览修改由 beginEdit/commitEdit 包围
-    bool setPlane(int index, const Plane &plane);
+    const QVector<PerspectivePlane> &planes() const { return m_planes; }
+    int appendPlane(const PerspectivePlane &plane);           // 几何预览修改由 beginEdit/commitEdit 包围
+    bool setPlane(int index, const PerspectivePlane &plane);
     void lockPlaneEdge(int index, int edge);
     bool isPlaneLinked(int index) const;           // 是否与相邻垂直平面共边
     int selectedPlane() const { return m_selectedPlane; }
@@ -66,12 +66,12 @@ public:
     int selectedImage() const { return m_selectedImage; }
     void setSelectedImage(int index);
     int addFloatingImage(const QImage &image);     // 追加到左上角，返回索引
-    int addFloatingImageOnSurface(const QImage &image, const QVector<Facet> &faces,
+    int addFloatingImageOnSurface(const QImage &image, const QVector<PerspectiveFacet> &faces,
                                   int hostFace, const QPointF &surfacePosition);
     void removeFloatingImage(int index);          // 删除指定浮动图像
     void setImagePosition(int index, const QPointF &position); // 仅移动位置
     // 把图像吸附到一组几何快照上（surfacePosition 为展开曲面坐标）
-    void attachImage(int index, const QVector<Facet> &faces, int hostFace,
+    void attachImage(int index, const QVector<PerspectiveFacet> &faces, int hostFace,
                      const QPointF &surfacePosition);
     void detachImage(int index, const QPointF &canvasPosition); // 脱离曲面回到画布坐标
 
@@ -99,7 +99,7 @@ private:
     // 结构部分体积小、位图靠隐式共享，可直接整份拷贝；而绘画层整份快照
     // 在 40 步历史下会因整层逐笔复制而失控，故只记录本次变动的脏矩形前后像素。
     struct HistoryEntry {
-        QVector<Plane> planes;
+        QVector<PerspectivePlane> planes;
         int selectedPlane = -1;
         QVector<FloatingImage> images;
         int selectedImage = -1;
@@ -112,7 +112,7 @@ private:
     void applyPaint(const QRect &rect, const QImage &pixels); // 把像素写回绘画层
 
     QImage m_background;                // 背景图像（即“文档”）
-    QVector<Plane> m_planes;            // 全部透视平面
+    QVector<PerspectivePlane> m_planes;            // 全部透视平面
     int m_selectedPlane = -1;           // 当前选中的平面索引
     QImage m_paintLayer;                // 绘画层（画布同尺寸）
     QVector<FloatingImage> m_images;    // 全部浮动图像

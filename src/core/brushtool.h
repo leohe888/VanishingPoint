@@ -22,7 +22,7 @@ public:
 
     // 起笔：锚定按下点对应的面片并落下第一个笔触点，返回画布脏矩形。
     // 锚定失败时返回空矩形，且不进入落笔状态。
-    QRect begin(QImage &layer, const QVector<Plane> &planes, const QSize &canvasSize,
+    QRect begin(QImage &layer, const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
                 const QPointF &point);
     // 续笔：从上一位置向目标位置补间落点，返回画布脏矩形。
     QRect move(QImage &layer, const QPointF &point);
@@ -31,16 +31,16 @@ public:
 
     // 在光标处预览即将落下的笔触点（所见即所得）。
     // 不改变任何交互状态，可与真实落笔共用同一台引擎。
-    void renderPreview(QPainter &painter, const QVector<Plane> &planes,
+    void renderPreview(QPainter &painter, const QVector<PerspectivePlane> &planes,
                        const QSize &canvasSize, const QPointF &point) const;
 
 private:
     // 解析点对应的可绘制面片（facet）与其归一化 UV。
     // 面片退化，或点落在该面片地平线之外时返回 false。
-    static bool resolveTarget(const QVector<Plane> &planes, const QSize &canvasSize,
-                              const QPointF &point, Facet *facet, QPointF *uv);
+    static bool resolveTarget(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
+                              const QPointF &point, PerspectiveFacet *facet, QPointF *uv);
 
     PaintEngine m_engine;
-    Facet m_facet;          // 本笔锚定的面片
+    PerspectiveFacet m_facet;          // 本笔锚定的面片
     bool m_drawing = false;
 };

@@ -30,7 +30,7 @@ public:
     // 传空点表示不绘制。
     void render(QPainter &painter, qreal viewScale, bool showGuides,
                 const QVector<QPointF> &creationPoints = {},
-                const Plane *extrudePreview = nullptr,
+                const PerspectivePlane *extrudePreview = nullptr,
                 bool editHandlesVisible = false,
                 int hoveredPlane = -1, qreal antsPhase = 0, bool drawContent = true,
                 qreal gridSize = 50.0, const QPointF &cursorPoint = QPointF());
@@ -45,7 +45,7 @@ public:
 private:
     // 绘制面片的编辑辅助元素：外框、内部网格，以及选中且处于编辑
     // 工具时的控制点方块。
-    void drawPlaneGuides(QPainter &painter, const Facet &facet, bool selected,
+    void drawPlaneGuides(QPainter &painter, const PerspectiveFacet &facet, bool selected,
                          bool hovered, bool showHandles, qreal gridSize,
                          int planeIndex = -1) const;
 

@@ -2,8 +2,6 @@
 
 #include <QPainter>
 
-using namespace PerspectivePlane;
-
 QPointF CloneTool::originalMarker() const
 {
     QPointF marker;
@@ -24,12 +22,12 @@ void CloneTool::setAligned(bool value)
     }
 }
 
-bool CloneTool::pickSource(const QVector<Plane> &planes, const QSize &canvasSize, const QPointF &point)
+bool CloneTool::pickSource(const QVector<PerspectivePlane> &planes, const QSize &canvasSize, const QPointF &point)
 {
-    Facet facet;
+    PerspectiveFacet facet;
     if (!resolveFacet(planes, canvasSize, point, &facet))
         return false;
-    m_sourceMapping = surfaceMapping(facet);
+    m_sourceMapping = facet.surfaceToCanvasTransform();
     QPointF surface;
     if (!m_sourceMapping.mapInverse(point, &surface))
         return false;
@@ -40,15 +38,15 @@ bool CloneTool::pickSource(const QVector<Plane> &planes, const QSize &canvasSize
     return true;
 }
 
-PerspectiveTransform CloneTool::targetAt(const QVector<Plane> &planes, const QSize &canvasSize,
+PerspectiveTransform CloneTool::targetAt(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
                                         const QPointF &point) const
 {
     if (m_drawing)
         return m_targetMapping;
-    Facet facet;
+    PerspectiveFacet facet;
     if (!resolveFacet(planes, canvasSize, point, &facet))
         return {};
-    return surfaceMapping(facet);
+    return facet.surfaceToCanvasTransform();
 }
 
 // 对齐模式下偏移一经锁定就跨笔保留，源点于是跟着光标走
@@ -59,7 +57,7 @@ QPointF CloneTool::anchoredOffset(const QPointF &position) const
     return m_source - position;
 }
 
-QRect CloneTool::begin(QImage &layer, const QImage &source, const QVector<Plane> &planes,
+QRect CloneTool::begin(QImage &layer, const QImage &source, const QVector<PerspectivePlane> &planes,
                        const QSize &canvasSize, const QPointF &point)
 {
     if (!m_hasSource || layer.isNull())
@@ -92,7 +90,7 @@ void CloneTool::end()
     }
 }
 
-void CloneTool::hover(const QVector<Plane> &planes, const QSize &canvasSize, const QPointF &point)
+void CloneTool::hover(const QVector<PerspectivePlane> &planes, const QSize &canvasSize, const QPointF &point)
 {
     if (!m_hasSource)
         return;
@@ -108,7 +106,7 @@ void CloneTool::hover(const QVector<Plane> &planes, const QSize &canvasSize, con
         m_marker = marker;
 }
 
-void CloneTool::renderPreview(QPainter &painter, const QImage &source, const QVector<Plane> &planes,
+void CloneTool::renderPreview(QPainter &painter, const QImage &source, const QVector<PerspectivePlane> &planes,
                               const QSize &canvasSize, const QPointF &point)
 {
     if (!m_hasSource)

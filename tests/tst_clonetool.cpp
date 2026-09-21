@@ -143,7 +143,7 @@ void CloneToolTest::followsPlanePerspective()
 {
     QImage layer = makeLayer();
     const QImage source = makeSource();
-    const QVector<Plane> planes{makeTestPlane()}; // 画面角点 = 展开坐标 + (10,10)
+    const QVector<PerspectivePlane> planes{makeTestPlane()}; // 画面角点 = 展开坐标 + (10,10)
     CloneTool tool = readyTool();
     QVERIFY(tool.pickSource(planes, layer.size(), QPointF(40, 40)));
 

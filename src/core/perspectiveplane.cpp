@@ -1,7 +1,6 @@
 #include "perspectiveplane.h"
 
 #include <QLineF>
-#include <QTransform>
 #include <QtMath>
 
 #include <cmath>
@@ -14,7 +13,7 @@ constexpr qreal Epsilon = 1e-6;
 
 bool isValidEdgeIndex(int edge)
 {
-    return edge >= 0 && edge < PerspectivePlane::EdgeCount;
+    return edge >= 0 && edge < PerspectiveFacet::CornerCount;
 }
 
 struct Vec3 {
@@ -121,232 +120,121 @@ bool projectPoint(const Vec3 &p, const CameraFrame &frame, QPointF *out)
 
 } // namespace
 
-namespace PerspectivePlane {
-PerspectiveTransform surfaceMapping(const Facet &facet)
+bool PerspectivePlane::isEdgeLocked(int edgeIndex) const
 {
-    return {planePolygon(facet.surfaceCorner), planePolygon(facet.corner)};
+    return edgeIndex >= 0 && edgeIndex < CornerCount &&
+           (m_lockedEdgeMask & quint8(1u << edgeIndex));
 }
 
-PerspectiveTransform uvMapping(const Facet &facet)
+void PerspectivePlane::setEdgeLocked(int edgeIndex, bool locked)
 {
-    return {QPolygonF{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)}, planePolygon(facet.corner)};
+    if (edgeIndex < 0 || edgeIndex >= CornerCount)
+        return;
+    const quint8 edgeBit = quint8(1u << edgeIndex);
+    if (locked)
+        m_lockedEdgeMask |= edgeBit;
+    else
+        m_lockedEdgeMask &= quint8(~edgeBit);
 }
 
-
-QPolygonF planePolygon(const Quad &corner)
+void PerspectivePlane::setParent(int planeIndex, int edgeIndex)
 {
-    // 角点顺序原样保留，调用方须给出不自交的顺时针或逆时针四点。
-    return QPolygonF{corner[0], corner[1], corner[2], corner[3]};
+    m_parentPlaneIndex = planeIndex;
+    m_parentEdgeIndex = edgeIndex;
 }
 
-// 返回面片的 8 个控制点：4 个角点在前，4 个边中点在后
-QVector<QPointF> handles(const Facet &facet)
+void PerspectivePlane::clearParent()
 {
-    return {facet.corner[0], facet.corner[1], facet.corner[2], facet.corner[3],
-            (facet.corner[0] + facet.corner[1]) / 2.0,
-            (facet.corner[1] + facet.corner[2]) / 2.0,
-            (facet.corner[2] + facet.corner[3]) / 2.0,
-            (facet.corner[3] + facet.corner[0]) / 2.0};
-}
-
-// 计算点 p 到线段 ab 的距离；t 返回最近点在线段上的参数化位置（0~1）
-qreal distanceToSegment(const QPointF &p, const QPointF &a,
-                        const QPointF &b, qreal *t)
-{
-    const QPointF d = b - a;
-    const qreal len2 = QPointF::dotProduct(d, d);
-    const qreal amount = len2 < Epsilon ? 0.0
-                                        : qBound(0.0, QPointF::dotProduct(p - a, d) / len2, 1.0);
-    if (t)
-        *t = amount;
-    return QLineF(p, a + d * amount).length();
-}
-
-// 校验面片是否是可用的单应变换目标：非交叉凸四边形，且不过于退化。
-bool isValidPlane(const Facet &facet)
-{
-    // 必须在 quadToQuad() 前拒绝凹形、自交叉与近乎退化的配置，否则极点可能穿过平面。
-    qreal windingSign = 0.0;
-    qreal twiceArea = 0.0;
-    for (const QPointF &corner : facet.corner) {
-        if (!qIsFinite(corner.x()) || !qIsFinite(corner.y()))
-            return false;
-    }
-    for (int i = 0; i < CornerCount; ++i) {
-        const QPointF a = facet.corner[i];
-        const QPointF b = facet.corner[(i + 1) % CornerCount];
-        const QPointF c = facet.corner[(i + 2) % CornerCount];
-        if (QLineF(a, b).length() < 8.0)
-            return false;
-        const QPointF ab = b - a;
-        const QPointF bc = c - b;
-        const qreal cross = ab.x() * bc.y() - ab.y() * bc.x();
-        if (qAbs(cross) < 4.0)
-            return false;
-        const qreal sign = cross > 0.0 ? 1.0 : -1.0;
-        if (i == 0)
-            windingSign = sign;
-        else if (sign != windingSign)
-            return false;
-        twiceArea += a.x() * b.y() - b.x() * a.y();
-    }
-    if (qAbs(twiceArea) < 100.0)
-        return false;
-
-    const QPolygonF unit{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)};
-    QTransform transform;
-    if (!QTransform::quadToQuad(unit, planePolygon(facet.corner), transform))
-        return false;
-
-    // 齐次分母对 u/v 线性，只需检查单位正方形四个角同号。
-    qreal denominatorSign = 0.0;
-    for (const QPointF &uv : unit) {
-        const qreal w = transform.m13() * uv.x() + transform.m23() * uv.y() + transform.m33();
-        if (!qIsFinite(w) || qAbs(w) < 1e-5)
-            return false;
-        const qreal sign = w > 0.0 ? 1.0 : -1.0;
-        if (denominatorSign == 0.0)
-            denominatorSign = sign;
-        else if (sign != denominatorSign)
-            return false;
-    }
-    return true;
-}
-
-// 归一化 UV 坐标 -> 面片上的图像坐标
-QPointF uvToPlane(const Facet &facet, const QPointF &uv)
-{
-    QPointF result;
-    uvMapping(facet).mapForward(uv, &result);
-    return result;
-}
-
-// 面片上的图像坐标 -> 归一化 UV 坐标（ok 返回变换是否有效）
-QPointF planeToUv(const Facet &facet, const QPointF &point, bool *ok)
-{
-    QPointF result;
-    const bool valid = uvMapping(facet).mapInverse(point, &result);
-    if (ok)
-        *ok = valid;
-    return result;
-}
-
-// 面片上的图像坐标 -> 该面片所属分组的共享展开曲面坐标
-QPointF planeToSurface(const Facet &facet, const QPointF &point, bool *ok)
-{
-    QPointF result;
-    const bool valid = surfaceMapping(facet).mapInverse(point, &result);
-    if (ok)
-        *ok = valid;
-    return result;
+    m_parentPlaneIndex = -1;
+    m_parentEdgeIndex = -1;
+    m_angleToParentDegrees = 90.0;
+    m_hasCustomAngle = false;
 }
 
 // 命中测试：返回点所在的最上层平面索引（后创建的优先），无命中返回 -1
-int planeAt(const QVector<Plane> &planes, const QPointF &point)
+int topmostPlaneIndexAt(const QVector<PerspectivePlane> &planes, const QPointF &point)
 {
     for (int i = planes.size() - 1; i >= 0; --i) {
-        if (planePolygon(planes[i].corner).containsPoint(point, Qt::OddEvenFill))
+        if (planes[i].containsCanvasPoint(point))
             return i;
     }
     return -1;
 }
 
 // 点所属的可绘制面片：平面内用该平面，平面外以整张图像为基准面。
-bool resolveFacet(const QVector<Plane> &planes, const QSize &canvasSize,
-                  const QPointF &point, Facet *facet)
+bool resolveFacet(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
+                  const QPointF &point, PerspectiveFacet *facet)
 {
     if (!facet)
         return false;
-    const int index = planeAt(planes, point);
+    const int index = topmostPlaneIndexAt(planes, point);
     if (index >= 0) {
         *facet = planes[index];
         return true;
     }
     if (canvasSize.isEmpty())
         return false;
-    // 基准面的展开坐标与画面坐标重合，surfaceMapping 因此是恒等的
+    // 基准面的展开坐标与画面坐标重合，surfaceToCanvasTransform 因此是恒等的
     const QPointF topLeft(0, 0);
     const QPointF bottomRight(canvasSize.width(), canvasSize.height());
-    facet->corner[0] = facet->surfaceCorner[0] = topLeft;
-    facet->corner[1] = facet->surfaceCorner[1] = QPointF(bottomRight.x(), topLeft.y());
-    facet->corner[2] = facet->surfaceCorner[2] = bottomRight;
-    facet->corner[3] = facet->surfaceCorner[3] = QPointF(topLeft.x(), bottomRight.y());
+    const PerspectiveFacet::Corners corners{
+        topLeft,
+        QPointF(bottomRight.x(), topLeft.y()),
+        bottomRight,
+        QPointF(topLeft.x(), bottomRight.y())
+    };
+    facet->setCanvasCorners(corners);
+    facet->setSurfaceCorners(corners);
     return true;
 }
 
-// 命中测试：返回距离点最近的控制点索引，无命中返回 -1
-int handleAt(const Facet &facet, const QPointF &point, qreal tolerance)
-{
-    if (!qIsFinite(point.x()) || !qIsFinite(point.y()) ||
-        !qIsFinite(tolerance) || tolerance < 0.0)
-        return -1;
-    const QVector<QPointF> hs = handles(facet);
-    for (int i = 0; i < hs.size(); ++i) {
-        if (QLineF(hs[i], point).length() <= tolerance)
-            return i;
-    }
-    return -1;
-}
-
-// 命中测试：返回点靠近的边缘索引（0~3），无命中返回 -1
-int edgeAt(const Facet &facet, const QPointF &point, qreal tolerance)
-{
-    if (!qIsFinite(point.x()) || !qIsFinite(point.y()) ||
-        !qIsFinite(tolerance) || tolerance < 0.0)
-        return -1;
-    for (int i = 0; i < EdgeCount; ++i) {
-        if (distanceToSegment(point, facet.corner[i],
-                              facet.corner[(i + 1) % CornerCount]) <= tolerance)
-            return i;
-    }
-    return -1;
-}
-
 // 保持原单应变换，在展开坐标中平移四个角点后重新投影。
-bool movePlaneOnSurface(const Plane &source, const QPointF &dragPoint,
-                        const QPointF &pressPoint, Plane *result)
+bool translatePlaneOnSurface(const PerspectivePlane &source, const QPointF &dragPoint,
+                             const QPointF &pressPoint, PerspectivePlane *result)
 {
     if (!result || !qIsFinite(dragPoint.x()) || !qIsFinite(dragPoint.y()))
         return false;
     bool pressOk = false, dragOk = false;
-    const QPointF press = planeToSurface(source, pressPoint, &pressOk);
-    const QPointF drag = planeToSurface(source, dragPoint, &dragOk);
+    const QPointF press = source.mapCanvasToSurface(pressPoint, &pressOk);
+    const QPointF drag = source.mapCanvasToSurface(dragPoint, &dragOk);
     if (!pressOk || !dragOk)
         return false;
-    const PerspectiveTransform projection = surfaceMapping(source);
+    const PerspectiveTransform projection = source.surfaceToCanvasTransform();
     const QPointF delta = drag - press;
-    Plane candidate = source;
-    for (int i = 0; i < 4; ++i) {
-        candidate.surfaceCorner[i] = source.surfaceCorner[i] + delta;
-        if (!projection.mapForward(candidate.surfaceCorner[i], &candidate.corner[i]))
+    PerspectivePlane candidate = source;
+    for (int i = 0; i < PerspectiveFacet::CornerCount; ++i) {
+        const QPointF surfaceCorner = source.surfaceCorners()[i] + delta;
+        QPointF canvasCorner;
+        if (!projection.mapForward(surfaceCorner, &canvasCorner))
             return false;
-        const QPointF &corner = candidate.corner[i];
-        if (!qIsFinite(corner.x()) || !qIsFinite(corner.y())
-            || qAbs(corner.x()) > 1e7 || qAbs(corner.y()) > 1e7)
+        if (!qIsFinite(canvasCorner.x()) || !qIsFinite(canvasCorner.y()) ||
+            qAbs(canvasCorner.x()) > 1e7 || qAbs(canvasCorner.y()) > 1e7)
             return false;
+        candidate.setSurfaceCorner(i, surfaceCorner);
+        candidate.setCanvasCorner(i, canvasCorner);
     }
-    if (!isValidPlane(candidate))
+    if (!candidate.isValid())
         return false;
     *result = candidate;
     return true;
 }
 
 // 沿某条边方向缩放平面：只改变该边到对边的距离，保持透视关系不变
-Plane resizePlaneAlongEdge(const Plane &source, int edge,
-                           const QPointF &dragPoint, const QPointF &pressPoint)
+PerspectivePlane resizePlaneFromEdge(const PerspectivePlane &source, int edge,
+                                     const QPointF &dragPoint, const QPointF &pressPoint)
 {
-    Plane result = source;
+    PerspectivePlane result = source;
     if (!isValidEdgeIndex(edge) ||
         !qIsFinite(dragPoint.x()) || !qIsFinite(dragPoint.y()) ||
         !qIsFinite(pressPoint.x()) || !qIsFinite(pressPoint.y()))
         return result;
-    const int next = (edge + 1) % CornerCount;
-    const int oppositeNext = (edge + 2) % CornerCount;
-    const int previous = (edge + 3) % CornerCount;
-    const QPointF a = source.corner[edge];
-    const QPointF b = source.corner[next];
-    const QPointF oppositeA = source.corner[oppositeNext];
-    const QPointF oppositeB = source.corner[previous];
+    const int next = (edge + 1) % PerspectiveFacet::CornerCount;
+    const int oppositeNext = (edge + 2) % PerspectiveFacet::CornerCount;
+    const int previous = (edge + 3) % PerspectiveFacet::CornerCount;
+    const QPointF a = source.canvasCorners()[edge];
+    const QPointF b = source.canvasCorners()[next];
+    const QPointF oppositeA = source.canvasCorners()[oppositeNext];
+    const QPointF oppositeB = source.canvasCorners()[previous];
     const QPointF edgeMidpoint = (a + b) / 2.0;
     const QPointF oppositeMidpoint = (oppositeA + oppositeB) / 2.0;
 
@@ -381,39 +269,39 @@ Plane resizePlaneAlongEdge(const Plane &source, int edge,
     // 端点约束在各自原侧边线上，垂直平面缩放时才只改高度、保持垂直。
     QPointF movedA;
     QPointF movedB;
-    const auto aType = QLineF(a, source.corner[previous]).intersects(resizedEdge, &movedA);
-    const auto bType = QLineF(b, source.corner[oppositeNext]).intersects(resizedEdge, &movedB);
+    const auto aType = QLineF(a, source.canvasCorners()[previous]).intersects(resizedEdge, &movedA);
+    const auto bType = QLineF(b, source.canvasCorners()[oppositeNext]).intersects(resizedEdge, &movedB);
     if (aType == QLineF::NoIntersection || bType == QLineF::NoIntersection ||
         !qIsFinite(movedA.x()) || !qIsFinite(movedA.y()) ||
         !qIsFinite(movedB.x()) || !qIsFinite(movedB.y()))
         return result;
 
-    result.corner[edge] = movedA;
-    result.corner[next] = movedB;
+    result.setCanvasCorner(edge, movedA);
+    result.setCanvasCorner(next, movedB);
 
     // 展开参数化必须原封不动：用改动前的映射反推新角点的曲面坐标，否则接缝处会错位。
-    const PerspectiveTransform projection = surfaceMapping(source);
+    const PerspectiveTransform projection = source.surfaceToCanvasTransform();
     QPointF surface[2];
     for (int i = 0; i < 2; ++i) {
         const int corner = i == 0 ? edge : next;
         // 新角点落到极点线之外时无法保持展开参数化，此时宁可放弃这次改动。
-        if (!projection.mapInverse(result.corner[corner], &surface[i]))
+        if (!projection.mapInverse(result.canvasCorners()[corner], &surface[i]))
             return source;
     }
-    result.surfaceCorner[edge] = surface[0];
-    result.surfaceCorner[next] = surface[1];
+    result.setSurfaceCorner(edge, surface[0]);
+    result.setSurfaceCorner(next, surface[1]);
     return result;
 }
 
 // 恢复源平面法线在图像上的投影方向（第三个消失方向），所有垂直平面共享它。
-bool perpendicularDirection(const Plane &source, const QPointF &atPoint,
+bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atPoint,
                             const QSize &backgroundSize, QPointF *direction)
 {
     // 齐次形式恢复两个消失点，同时覆盖消失点在无穷远的平行线族。
-    const Vec3 p0 = imagePoint(source.corner[0]);
-    const Vec3 p1 = imagePoint(source.corner[1]);
-    const Vec3 p2 = imagePoint(source.corner[2]);
-    const Vec3 p3 = imagePoint(source.corner[3]);
+    const Vec3 p0 = imagePoint(source.canvasCorners()[0]);
+    const Vec3 p1 = imagePoint(source.canvasCorners()[1]);
+    const Vec3 p2 = imagePoint(source.canvasCorners()[2]);
+    const Vec3 p3 = imagePoint(source.canvasCorners()[3]);
     const Vec3 line01 = joinLines(p0, p1);
     const Vec3 line32 = joinLines(p3, p2);
     const Vec3 line03 = joinLines(p0, p3);
@@ -467,44 +355,45 @@ bool perpendicularDirection(const Plane &source, const QPointF &atPoint,
 }
 
 // 从源平面的一条边拖出与之垂直的新平面（Ctrl+拖动边缘）
-Plane makePerpendicularPlane(const Plane &source, int edge,
-                             const QPointF &dragPoint, const QPointF &pressPoint,
-                             const QSize &backgroundSize)
+PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int edge,
+                                           const QPointF &dragPoint,
+                                           const QPointF &pressPoint,
+                                           const QSize &backgroundSize)
 {
-    Plane result;
+    PerspectivePlane result;
     if (!isValidEdgeIndex(edge) || backgroundSize.isEmpty() ||
         !qIsFinite(dragPoint.x()) || !qIsFinite(dragPoint.y()) ||
         !qIsFinite(pressPoint.x()) || !qIsFinite(pressPoint.y()))
         return result;
-    result.surfaceGroup = source.surfaceGroup;
-    result.lockedEdges = 1u; // 新平面的第 0 条边就是与源平面共用的边
-    result.surfaceCorner[0] = source.surfaceCorner[edge];
-    result.surfaceCorner[1] = source.surfaceCorner[(edge + 1) % CornerCount];
-    result.surfaceCorner[2] = result.surfaceCorner[1];
-    result.surfaceCorner[3] = result.surfaceCorner[0];
-    const QPointF a = source.corner[edge];
-    const QPointF b = source.corner[(edge + 1) % CornerCount];
+    result.setSurfaceGroupId(source.surfaceGroupId());
+    result.setEdgeLocked(0, true); // 新平面的第 0 条边就是与源平面共用的边
+    result.setSurfaceCorner(0, source.surfaceCorners()[edge]);
+    result.setSurfaceCorner(1, source.surfaceCorners()[(edge + 1) % PerspectiveFacet::CornerCount]);
+    result.setSurfaceCorner(2, result.surfaceCorners()[1]);
+    result.setSurfaceCorner(3, result.surfaceCorners()[0]);
+    const QPointF a = source.canvasCorners()[edge];
+    const QPointF b = source.canvasCorners()[(edge + 1) % PerspectiveFacet::CornerCount];
     const QPointF midpoint = (a + b) / 2.0;
     QPointF perpendicularAtMidpoint;
-    if (!perpendicularDirection(source, midpoint, backgroundSize, &perpendicularAtMidpoint))
+    if (!projectedNormalDirection(source, midpoint, backgroundSize, &perpendicularAtMidpoint))
         return result;
 
     // 指针只控制沿投影后 3D 法线的有符号距离，侧向移动不改变夹角。
     const qreal amount = QPointF::dotProduct(dragPoint - pressPoint,
                                              perpendicularAtMidpoint);
     const QPointF targetMidpoint = midpoint + perpendicularAtMidpoint * amount;
-    result.corner[0] = a;
-    result.corner[1] = b;
+    result.setCanvasCorner(0, a);
+    result.setCanvasCorner(1, b);
 
     if (qAbs(amount) < 2.0) {
-        result.corner[2] = b;
-        result.corner[3] = a;
+        result.setCanvasCorner(2, b);
+        result.setCanvasCorner(3, a);
         return result;
     }
 
     // 共享边与外侧边在 3D 中同向，故交于原边线族的消失点。
-    const QPointF oppositeA = source.corner[(edge + 2) % CornerCount];
-    const QPointF oppositeB = source.corner[(edge + 3) % CornerCount];
+    const QPointF oppositeA = source.canvasCorners()[(edge + 2) % PerspectiveFacet::CornerCount];
+    const QPointF oppositeB = source.canvasCorners()[(edge + 3) % PerspectiveFacet::CornerCount];
     QPointF edgeVanishingPoint;
     const QLineF::IntersectionType vpType =
         QLineF(a, b).intersects(QLineF(oppositeA, oppositeB), &edgeVanishingPoint);
@@ -519,16 +408,16 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
             const QLineF outerLine(edgeVanishingPoint, targetMidpoint);
             QPointF perpendicularAtA;
             QPointF perpendicularAtB;
-            if (!perpendicularDirection(source, a, backgroundSize, &perpendicularAtA) ||
-                !perpendicularDirection(source, b, backgroundSize, &perpendicularAtB))
+            if (!projectedNormalDirection(source, a, backgroundSize, &perpendicularAtA) ||
+                !projectedNormalDirection(source, b, backgroundSize, &perpendicularAtB))
                 return result;
             const auto bType = QLineF(b, b + perpendicularAtB).intersects(outerLine, &outerAtB);
             const auto aType = QLineF(a, a + perpendicularAtA).intersects(outerLine, &outerAtA);
             if (bType != QLineF::NoIntersection && aType != QLineF::NoIntersection &&
                 qIsFinite(outerAtA.x()) && qIsFinite(outerAtA.y()) &&
                 qIsFinite(outerAtB.x()) && qIsFinite(outerAtB.y())) {
-                result.corner[2] = outerAtB;
-                result.corner[3] = outerAtA;
+                result.setCanvasCorner(2, outerAtB);
+                result.setCanvasCorner(3, outerAtA);
                 constructedWithVanishingPoint = true;
             }
         }
@@ -541,23 +430,23 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
         QPointF perpendicularAtB;
         QPointF outerAtA;
         QPointF outerAtB;
-        if (perpendicularDirection(source, a, backgroundSize, &perpendicularAtA) &&
-            perpendicularDirection(source, b, backgroundSize, &perpendicularAtB) &&
+        if (projectedNormalDirection(source, a, backgroundSize, &perpendicularAtA) &&
+            projectedNormalDirection(source, b, backgroundSize, &perpendicularAtB) &&
             QLineF(a, a + perpendicularAtA).intersects(outerLine, &outerAtA) !=
                 QLineF::NoIntersection &&
             QLineF(b, b + perpendicularAtB).intersects(outerLine, &outerAtB) !=
                 QLineF::NoIntersection) {
-            result.corner[2] = outerAtB;
-            result.corner[3] = outerAtA;
+            result.setCanvasCorner(2, outerAtB);
+            result.setCanvasCorner(3, outerAtA);
         } else {
-            result.corner[2] = b;
-            result.corner[3] = a;
+            result.setCanvasCorner(2, b);
+            result.setCanvasCorner(3, a);
         }
     }
 
     // 绕共享边把垂直面展开到曲面上：接缝处曲面坐标相同，外侧边落在源面另一侧。
-    const QPointF surfaceA = result.surfaceCorner[0];
-    const QPointF surfaceB = result.surfaceCorner[1];
+    const QPointF surfaceA = result.surfaceCorners()[0];
+    const QPointF surfaceB = result.surfaceCorners()[1];
     const QPointF surfaceEdge = surfaceB - surfaceA;
     const qreal surfaceEdgeLength = QLineF(surfaceA, surfaceB).length();
     const qreal canvasEdgeLength = qMax(Epsilon, QLineF(a, b).length());
@@ -566,42 +455,44 @@ Plane makePerpendicularPlane(const Plane &source, int edge,
     if (outwardLength > Epsilon)
         outward /= outwardLength;
     QPointF sourceCenter;
-    for (const QPointF &corner : source.surfaceCorner)
+    for (const QPointF &corner : source.surfaceCorners())
         sourceCenter += corner;
     sourceCenter /= 4.0;
     const QPointF seamCenter = (surfaceA + surfaceB) / 2.0;
     if (QPointF::dotProduct(outward, sourceCenter - seamCenter) > 0.0)
         outward = -outward;
-    const qreal canvasDepth = (QLineF(result.corner[0], result.corner[3]).length() +
-                               QLineF(result.corner[1], result.corner[2]).length()) / 2.0;
+    const qreal canvasDepth =
+        (QLineF(result.canvasCorners()[0], result.canvasCorners()[3]).length() +
+         QLineF(result.canvasCorners()[1], result.canvasCorners()[2]).length()) / 2.0;
     const qreal surfaceDepth = qMax(1.0, canvasDepth * surfaceEdgeLength / canvasEdgeLength);
-    result.surfaceCorner[2] = surfaceB + outward * surfaceDepth;
-    result.surfaceCorner[3] = surfaceA + outward * surfaceDepth;
+    result.setSurfaceCorner(2, surfaceB + outward * surfaceDepth);
+    result.setSurfaceCorner(3, surfaceA + outward * surfaceDepth);
     return result;
 }
 
 // 把子平面绕共享边做三维旋转，再重新投影回图像。
 // 不能用图像平面上的二维圆弧代替：绕三维直线旋转的投影不是圆周运动，
 // 那样夹角数值会与几何脱节，调成 0° 时两个平面看上去依然有角度。
-Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
-                       const QSize &backgroundSize)
+PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
+                                       qreal targetAngle,
+                                       const QSize &backgroundSize)
 {
-    Plane result = source;
+    PerspectivePlane result = source;
     if (!isValidEdgeIndex(edge) || !qIsFinite(targetAngle) || backgroundSize.isEmpty())
         return result;
 
-    const int next = (edge + 1) % CornerCount;
-    const int farB = (edge + 2) % CornerCount; // 外侧角点，与共享边的 next 端点相连
-    const int farA = (edge + 3) % CornerCount; // 外侧角点，与共享边的 edge 端点相连
-    const QPointF seamA = source.corner[edge];
-    const QPointF seamB = source.corner[next];
+    const int next = (edge + 1) % PerspectiveFacet::CornerCount;
+    const int farB = (edge + 2) % PerspectiveFacet::CornerCount;
+    const int farA = (edge + 3) % PerspectiveFacet::CornerCount;
+    const QPointF seamA = source.canvasCorners()[edge];
+    const QPointF seamB = source.canvasCorners()[next];
 
     // 1. 子平面的两个消失点：共享边方向 u 与深度方向 v。
     const Vec3 seamLine = joinLines(imagePoint(seamA), imagePoint(seamB));
-    const Vec3 outerLine = joinLines(imagePoint(source.corner[farA]),
-                                     imagePoint(source.corner[farB]));
-    const Vec3 sideA = joinLines(imagePoint(seamA), imagePoint(source.corner[farA]));
-    const Vec3 sideB = joinLines(imagePoint(seamB), imagePoint(source.corner[farB]));
+    const Vec3 outerLine = joinLines(imagePoint(source.canvasCorners()[farA]),
+                                     imagePoint(source.canvasCorners()[farB]));
+    const Vec3 sideA = joinLines(imagePoint(seamA), imagePoint(source.canvasCorners()[farA]));
+    const Vec3 sideB = joinLines(imagePoint(seamB), imagePoint(source.canvasCorners()[farB]));
     const Vec3 vanishingU = meetLines(seamLine, outerLine);
     const Vec3 vanishingV = meetLines(sideA, sideB);
     if (dot(vanishingU, vanishingU) < 1e-12 || dot(vanishingV, vanishingV) < 1e-12)
@@ -643,14 +534,15 @@ Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
     Vec3 outerA;
     Vec3 outerB;
     if (!onPlane(seamA, &a) || !onPlane(seamB, &b) ||
-        !onPlane(source.corner[farA], &outerA) || !onPlane(source.corner[farB], &outerB))
+        !onPlane(source.canvasCorners()[farA], &outerA) ||
+        !onPlane(source.canvasCorners()[farB], &outerB))
         return result;
     // 消失点齐次符号任意：把轴统一成 seamA -> seamB，夹角正方向才不随绕向变化。
     if (dot(b - a, axis) < 0.0)
         axis = axis * -1.0;
 
     // 3. 绕共享边旋转 Δ；用完整 Rodrigues 公式，子平面被拖成一般四边形也能保持刚体旋转。
-    qreal delta = targetAngle - source.relativeAngle;
+    qreal delta = targetAngle - source.angleToParentDegrees();
     while (delta > 180.0)
         delta -= 360.0;
     while (delta <= -180.0)
@@ -670,19 +562,18 @@ Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
     QPointF projectedB;
     if (!projectPoint(movedA, frame, &projectedA) || !projectPoint(movedB, frame, &projectedB))
         return result;
-    result.corner[farA] = projectedA;
-    result.corner[farB] = projectedB;
+    result.setCanvasCorner(farA, projectedA);
+    result.setCanvasCorner(farB, projectedB);
 
     // 曲面坐标保持不变：旋转不改变子平面的固有尺寸，纹理应当继续贴合角点。
-    result.relativeAngle = std::fmod(targetAngle, 360.0);
-    if (qFuzzyIsNull(result.relativeAngle) && targetAngle > 0.0)
-        result.relativeAngle = 360.0;
-    else if (result.relativeAngle < 0.0)
-        result.relativeAngle += 360.0;
-    result.angleAdjusted = true;
-    if (!isValidPlane(result))
+    qreal normalizedAngle = std::fmod(targetAngle, 360.0);
+    if (qFuzzyIsNull(normalizedAngle) && targetAngle > 0.0)
+        normalizedAngle = 360.0;
+    else if (normalizedAngle < 0.0)
+        normalizedAngle += 360.0;
+    result.setAngleToParentDegrees(normalizedAngle);
+    result.setHasCustomAngle(true);
+    if (!result.isValid())
         return source;
     return result;
 }
-
-} // namespace PerspectivePlane

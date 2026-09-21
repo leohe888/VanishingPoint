@@ -1,88 +1,60 @@
 #pragma once
 
-#include <QPointF>
-#include <QPolygonF>
+#include "perspectivefacet.h"
+
 #include <QSize>
 #include <QVector>
 
-#include <array>
+#include <utility>
 
-#include "perspectivetransform.h"
+class PerspectivePlane final : public PerspectiveFacet
+{
+public:
+    PerspectivePlane() = default;
+    PerspectivePlane(Corners canvasCorners, Corners surfaceCorners)
+        : PerspectiveFacet(std::move(canvasCorners), std::move(surfaceCorners)) {}
 
-namespace PerspectivePlane {
+    int surfaceGroupId() const { return m_surfaceGroupId; }
+    void setSurfaceGroupId(int id) { m_surfaceGroupId = id; }
 
-inline constexpr int CornerCount = 4;
-inline constexpr int EdgeCount = CornerCount;
-inline constexpr int HandleCount = CornerCount + EdgeCount;
+    quint8 lockedEdgeMask() const { return m_lockedEdgeMask; }
+    bool isEdgeLocked(int edgeIndex) const;
+    void setEdgeLocked(int edgeIndex, bool locked);
 
-using Quad = std::array<QPointF, CornerCount>;
+    int parentPlaneIndex() const { return m_parentPlaneIndex; }
+    int parentEdgeIndex() const { return m_parentEdgeIndex; }
+    void setParent(int planeIndex, int edgeIndex);
+    void clearParent();
 
-struct Facet {
-    Quad corner{};        // 画布坐标：左上 / 右上 / 右下 / 左下
-    Quad surfaceCorner{}; // 展开曲面坐标，与 corner 一一对应
+    qreal angleToParentDegrees() const { return m_angleToParentDegrees; }
+    void setAngleToParentDegrees(qreal degrees) { m_angleToParentDegrees = degrees; }
+
+    bool hasCustomAngle() const { return m_hasCustomAngle; }
+    void setHasCustomAngle(bool adjusted) { m_hasCustomAngle = adjusted; }
+
+private:
+    int m_surfaceGroupId = -1;
+    quint8 m_lockedEdgeMask = 0;
+    int m_parentPlaneIndex = -1;
+    int m_parentEdgeIndex = -1;
+    qreal m_angleToParentDegrees = 90.0;
+    bool m_hasCustomAngle = false;
 };
 
-struct Plane : Facet {
-    int surfaceGroup = -1;  // 所属的展开曲面分组（共享曲面的相邻平面同组）
-    quint8 lockedEdges = 0; // 与相邻垂直平面共用、不可编辑的边（位掩码）
-    int parentPlane = -1;   // 由哪个平面拖出；仅子平面可设置夹角
-    int parentEdge = -1;    // 父平面上对应的共享边
-    qreal relativeAngle = 90.0; // 与父平面的夹角（度）
-    bool angleAdjusted = false; // 用户是否手动调整过夹角
-};
+// 集合查询与编辑算法不属于单个对象，保留为全局函数。
+int topmostPlaneIndexAt(const QVector<PerspectivePlane> &planes, const QPointF &point);
+bool resolveFacet(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
+                  const QPointF &point, PerspectiveFacet *facet);
 
-// 同一面片的两种参数化，目标都是 facet.corner，区别只在源坐标系与是否带尺度。
-// 展开图坐标 ↔ 画面坐标；坐标是真实像素，位移与拼缝才能在相邻平面之间对齐。
-PerspectiveTransform surfaceMapping(const Facet &facet);
-// 归一化 UV ↔ 画面坐标；源恒为单位正方形，因而与面片尺寸无关，画笔按 UV 落笔用它。
-PerspectiveTransform uvMapping(const Facet &facet);
-
-// —— 基础几何 ——
-QPolygonF planePolygon(const Quad &corner);        // 把 4 个角点组装为多边形
-QVector<QPointF> handles(const Facet &facet);      // 面片的 4 个角点 + 4 个边中点
-// 计算点 p 到线段 ab 的距离；t 返回最近点在线段上的参数化位置（0~1）
-qreal distanceToSegment(const QPointF &p, const QPointF &a,
-                        const QPointF &b, qreal *t = nullptr);
-bool isValidPlane(const Facet &facet);             // 校验是否为有效的凸四边形
-
-// —— 坐标变换（单应） ——
-// 接受 Facet，因此对平面和浮动图像的几何快照都适用。
-QPointF uvToPlane(const Facet &facet, const QPointF &uv);             // 归一化 UV -> 图像坐标
-QPointF planeToUv(const Facet &facet, const QPointF &point,           // 图像坐标 -> 归一化 UV
-                  bool *ok = nullptr);
-QPointF planeToSurface(const Facet &facet, const QPointF &point,      // 图像坐标 -> 展开曲面坐标
-                       bool *ok = nullptr);
-
-// —— 命中测试（tolerance 为图像坐标系下的拾取半径） ——
-int planeAt(const QVector<Plane> &planes, const QPointF &point);        // 点所在的最上层平面
-int handleAt(const Facet &facet, const QPointF &point, qreal tolerance); // 控制点索引
-int edgeAt(const Facet &facet, const QPointF &point, qreal tolerance);   // 边缘索引
-// 点所属的可绘制面片：平面内用该平面，平面外以整张图像为基准面——此时展开
-// 坐标与画面坐标重合，surfaceMapping 退化为恒等。画布尺寸为空时返回 false。
-bool resolveFacet(const QVector<Plane> &planes, const QSize &canvasSize,
-                  const QPointF &point, Facet *facet);
-
-// —— 平面构造算法（pressPoint 为本次拖动的按下起点） ——
-// 平移四边形并同步移动展开坐标；越过地平线或退化时返回 false，调用方保留最后有效位置。
-bool movePlaneOnSurface(const Plane &source, const QPointF &dragPoint,
-                        const QPointF &pressPoint, Plane *result);
-// 沿某条边方向缩放平面：只改变该边到对边的距离，保持透视关系不变
-Plane resizePlaneAlongEdge(const Plane &source, int edge,
-                           const QPointF &dragPoint, const QPointF &pressPoint);
-// 由平面法线恢复投影后的第三个消失方向（backgroundSize 用于估计焦距）
-bool perpendicularDirection(const Plane &source, const QPointF &atPoint,
-                            const QSize &backgroundSize, QPointF *direction);
-// 从源平面的一条边拖出与之垂直的新平面（Ctrl+拖动边缘）
-Plane makePerpendicularPlane(const Plane &source, int edge,
-                             const QPointF &dragPoint, const QPointF &pressPoint,
-                             const QSize &backgroundSize);
-// 绕共享边三维旋转子平面再重投影；0°/180° 时与父平面严格共面（backgroundSize 估焦距）。
-Plane rotateChildPlane(const Plane &source, int edge, qreal targetAngle,
-                       const QSize &backgroundSize);
-
-} // namespace PerspectivePlane
-
-// 兼容现有调用方；新代码优先使用 PerspectivePlane::Facet / Plane。
-// 待上层模块逐步迁移后，可以单独删除这两个全局别名。
-using Facet = PerspectivePlane::Facet;
-using Plane = PerspectivePlane::Plane;
+bool translatePlaneOnSurface(const PerspectivePlane &source, const QPointF &dragPoint,
+                             const QPointF &pressPoint, PerspectivePlane *result);
+PerspectivePlane resizePlaneFromEdge(const PerspectivePlane &source, int edgeIndex,
+                                     const QPointF &dragPoint, const QPointF &pressPoint);
+bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atPoint,
+                              const QSize &backgroundSize, QPointF *direction);
+PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int edgeIndex,
+                                           const QPointF &dragPoint, const QPointF &pressPoint,
+                                           const QSize &backgroundSize);
+PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edgeIndex,
+                                       qreal targetAngleDegrees,
+                                       const QSize &backgroundSize);

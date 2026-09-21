@@ -36,8 +36,8 @@ bool CanvasDocument::loadImage(const QString &fileName)
 int CanvasDocument::nextSurfaceGroupId() const
 {
     int nextSurfaceGroup = 0;
-    for (const Plane &existing : m_planes)
-        nextSurfaceGroup = qMax(nextSurfaceGroup, existing.surfaceGroup + 1);
+    for (const PerspectivePlane &existing : m_planes)
+        nextSurfaceGroup = qMax(nextSurfaceGroup, existing.surfaceGroupId() + 1);
     return nextSurfaceGroup;
 }
 
@@ -84,17 +84,17 @@ void CanvasDocument::addPaintDirty(const QRect &rect)
 }
 
 // 追加一个平面并返回其下标；几何非法时不追加，返回 -1。
-int CanvasDocument::appendPlane(const Plane &plane)
+int CanvasDocument::appendPlane(const PerspectivePlane &plane)
 {
-    if (!PerspectivePlane::isValidPlane(plane))
+    if (!plane.isValid())
         return -1;
     m_planes.append(plane);
     return m_planes.size() - 1;
 }
 
-bool CanvasDocument::setPlane(int index, const Plane &plane)
+bool CanvasDocument::setPlane(int index, const PerspectivePlane &plane)
 {
-    if (index < 0 || index >= m_planes.size() || !PerspectivePlane::isValidPlane(plane))
+    if (index < 0 || index >= m_planes.size() || !plane.isValid())
         return false;
     m_planes[index] = plane;
     return true;
@@ -117,30 +117,28 @@ void CanvasDocument::removePlane(int index)
 {
     if (index < 0 || index >= m_planes.size())
         return;
-    // 删除前先解除共用边的锁定。这里必须依赖 parentPlane / parentEdge 这条
+    // 删除前先解除共用边的锁定。这里必须依赖 parentPlaneIndex / parentEdgeIndex 这条
     // 显式关系，不能靠"两端点几何重合"来判断：子平面被缩放后（延长它的邻边会
     // 连带改变共用边的长度），共用边的端点已经不再与父平面重合，几何匹配会失效，
     // 父平面的锁定边就永远解不开——表现为删除子平面后，父平面共用边上的三个控制点
     // 仍锁死、平面也拖不动。
-    const Plane removed = m_planes[index];
+    const PerspectivePlane removed = m_planes[index];
     auto unlockEdge = [this](int planeIndex, int edge) {
         if (planeIndex >= 0 && planeIndex < m_planes.size() && edge >= 0 && edge < 4)
-            m_planes[planeIndex].lockedEdges &= quint8(~(1u << edge));
+            m_planes[planeIndex].setEdgeLocked(edge, false);
     };
     // 被删的是子平面：解锁父平面上被它共用的那条边。
-    unlockEdge(removed.parentPlane, removed.parentEdge);
+    unlockEdge(removed.parentPlaneIndex(), removed.parentEdgeIndex());
     for (int other = 0; other < m_planes.size(); ++other) {
         if (other == index)
             continue;
-        if (m_planes[other].parentPlane == index) {
+        if (m_planes[other].parentPlaneIndex() == index) {
             // 被删的是父平面：子平面的第 0 条边就是共用边。
             unlockEdge(other, 0);
-            m_planes[other].parentPlane = -1;
-            m_planes[other].parentEdge = -1;
-            m_planes[other].relativeAngle = 90.0;
-            m_planes[other].angleAdjusted = false;
-        } else if (m_planes[other].parentPlane > index) {
-            --m_planes[other].parentPlane;
+            m_planes[other].clearParent();
+        } else if (m_planes[other].parentPlaneIndex() > index) {
+            m_planes[other].setParent(m_planes[other].parentPlaneIndex() - 1,
+                                      m_planes[other].parentEdgeIndex());
         }
     }
     m_planes.removeAt(index);
@@ -166,7 +164,7 @@ int CanvasDocument::addFloatingImage(const QImage &image)
 }
 
 int CanvasDocument::addFloatingImageOnSurface(const QImage &image,
-                                               const QVector<Facet> &faces,
+                                               const QVector<PerspectiveFacet> &faces,
                                                int hostFace,
                                                const QPointF &surfacePosition)
 {
@@ -187,7 +185,7 @@ int CanvasDocument::addFloatingImageOnSurface(const QImage &image,
 void CanvasDocument::lockPlaneEdge(int index, int edge)
 {
     if (index >= 0 && index < m_planes.size() && edge >= 0 && edge < 4)
-        m_planes[index].lockedEdges |= quint8(1u << edge);
+        m_planes[index].setEdgeLocked(edge, true);
 }
 
 // 是否与相邻垂直平面共边：自己是子平面，或是别的平面的父平面。
@@ -195,10 +193,10 @@ bool CanvasDocument::isPlaneLinked(int index) const
 {
     if (index < 0 || index >= m_planes.size())
         return false;
-    if (m_planes[index].parentPlane >= 0)
+    if (m_planes[index].parentPlaneIndex() >= 0)
         return true;
-    for (const Plane &plane : m_planes) {
-        if (plane.parentPlane == index)
+    for (const PerspectivePlane &plane : m_planes) {
+        if (plane.parentPlaneIndex() == index)
             return true;
     }
     return false;
@@ -238,7 +236,7 @@ void CanvasDocument::setImagePosition(int index, const QPointF &position)
 }
 
 // 把图像吸附到一组几何快照上（严格快照：此后平面增删改不再影响它）
-void CanvasDocument::attachImage(int index, const QVector<Facet> &faces, int hostFace,
+void CanvasDocument::attachImage(int index, const QVector<PerspectiveFacet> &faces, int hostFace,
                                  const QPointF &surfacePosition)
 {
     if (index < 0 || index >= m_images.size())

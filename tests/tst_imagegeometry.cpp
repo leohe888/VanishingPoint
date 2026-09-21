@@ -3,37 +3,23 @@
 #include "core/imagegeometry.h"
 #include "core/perspectiveplane.h"
 
-using namespace PerspectivePlane;
-
 namespace {
 
 // 左面是规整矩形，面内是仿射；右面是斜梯形，必须做真正的透视投影。
-Facet leftFace()
+PerspectiveFacet leftFace()
 {
-    Facet face;
-    face.corner[0] = QPointF(10, 10);
-    face.corner[1] = QPointF(110, 10);
-    face.corner[2] = QPointF(110, 80);
-    face.corner[3] = QPointF(10, 80);
-    face.surfaceCorner[0] = QPointF(0, 0);
-    face.surfaceCorner[1] = QPointF(100, 0);
-    face.surfaceCorner[2] = QPointF(100, 70);
-    face.surfaceCorner[3] = QPointF(0, 70);
-    return face;
+    return {
+        {QPointF(10, 10), QPointF(110, 10), QPointF(110, 80), QPointF(10, 80)},
+        {QPointF(0, 0), QPointF(100, 0), QPointF(100, 70), QPointF(0, 70)}
+    };
 }
 
-Facet rightFace()
+PerspectiveFacet rightFace()
 {
-    Facet face;
-    face.corner[0] = QPointF(110, 10);
-    face.corner[1] = QPointF(230, 30);
-    face.corner[2] = QPointF(230, 96);
-    face.corner[3] = QPointF(110, 80);
-    face.surfaceCorner[0] = QPointF(100, 0);
-    face.surfaceCorner[1] = QPointF(200, 0);
-    face.surfaceCorner[2] = QPointF(200, 70);
-    face.surfaceCorner[3] = QPointF(100, 70);
-    return face;
+    return {
+        {QPointF(110, 10), QPointF(230, 30), QPointF(230, 96), QPointF(110, 80)},
+        {QPointF(100, 0), QPointF(200, 0), QPointF(200, 70), QPointF(100, 70)}
+    };
 }
 
 // 200×70 的位图铺在展开曲面上，正好横跨上面两个面片。
@@ -45,29 +31,29 @@ FloatingImage attachedAcrossSeam()
     image.position = QPointF(0, 0);
     image.attached = true;
     image.hostFace = 0;
-    image.faces = QVector<Facet>{leftFace(), rightFace()};
+    image.faces = QVector<PerspectiveFacet>{leftFace(), rightFace()};
     return image;
 }
 
-QPointF cornerAverage(const Facet &face)
+QPointF cornerAverage(const PerspectiveFacet &face)
 {
     QPointF sum;
-    for (const QPointF &corner : planePolygon(face.corner))
+    for (const QPointF &corner : face.canvasPolygon())
         sum += corner / 4.0;
     return sum;
 }
 
 // 一张 100×70 的位图正好铺满该面片时，位图中心与画面四角平均值的距离。
 // 仿射映射下两者必然重合，只有真正的透视项才会让它偏离——用它衡量映射里有没有透视。
-qreal centerDeviation(const Facet &face)
+qreal centerDeviation(const PerspectiveFacet &face)
 {
     FloatingImage image;
     image.image = QImage(100, 70, QImage::Format_ARGB32);
     image.image.fill(Qt::red);
-    image.position = face.surfaceCorner[0]; // 位图对齐到面片的展开区域
+    image.position = face.surfaceCorners()[0]; // 位图对齐到面片的展开区域
     image.attached = true;
     image.hostFace = 0;
-    image.faces = QVector<Facet>{face};
+    image.faces = QVector<PerspectiveFacet>{face};
 
     const auto geometry = ImageGeometry::get(image);
     if (geometry->patches().size() != 1)
