@@ -41,8 +41,8 @@ set(PROJECT_SOURCES
         src/core/planeedittool.h
         src/core/planecreatetool.cpp
         src/core/planecreatetool.h
-        src/core/perspectivefacet.cpp
-        src/core/perspectivefacet.h
+        src/core/perspectivequad.cpp
+        src/core/perspectivequad.h
         src/core/perspectiveplane.cpp
         src/core/perspectiveplane.h
         src/core/perspectivetransform.cpp

@@ -16,10 +16,10 @@ void PlaneEditTool::begin(const PerspectivePlane &plane, const QPointF &pressPoi
     m_isRotating = rotate;
     m_rotationEdgeIndex = rotationEdgeIndex;
     if (m_isRotating && rotationEdgeIndex >= 0 &&
-        rotationEdgeIndex < PerspectiveFacet::CornerCount) {
+        rotationEdgeIndex < PerspectiveQuad::CornerCount) {
         const QPointF seamMidpoint =
-            (plane.facet().canvasCorners()[rotationEdgeIndex] +
-             plane.facet().canvasCorners()[(rotationEdgeIndex + 1) % PerspectiveFacet::CornerCount]) / 2.0;
+            (plane.quad().canvasCorners()[rotationEdgeIndex] +
+             plane.quad().canvasCorners()[(rotationEdgeIndex + 1) % PerspectiveQuad::CornerCount]) / 2.0;
         const QPointF pointerFromSeam = pressPoint - seamMidpoint;
         m_lastPointerAngle = std::atan2(pointerFromSeam.y(), pointerFromSeam.x());
         m_accumulatedRotation = 0.0;
@@ -37,8 +37,8 @@ bool PlaneEditTool::update(const QPointF &point, PerspectivePlane *result)
     } else if (m_isRotating) {
         const int edge = m_rotationEdgeIndex;
         const QPointF seamMidpoint =
-            (m_initialPlane.facet().canvasCorners()[edge] +
-             m_initialPlane.facet().canvasCorners()[(edge + 1) % PerspectiveFacet::CornerCount]) / 2.0;
+            (m_initialPlane.quad().canvasCorners()[edge] +
+             m_initialPlane.quad().canvasCorners()[(edge + 1) % PerspectiveQuad::CornerCount]) / 2.0;
         const QPointF pointerFromSeam = point - seamMidpoint;
         if (QLineF(QPointF(), pointerFromSeam).length() < 1e-4)
             return false;
@@ -54,17 +54,17 @@ bool PlaneEditTool::update(const QPointF &point, PerspectivePlane *result)
             m_initialPlane, edge,
             m_initialPlane.angleToParentDegrees() + m_accumulatedRotation, m_canvasSize);
     } else if (m_controlPointIndex >= 0 &&
-               m_controlPointIndex < PerspectiveFacet::CornerCount) {
-        candidate.facet().setCanvasCorner(m_controlPointIndex, point);
-    } else if (m_controlPointIndex >= PerspectiveFacet::CornerCount) {
+               m_controlPointIndex < PerspectiveQuad::CornerCount) {
+        candidate.quad().setCanvasCorner(m_controlPointIndex, point);
+    } else if (m_controlPointIndex >= PerspectiveQuad::CornerCount) {
         candidate = resizePlaneFromEdge(
-            m_initialPlane, m_controlPointIndex - PerspectiveFacet::CornerCount,
+            m_initialPlane, m_controlPointIndex - PerspectiveQuad::CornerCount,
             point, m_pressPoint);
     } else if (!translatePlaneOnSurface(
                    m_initialPlane, point, m_pressPoint, &candidate)) {
         return false;
     }
-    if (!candidate.facet().isValid())
+    if (!candidate.quad().isValid())
         return false;
     *result = candidate;
     return true;

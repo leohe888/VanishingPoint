@@ -37,49 +37,49 @@ QVector<QPointF> FloatingImage::transformHandlePositions() const
     return positions;
 }
 
-QPointF FloatingImage::mapPlacementToCanvas(const QPointF &point, int *facetIndex) const
+QPointF FloatingImage::mapPlacementToCanvas(const QPointF &point, int *quadIndex) const
 {
-    int selectedFacet = hostFacetIndex;
+    int selectedQuad = hostQuadIndex;
     if (surfaceAttached) {
-        for (int index = surfaceFacets.size() - 1; index >= 0; --index) {
-            if (surfaceFacets[index].surfacePolygon().containsPoint(point, Qt::OddEvenFill)) {
-                selectedFacet = index;
+        for (int index = surfaceQuads.size() - 1; index >= 0; --index) {
+            if (surfaceQuads[index].surfacePolygon().containsPoint(point, Qt::OddEvenFill)) {
+                selectedQuad = index;
                 break;
             }
         }
     }
-    if (facetIndex)
-        *facetIndex = selectedFacet;
-    if (!surfaceAttached || selectedFacet < 0 || selectedFacet >= surfaceFacets.size())
+    if (quadIndex)
+        *quadIndex = selectedQuad;
+    if (!surfaceAttached || selectedQuad < 0 || selectedQuad >= surfaceQuads.size())
         return point;
 
     QPointF canvasPoint;
-    if (!surfaceFacets[selectedFacet].surfaceToCanvasTransform().mapForward(point, &canvasPoint))
+    if (!surfaceQuads[selectedQuad].surfaceToCanvasTransform().mapForward(point, &canvasPoint))
         return QPointF(qQNaN(), qQNaN());
     return canvasPoint;
 }
 
 bool FloatingImage::mapCanvasToPlacement(const QPointF &point, QPointF *result,
-                                         int fallbackFacetIndex) const
+                                         int fallbackQuadIndex) const
 {
     if (!result)
         return false;
-    if (!surfaceAttached || surfaceFacets.isEmpty()) {
+    if (!surfaceAttached || surfaceQuads.isEmpty()) {
         *result = point;
         return true;
     }
 
-    int selectedFacet = fallbackFacetIndex >= 0 ? fallbackFacetIndex : hostFacetIndex;
-    for (int index = surfaceFacets.size() - 1; index >= 0; --index) {
-        if (surfaceFacets[index].containsCanvasPoint(point)) {
-            selectedFacet = index;
+    int selectedQuad = fallbackQuadIndex >= 0 ? fallbackQuadIndex : hostQuadIndex;
+    for (int index = surfaceQuads.size() - 1; index >= 0; --index) {
+        if (surfaceQuads[index].containsCanvasPoint(point)) {
+            selectedQuad = index;
             break;
         }
     }
-    if (selectedFacet < 0 || selectedFacet >= surfaceFacets.size())
+    if (selectedQuad < 0 || selectedQuad >= surfaceQuads.size())
         return false;
 
     bool mapped = false;
-    *result = surfaceFacets[selectedFacet].mapCanvasToSurface(point, &mapped);
+    *result = surfaceQuads[selectedQuad].mapCanvasToSurface(point, &mapped);
     return mapped && std::isfinite(result->x()) && std::isfinite(result->y());
 }

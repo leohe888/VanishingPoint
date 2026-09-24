@@ -86,7 +86,7 @@ void CanvasDocument::addPaintDirty(const QRect &rect)
 // 追加一个平面并返回其下标；几何非法时不追加，返回 -1。
 int CanvasDocument::appendPlane(const PerspectivePlane &plane)
 {
-    if (!plane.facet().isValid())
+    if (!plane.quad().isValid())
         return -1;
     m_planes.append(plane);
     return m_planes.size() - 1;
@@ -94,7 +94,7 @@ int CanvasDocument::appendPlane(const PerspectivePlane &plane)
 
 bool CanvasDocument::setPlane(int index, const PerspectivePlane &plane)
 {
-    if (index < 0 || index >= m_planes.size() || !plane.facet().isValid())
+    if (index < 0 || index >= m_planes.size() || !plane.quad().isValid())
         return false;
     m_planes[index] = plane;
     return true;
@@ -157,7 +157,7 @@ int CanvasDocument::addFloatingImage(const QImage &image)
     floating.bitmap = image.convertToFormat(QImage::Format_ARGB32);
     floating.placementOrigin = QPointF(0, 0);
     floating.surfaceAttached = false;
-    floating.hostFacetIndex = -1;
+    floating.hostQuadIndex = -1;
     m_floatingImages.append(floating);
     setSelectedFloatingImage(m_floatingImages.size() - 1);
     commitHistory();
@@ -165,20 +165,20 @@ int CanvasDocument::addFloatingImage(const QImage &image)
 }
 
 int CanvasDocument::addFloatingImageOnSurface(const QImage &image,
-                                               const QVector<PerspectiveFacet> &surfaceFacets,
-                                               int hostFacetIndex,
+                                               const QVector<PerspectiveQuad> &surfaceQuads,
+                                               int hostQuadIndex,
                                                const QPointF &surfaceOrigin)
 {
-    if (image.isNull() || surfaceFacets.isEmpty()
-        || hostFacetIndex < 0 || hostFacetIndex >= surfaceFacets.size()) {
+    if (image.isNull() || surfaceQuads.isEmpty()
+        || hostQuadIndex < 0 || hostQuadIndex >= surfaceQuads.size()) {
         return -1;
     }
     FloatingImage floating;
     floating.bitmap = image.convertToFormat(QImage::Format_ARGB32);
     floating.placementOrigin = surfaceOrigin;
     floating.surfaceAttached = true;
-    floating.surfaceFacets = surfaceFacets;
-    floating.hostFacetIndex = hostFacetIndex;
+    floating.surfaceQuads = surfaceQuads;
+    floating.hostQuadIndex = hostQuadIndex;
     m_floatingImages.append(floating);
     setSelectedFloatingImage(m_floatingImages.size() - 1);
     commitHistory();
@@ -240,14 +240,14 @@ void CanvasDocument::setFloatingImageOrigin(int index, const QPointF &placementO
 
 // 把图像吸附到一组几何快照上（严格快照：此后平面增删改不再影响它）
 void CanvasDocument::attachFloatingImage(int index,
-                                         const QVector<PerspectiveFacet> &surfaceFacets,
-                                         int hostFacetIndex, const QPointF &surfaceOrigin)
+                                         const QVector<PerspectiveQuad> &surfaceQuads,
+                                         int hostQuadIndex, const QPointF &surfaceOrigin)
 {
     if (index < 0 || index >= m_floatingImages.size())
         return;
     FloatingImage &image = m_floatingImages[index];
-    image.surfaceFacets = surfaceFacets;
-    image.hostFacetIndex = hostFacetIndex;
+    image.surfaceQuads = surfaceQuads;
+    image.hostQuadIndex = hostQuadIndex;
     image.placementOrigin = surfaceOrigin;
     image.surfaceAttached = true;
 }
@@ -258,8 +258,8 @@ void CanvasDocument::detachFloatingImage(int index, const QPointF &canvasOrigin)
     if (index < 0 || index >= m_floatingImages.size())
         return;
     FloatingImage &image = m_floatingImages[index];
-    image.surfaceFacets.clear();
-    image.hostFacetIndex = -1;
+    image.surfaceQuads.clear();
+    image.hostQuadIndex = -1;
     image.placementOrigin = canvasOrigin;
     image.surfaceAttached = false;
 }

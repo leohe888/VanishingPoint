@@ -107,8 +107,8 @@ bool FloatingImageTransformTool::beginTransform(const FloatingImage &image,
     }
     m_startImage = image;
     const QPointF handlePosition = image.transformHandlePositions()[handleIndex];
-    image.mapPlacementToCanvas(handlePosition, &m_activeFacetIndex);
-    if (!image.mapCanvasToPlacement(canvasPoint, &m_pressPosition, m_activeFacetIndex))
+    image.mapPlacementToCanvas(handlePosition, &m_activeQuadIndex);
+    if (!image.mapCanvasToPlacement(canvasPoint, &m_pressPosition, m_activeQuadIndex))
         return false;
     m_grabOffset = m_pressPosition - handlePosition;
     m_activeHandle = handleIndex;
@@ -121,7 +121,7 @@ void FloatingImageTransformTool::beginMove(const FloatingImage &image,
 {
     m_startImage = image;
     m_grabOffset = placementOffset;
-    m_activeFacetIndex = -1;
+    m_activeQuadIndex = -1;
     m_mode = Mode::Move;
 }
 
@@ -131,7 +131,7 @@ bool FloatingImageTransformTool::update(const QPointF &canvasPoint, bool constra
     if (!result || m_mode == Mode::Idle)
         return false;
     QPointF placementPoint;
-    if (!m_startImage.mapCanvasToPlacement(canvasPoint, &placementPoint, m_activeFacetIndex))
+    if (!m_startImage.mapCanvasToPlacement(canvasPoint, &placementPoint, m_activeQuadIndex))
         return false;
 
     if (m_mode == Mode::Rotate) {

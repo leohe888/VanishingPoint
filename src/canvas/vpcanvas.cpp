@@ -360,7 +360,7 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         int handle = -1;
         // 先检测控制点。后创建的平面在上层，先被检查
         for (int i = m_doc.planes().size() - 1; i >= 0; --i) {
-            const int candidateHandle = m_doc.planes()[i].facet().controlPointIndexAt(point, tolerance);
+            const int candidateHandle = m_doc.planes()[i].quad().controlPointIndexAt(point, tolerance);
             if (candidateHandle >= 0) {
                 planeIndex = i;
                 handle = candidateHandle;
@@ -500,15 +500,15 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         for (const PerspectivePlane &plane : m_doc.planes()) {
             if (plane.surfaceGroupId() != host.surfaceGroupId())
                 continue;
-            PerspectiveFacet face;
+            PerspectiveQuad face;
             for (int c = 0; c < 4; ++c) {
-                face.setCanvasCorner(c, plane.facet().canvasCorners()[c]);
-                face.setSurfaceCorner(c, plane.facet().surfaceCorners()[c]);
+                face.setCanvasCorner(c, plane.quad().canvasCorners()[c]);
+                face.setSurfaceCorner(c, plane.quad().surfaceCorners()[c]);
             }
             m_selectionFaces.append(face);
         }
         bool ok = false;
-        m_selectionPressSurface = host.facet().mapCanvasToSurface(point, &ok);
+        m_selectionPressSurface = host.quad().mapCanvasToSurface(point, &ok);
         if (!ok) {
             clearSelection();
             return;
@@ -727,7 +727,7 @@ void VpCanvas::finishPlaneCreation()
     const PerspectivePlane plane = m_createTool.makePlane(m_doc.nextSurfaceGroupId());
     m_createTool.reset();
 
-    if (!plane.facet().isValid()) {
+    if (!plane.quad().isValid()) {
         emit statusMessage(tr("无法创建：四个点必须依次组成非交叉的凸四边形，请重新设置。"));
         return;
     }
@@ -748,7 +748,7 @@ bool VpCanvas::extrudePlane(int sourcePlane, int edge)
         return false;
     PerspectivePlane plane = m_extrudePreview;
     // 拖出的面积太小当成误操作，不落盘
-    const QRectF bounds = plane.facet().canvasPolygon().boundingRect();
+    const QRectF bounds = plane.quad().canvasPolygon().boundingRect();
     if (qAbs(bounds.width() * bounds.height()) <= 100.0)
         return false;
     plane.setParent(sourcePlane, edge); // 父子关系：删除平面时靠它解锁共用边
@@ -945,27 +945,27 @@ bool VpCanvas::floatingImageAt(const QPointF &point, int *index, QPointF *grabOf
 void VpCanvas::attachFloatingImageToPlane(int index, int planeIndex, const QPointF &point)
 {
     const PerspectivePlane &host = m_doc.planes()[planeIndex];
-    QVector<PerspectiveFacet> surfaceFacets;
-    int hostFacetIndex = -1;
+    QVector<PerspectiveQuad> surfaceQuads;
+    int hostQuadIndex = -1;
     for (int i = 0; i < m_doc.planes().size(); ++i) {
         const PerspectivePlane &plane = m_doc.planes()[i];
         if (plane.surfaceGroupId() != host.surfaceGroupId())
             continue;
-        PerspectiveFacet facet;
+        PerspectiveQuad quad;
         for (int c = 0; c < 4; ++c) {
-            facet.setCanvasCorner(c, plane.facet().canvasCorners()[c]);
-            facet.setSurfaceCorner(c, plane.facet().surfaceCorners()[c]);
+            quad.setCanvasCorner(c, plane.quad().canvasCorners()[c]);
+            quad.setSurfaceCorner(c, plane.quad().surfaceCorners()[c]);
         }
         if (i == planeIndex)
-            hostFacetIndex = surfaceFacets.size();
-        surfaceFacets.append(facet);
+            hostQuadIndex = surfaceQuads.size();
+        surfaceQuads.append(quad);
     }
     bool ok = false;
-    const QPointF surfacePoint = host.facet().mapCanvasToSurface(point, &ok);
+    const QPointF surfacePoint = host.quad().mapCanvasToSurface(point, &ok);
     if (!ok)
         return;
     m_doc.attachFloatingImage(
-        index, surfaceFacets, hostFacetIndex,
+        index, surfaceQuads, hostQuadIndex,
         surfacePoint - m_floatingImageTransform.grabOffset());
 }
 
@@ -974,21 +974,21 @@ void VpCanvas::attachFloatingImageToPlane(int index, int planeIndex, const QPoin
 bool VpCanvas::moveSurfaceAttachedImage(int index, const QPointF &point)
 {
     const FloatingImage &image = m_doc.floatingImage(index);
-    auto moveOnFacet = [this, index, &point](const PerspectiveFacet &facet) {
+    auto moveOnQuad = [this, index, &point](const PerspectiveQuad &quad) {
         bool ok = false;
-        const QPointF surfacePoint = facet.mapCanvasToSurface(point, &ok);
+        const QPointF surfacePoint = quad.mapCanvasToSurface(point, &ok);
         if (ok)
             m_doc.setFloatingImageOrigin(
                 index, surfacePoint - m_floatingImageTransform.grabOffset());
         return ok;
     };
-    for (auto facet = image.surfaceFacets.crbegin(); facet != image.surfaceFacets.crend(); ++facet) {
-        if (facet->containsCanvasPoint(point)
-            && moveOnFacet(*facet))
+    for (auto quad = image.surfaceQuads.crbegin(); quad != image.surfaceQuads.crend(); ++quad) {
+        if (quad->containsCanvasPoint(point)
+            && moveOnQuad(*quad))
             return true;
     }
-    return image.hostFacetIndex >= 0 && image.hostFacetIndex < image.surfaceFacets.size()
-           && moveOnFacet(image.surfaceFacets[image.hostFacetIndex]);
+    return image.hostQuadIndex >= 0 && image.hostQuadIndex < image.surfaceQuads.size()
+           && moveOnQuad(image.surfaceQuads[image.hostQuadIndex]);
 }
 
 // 把当前选中的浮动图像按当前几何画进绘画层并删除它：走的是与屏幕渲染完全相同的
@@ -1052,7 +1052,7 @@ bool VpCanvas::pointToSelectionSurface(const QPointF &point, QPointF *surface) c
     if (!surface || m_selectionFaces.isEmpty())
         return false;
     for (int i = m_selectionFaces.size() - 1; i >= 0; --i) {
-        const PerspectiveFacet &face = m_selectionFaces[i];
+        const PerspectiveQuad &face = m_selectionFaces[i];
         if (!face.containsCanvasPoint(point))
             continue;
         bool ok = false;
@@ -1074,7 +1074,7 @@ QPainterPath VpCanvas::selectionPath() const
         return result;
     QPainterPath rectangle;
     rectangle.addRect(m_selectionRect.normalized());
-    for (const PerspectiveFacet &face : m_selectionFaces) {
+    for (const PerspectiveQuad &face : m_selectionFaces) {
         QPainterPath facePath;
         facePath.addPolygon(face.surfacePolygon());
         facePath.closeSubpath();
@@ -1160,14 +1160,14 @@ void VpCanvas::fillSelectionFromPoint(const QPointF &point)
     QPainterPath selectionSurfacePath;
     selectionSurfacePath.addRect(m_selectionRect.normalized());
     // 每个「目标面 + 源面」组合是一片单应补丁，整片交给光栅器一次画完。
-    for (const PerspectiveFacet &targetFace : m_selectionFaces) {
+    for (const PerspectiveQuad &targetFace : m_selectionFaces) {
         QPainterPath targetSurfacePath;
         targetSurfacePath.addPolygon(targetFace.surfacePolygon());
         targetSurfacePath.closeSubpath();
         const PerspectiveTransform targetMapping = targetFace.surfaceToCanvasTransform();
         if (!targetMapping.isValid())
             continue;
-        for (const PerspectiveFacet &sourceFace : m_selectionFaces) {
+        for (const PerspectiveQuad &sourceFace : m_selectionFaces) {
             QPolygonF shiftedSourceSurface;
             QPolygonF sourceCanvas;
             QPolygonF targetCanvas;
@@ -1243,7 +1243,7 @@ int VpCanvas::copySelectionToFloatingImage(const QPointF &point)
     QPointF pressSurface;
     pointToSelectionSurface(point, &pressSurface);
     for (int i = 0; i < m_selectionFaces.size(); ++i) {
-        const PerspectiveFacet &face = m_selectionFaces[i];
+        const PerspectiveQuad &face = m_selectionFaces[i];
         QPolygonF target;
         for (int c = 0; c < 4; ++c)
             target.append(face.surfaceCorners()[c] - rect.topLeft());
@@ -1294,14 +1294,14 @@ int VpCanvas::cloneSelectionToFloatingImage()
             hostFace = i;
         }
     }
-    for (const PerspectiveFacet &targetFace : m_selectionFaces) {
+    for (const PerspectiveQuad &targetFace : m_selectionFaces) {
         QPolygonF targetQuad;
         for (int c = 0; c < 4; ++c)
             targetQuad.append(targetFace.surfaceCorners()[c] - origin);
         QPainterPath targetSurface;
         targetSurface.addPolygon(targetQuad);
         targetSurface.closeSubpath();
-        for (const PerspectiveFacet &sourceFace : m_selectionFaces) {
+        for (const PerspectiveQuad &sourceFace : m_selectionFaces) {
             QPolygonF shifted; // 源面按拖动偏移搬到目标位置后，在位图中的四边形
             for (int c = 0; c < 4; ++c)
                 shifted.append(sourceFace.surfaceCorners()[c] - m_selectionFillOffset - origin);

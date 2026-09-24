@@ -1,4 +1,4 @@
-#include "perspectivefacet.h"
+#include "perspectivequad.h"
 
 #include <QLineF>
 #include <QTransform>
@@ -23,39 +23,39 @@ qreal pointToSegmentDistance(const QPointF &point, const QPointF &start,
 
 } // namespace
 
-PerspectiveFacet::PerspectiveFacet(Corners canvasCorners, Corners surfaceCorners)
+PerspectiveQuad::PerspectiveQuad(Corners canvasCorners, Corners surfaceCorners)
     : m_canvasCorners(std::move(canvasCorners)),
       m_surfaceCorners(std::move(surfaceCorners))
 {
 }
 
-void PerspectiveFacet::setCanvasCorner(int index, const QPointF &point)
+void PerspectiveQuad::setCanvasCorner(int index, const QPointF &point)
 {
     Q_ASSERT(index >= 0 && index < CornerCount);
     if (index >= 0 && index < CornerCount)
         m_canvasCorners[index] = point;
 }
 
-void PerspectiveFacet::setSurfaceCorner(int index, const QPointF &point)
+void PerspectiveQuad::setSurfaceCorner(int index, const QPointF &point)
 {
     Q_ASSERT(index >= 0 && index < CornerCount);
     if (index >= 0 && index < CornerCount)
         m_surfaceCorners[index] = point;
 }
 
-QPolygonF PerspectiveFacet::canvasPolygon() const
+QPolygonF PerspectiveQuad::canvasPolygon() const
 {
     return {m_canvasCorners[0], m_canvasCorners[1],
             m_canvasCorners[2], m_canvasCorners[3]};
 }
 
-QPolygonF PerspectiveFacet::surfacePolygon() const
+QPolygonF PerspectiveQuad::surfacePolygon() const
 {
     return {m_surfaceCorners[0], m_surfaceCorners[1],
             m_surfaceCorners[2], m_surfaceCorners[3]};
 }
 
-QVector<QPointF> PerspectiveFacet::controlPoints() const
+QVector<QPointF> PerspectiveQuad::controlPoints() const
 {
     return {m_canvasCorners[0], m_canvasCorners[1],
             m_canvasCorners[2], m_canvasCorners[3],
@@ -65,7 +65,7 @@ QVector<QPointF> PerspectiveFacet::controlPoints() const
             (m_canvasCorners[3] + m_canvasCorners[0]) / 2.0};
 }
 
-bool PerspectiveFacet::isValid() const
+bool PerspectiveQuad::isValid() const
 {
     qreal windingSign = 0.0;
     qreal twiceArea = 0.0;
@@ -115,12 +115,12 @@ bool PerspectiveFacet::isValid() const
     return true;
 }
 
-bool PerspectiveFacet::containsCanvasPoint(const QPointF &point) const
+bool PerspectiveQuad::containsCanvasPoint(const QPointF &point) const
 {
     return canvasPolygon().containsPoint(point, Qt::OddEvenFill);
 }
 
-int PerspectiveFacet::controlPointIndexAt(const QPointF &point, qreal tolerance) const
+int PerspectiveQuad::controlPointIndexAt(const QPointF &point, qreal tolerance) const
 {
     if (!qIsFinite(point.x()) || !qIsFinite(point.y()) ||
         !qIsFinite(tolerance) || tolerance < 0.0)
@@ -133,7 +133,7 @@ int PerspectiveFacet::controlPointIndexAt(const QPointF &point, qreal tolerance)
     return -1;
 }
 
-int PerspectiveFacet::edgeIndexAt(const QPointF &point, qreal tolerance) const
+int PerspectiveQuad::edgeIndexAt(const QPointF &point, qreal tolerance) const
 {
     if (!qIsFinite(point.x()) || !qIsFinite(point.y()) ||
         !qIsFinite(tolerance) || tolerance < 0.0)
@@ -146,18 +146,18 @@ int PerspectiveFacet::edgeIndexAt(const QPointF &point, qreal tolerance) const
     return -1;
 }
 
-PerspectiveTransform PerspectiveFacet::surfaceToCanvasTransform() const
+PerspectiveTransform PerspectiveQuad::surfaceToCanvasTransform() const
 {
     return {surfacePolygon(), canvasPolygon()};
 }
 
-PerspectiveTransform PerspectiveFacet::uvToCanvasTransform() const
+PerspectiveTransform PerspectiveQuad::uvToCanvasTransform() const
 {
     return {{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)},
             canvasPolygon()};
 }
 
-QPointF PerspectiveFacet::mapUvToCanvas(const QPointF &uv, bool *ok) const
+QPointF PerspectiveQuad::mapUvToCanvas(const QPointF &uv, bool *ok) const
 {
     QPointF result;
     const bool valid = uvToCanvasTransform().mapForward(uv, &result);
@@ -166,7 +166,7 @@ QPointF PerspectiveFacet::mapUvToCanvas(const QPointF &uv, bool *ok) const
     return result;
 }
 
-QPointF PerspectiveFacet::mapCanvasToUv(const QPointF &point, bool *ok) const
+QPointF PerspectiveQuad::mapCanvasToUv(const QPointF &point, bool *ok) const
 {
     QPointF result;
     const bool valid = uvToCanvasTransform().mapInverse(point, &result);
@@ -175,7 +175,7 @@ QPointF PerspectiveFacet::mapCanvasToUv(const QPointF &point, bool *ok) const
     return result;
 }
 
-QPointF PerspectiveFacet::mapCanvasToSurface(const QPointF &point, bool *ok) const
+QPointF PerspectiveQuad::mapCanvasToSurface(const QPointF &point, bool *ok) const
 {
     QPointF result;
     const bool valid = surfaceToCanvasTransform().mapInverse(point, &result);

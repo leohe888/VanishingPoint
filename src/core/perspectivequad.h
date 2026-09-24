@@ -8,14 +8,14 @@
 
 #include "perspectivetransform.h"
 
-class PerspectiveFacet
+class PerspectiveQuad
 {
 public:
     static constexpr int CornerCount = 4;
     using Corners = std::array<QPointF, CornerCount>;
 
-    PerspectiveFacet() = default;
-    PerspectiveFacet(Corners canvasCorners, Corners surfaceCorners);
+    PerspectiveQuad() = default;
+    PerspectiveQuad(Corners canvasCorners, Corners surfaceCorners);
 
     const Corners &canvasCorners() const { return m_canvasCorners; }
     const Corners &surfaceCorners() const { return m_surfaceCorners; }

@@ -18,7 +18,7 @@ function(add_vp_test test_name)
 endfunction()
 
 set(VP_GEOMETRY_SOURCES
-    ${PROJECT_SOURCE_DIR}/src/core/perspectivefacet.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/perspectivequad.cpp
     ${PROJECT_SOURCE_DIR}/src/core/perspectiveplane.cpp
     ${PROJECT_SOURCE_DIR}/src/core/perspectivetransform.cpp)
 

@@ -54,13 +54,13 @@ public:
     void setSelectedFloatingImage(int index);
     int addFloatingImage(const QImage &image);     // 追加到左上角，返回索引
     int addFloatingImageOnSurface(const QImage &image,
-                                  const QVector<PerspectiveFacet> &surfaceFacets,
-                                  int hostFacetIndex, const QPointF &surfaceOrigin);
+                                  const QVector<PerspectiveQuad> &surfaceQuads,
+                                  int hostQuadIndex, const QPointF &surfaceOrigin);
     void removeFloatingImage(int index);          // 删除指定浮动图像
     void setFloatingImageOrigin(int index, const QPointF &placementOrigin); // 仅移动位置
     // 把图像吸附到一组几何快照上（surfacePosition 为展开曲面坐标）
-    void attachFloatingImage(int index, const QVector<PerspectiveFacet> &surfaceFacets,
-                             int hostFacetIndex, const QPointF &surfaceOrigin);
+    void attachFloatingImage(int index, const QVector<PerspectiveQuad> &surfaceQuads,
+                             int hostQuadIndex, const QPointF &surfaceOrigin);
     void detachFloatingImage(int index, const QPointF &canvasOrigin);
 
     // —— 历史 ——

@@ -10,11 +10,11 @@ QByteArray FloatingImageProjection::cacheKey(const FloatingImage &image)
     QByteArray key;
     QDataStream stream(&key, QIODevice::WriteOnly);
     stream << image.bitmap.size() << image.placementOrigin << image.scaleFactors
-           << image.rotationDegrees << image.surfaceAttached << image.hostFacetIndex
-           << qint64(image.surfaceFacets.size());
-    for (const PerspectiveFacet &facet : image.surfaceFacets) {
-        for (int corner = 0; corner < PerspectiveFacet::CornerCount; ++corner)
-            stream << facet.canvasCorners()[corner] << facet.surfaceCorners()[corner];
+           << image.rotationDegrees << image.surfaceAttached << image.hostQuadIndex
+           << qint64(image.surfaceQuads.size());
+    for (const PerspectiveQuad &quad : image.surfaceQuads) {
+        for (int corner = 0; corner < PerspectiveQuad::CornerCount; ++corner)
+            stream << quad.canvasCorners()[corner] << quad.surfaceCorners()[corner];
     }
     return key;
 }
@@ -50,7 +50,7 @@ FloatingImageProjection::FloatingImageProjection(const FloatingImage &image)
         }
     };
 
-    if (!image.surfaceAttached || image.surfaceFacets.isEmpty()) {
+    if (!image.surfaceAttached || image.surfaceQuads.isEmpty()) {
         const QRectF rect(QPointF(0, 0), QSizeF(image.bitmap.size()));
         const QPolygonF bitmapDomain{
             rect.topLeft(), rect.topRight(), rect.bottomRight(), rect.bottomLeft()
@@ -58,28 +58,28 @@ FloatingImageProjection::FloatingImageProjection(const FloatingImage &image)
         appendPatch(bitmapDomain, m_bitmapToPlacement.map(bitmapDomain), bitmapPath);
     } else {
         QVector<QPolygonF> bitmapDomains;
-        QVector<QPainterPath> facetClips;
+        QVector<QPainterPath> quadClips;
         QPainterPath hostClip = bitmapPath;
         const QTransform placementToBitmap = m_bitmapToPlacement.inverted();
-        for (int index = 0; index < image.surfaceFacets.size(); ++index) {
+        for (int index = 0; index < image.surfaceQuads.size(); ++index) {
             const QPolygonF bitmapDomain =
-                placementToBitmap.map(image.surfaceFacets[index].surfacePolygon());
+                placementToBitmap.map(image.surfaceQuads[index].surfacePolygon());
             bitmapDomains.append(bitmapDomain);
-            QPainterPath facetPath;
-            facetPath.addPolygon(bitmapDomain);
-            facetPath.closeSubpath();
-            facetClips.append(bitmapPath.intersected(facetPath));
-            if (index != image.hostFacetIndex)
-                hostClip = hostClip.subtracted(facetPath);
+            QPainterPath quadPath;
+            quadPath.addPolygon(bitmapDomain);
+            quadPath.closeSubpath();
+            quadClips.append(bitmapPath.intersected(quadPath));
+            if (index != image.hostQuadIndex)
+                hostClip = hostClip.subtracted(quadPath);
         }
-        if (image.hostFacetIndex >= 0 && image.hostFacetIndex < image.surfaceFacets.size()) {
-            appendPatch(bitmapDomains[image.hostFacetIndex],
-                        image.surfaceFacets[image.hostFacetIndex].canvasPolygon(), hostClip);
+        if (image.hostQuadIndex >= 0 && image.hostQuadIndex < image.surfaceQuads.size()) {
+            appendPatch(bitmapDomains[image.hostQuadIndex],
+                        image.surfaceQuads[image.hostQuadIndex].canvasPolygon(), hostClip);
         }
-        for (int index = 0; index < image.surfaceFacets.size(); ++index) {
-            if (index != image.hostFacetIndex) {
-                appendPatch(bitmapDomains[index], image.surfaceFacets[index].canvasPolygon(),
-                            facetClips[index]);
+        for (int index = 0; index < image.surfaceQuads.size(); ++index) {
+            if (index != image.hostQuadIndex) {
+                appendPatch(bitmapDomains[index], image.surfaceQuads[index].canvasPolygon(),
+                            quadClips[index]);
             }
         }
     }

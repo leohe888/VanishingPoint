@@ -154,7 +154,7 @@ private:
     int m_draggedFloatingImageIndex = -1;
     bool m_floatingImageChanged = false;
 
-    QVector<PerspectiveFacet> m_selectionFaces;  // 选区所在曲面分组的几何快照（可跨多平面）
+    QVector<PerspectiveQuad> m_selectionFaces;  // 选区所在曲面分组的几何快照（可跨多平面）
     QRectF m_selectionRect;           // 展开曲面坐标下的矩形选区
     QRectF m_selectionStartRect;      // 平移开始时的选区，避免逐帧累加误差
     QPointF m_selectionPressSurface;  // 按下点在展开曲面上的位置

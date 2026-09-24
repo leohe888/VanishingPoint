@@ -1,6 +1,6 @@
 #pragma once
 
-#include "perspectivefacet.h"
+#include "perspectivequad.h"
 
 #include <QImage>
 #include <QPointF>
@@ -18,14 +18,14 @@ struct FloatingImage
     QPointF scaleFactors = QPointF(1, 1);
     qreal rotationDegrees = 0;
     bool surfaceAttached = false;
-    QVector<PerspectiveFacet> surfaceFacets;
-    int hostFacetIndex = -1;
+    QVector<PerspectiveQuad> surfaceQuads;
+    int hostQuadIndex = -1;
 
     QSizeF displaySize() const;
     QTransform bitmapToPlacementTransform() const;
     QVector<QPointF> transformHandlePositions() const;
 
-    QPointF mapPlacementToCanvas(const QPointF &point, int *facetIndex = nullptr) const;
+    QPointF mapPlacementToCanvas(const QPointF &point, int *quadIndex = nullptr) const;
     bool mapCanvasToPlacement(const QPointF &point, QPointF *result,
-                              int fallbackFacetIndex = -1) const;
+                              int fallbackQuadIndex = -1) const;
 };

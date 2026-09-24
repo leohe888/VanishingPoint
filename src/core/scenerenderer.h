@@ -45,7 +45,7 @@ public:
 private:
     // 绘制面片的编辑辅助元素：外框、内部网格，以及选中且处于编辑
     // 工具时的控制点方块。
-    void drawPlaneGuides(QPainter &painter, const PerspectiveFacet &facet, bool selected,
+    void drawPlaneGuides(QPainter &painter, const PerspectiveQuad &quad, bool selected,
                          bool hovered, bool showHandles, qreal gridSize,
                          int planeIndex = -1) const;
 

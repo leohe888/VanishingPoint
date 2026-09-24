@@ -24,10 +24,10 @@ void CloneTool::setAligned(bool value)
 
 bool CloneTool::pickSource(const QVector<PerspectivePlane> &planes, const QSize &canvasSize, const QPointF &point)
 {
-    PerspectiveFacet facet;
-    if (!resolveFacet(planes, canvasSize, point, &facet))
+    PerspectiveQuad quad;
+    if (!resolveQuad(planes, canvasSize, point, &quad))
         return false;
-    m_sourceMapping = facet.surfaceToCanvasTransform();
+    m_sourceMapping = quad.surfaceToCanvasTransform();
     QPointF surface;
     if (!m_sourceMapping.mapInverse(point, &surface))
         return false;
@@ -43,10 +43,10 @@ PerspectiveTransform CloneTool::targetAt(const QVector<PerspectivePlane> &planes
 {
     if (m_drawing)
         return m_targetMapping;
-    PerspectiveFacet facet;
-    if (!resolveFacet(planes, canvasSize, point, &facet))
+    PerspectiveQuad quad;
+    if (!resolveQuad(planes, canvasSize, point, &quad))
         return {};
-    return facet.surfaceToCanvasTransform();
+    return quad.surfaceToCanvasTransform();
 }
 
 // 对齐模式下偏移一经锁定就跨笔保留，源点于是跟着光标走

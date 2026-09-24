@@ -4,16 +4,16 @@
 
 // 面片由几何层解析，这里只补上笔触所需的归一化 UV。
 bool BrushTool::resolveTarget(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
-                              const QPointF &point, PerspectiveFacet *facet, QPointF *uv)
+                              const QPointF &point, PerspectiveQuad *quad, QPointF *uv)
 {
-    PerspectiveFacet target;
-    if (!resolveFacet(planes, canvasSize, point, &target))
+    PerspectiveQuad target;
+    if (!resolveQuad(planes, canvasSize, point, &target))
         return false;
     bool valid = false;
     const QPointF position = target.mapCanvasToUv(point, &valid);
     if (!valid)
         return false;
-    *facet = target;
+    *quad = target;
     *uv = position;
     return true;
 }
@@ -21,13 +21,13 @@ bool BrushTool::resolveTarget(const QVector<PerspectivePlane> &planes, const QSi
 QRect BrushTool::begin(QImage &layer, const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
                        const QPointF &point)
 {
-    PerspectiveFacet facet;
+    PerspectiveQuad quad;
     QPointF uv;
-    if (layer.isNull() || !resolveTarget(planes, canvasSize, point, &facet, &uv))
+    if (layer.isNull() || !resolveTarget(planes, canvasSize, point, &quad, &uv))
         return {};
-    m_facet = facet;
+    m_quad = quad;
     m_drawing = true;
-    return m_engine.beginStroke(layer, m_facet, uv);
+    return m_engine.beginStroke(layer, m_quad, uv);
 }
 
 // 锚定后笔触可以越过面片边界继续延伸，只要求点仍在该面片的单应有效范围内。
@@ -36,10 +36,10 @@ QRect BrushTool::move(QImage &layer, const QPointF &point)
     if (!m_drawing)
         return {};
     bool valid = false;
-    const QPointF uv = m_facet.mapCanvasToUv(point, &valid);
+    const QPointF uv = m_quad.mapCanvasToUv(point, &valid);
     if (!valid)
         return {};
-    return m_engine.drawStrokeTo(layer, m_facet, uv);
+    return m_engine.drawStrokeTo(layer, m_quad, uv);
 }
 
 // 所见即所得：把即将落下的那一个笔触点直接画到光标处。
@@ -47,9 +47,9 @@ QRect BrushTool::move(QImage &layer, const QPointF &point)
 void BrushTool::renderPreview(QPainter &painter, const QVector<PerspectivePlane> &planes,
                               const QSize &canvasSize, const QPointF &point) const
 {
-    PerspectiveFacet facet;
+    PerspectiveQuad quad;
     QPointF uv;
-    if (!resolveTarget(planes, canvasSize, point, &facet, &uv))
+    if (!resolveTarget(planes, canvasSize, point, &quad, &uv))
         return;
-    m_engine.applyDab(painter, facet, uv);
+    m_engine.applyDab(painter, quad, uv);
 }

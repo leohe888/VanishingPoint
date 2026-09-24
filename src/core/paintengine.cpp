@@ -10,21 +10,21 @@
 namespace {
 // 把直径换算到归一化 UV：以面片的平均水平边长作为 UV -> 画布的局部尺度，
 // 这样同一个笔触点在透视下保持一致的视觉粗细。
-qreal uvRadius(const PerspectiveFacet &facet, qreal diameter)
+qreal uvRadius(const PerspectiveQuad &quad, qreal diameter)
 {
-    const qreal planeWidth = (QLineF(facet.canvasCorners()[0], facet.canvasCorners()[1]).length() +
-                              QLineF(facet.canvasCorners()[3], facet.canvasCorners()[2]).length()) / 2.0;
+    const qreal planeWidth = (QLineF(quad.canvasCorners()[0], quad.canvasCorners()[1]).length() +
+                              QLineF(quad.canvasCorners()[3], quad.canvasCorners()[2]).length()) / 2.0;
     return (diameter / 2.0) / qMax(40.0, planeWidth);
 }
 }
 
 // 在面片透视下于 UV 位置落下一个软边笔触点，返回画布脏矩形。
-QRect PaintEngine::applyDab(QPainter &painter, const PerspectiveFacet &facet, const QPointF &uv) const
+QRect PaintEngine::applyDab(QPainter &painter, const PerspectiveQuad &quad, const QPointF &uv) const
 {
-    const qreal radiusUv = uvRadius(facet, m_diameter);
+    const qreal radiusUv = uvRadius(quad, m_diameter);
     const qreal hardness = m_hardness / 100.0; // 半径内完全不透明的比例
 
-    const PerspectiveTransform mapping = facet.uvToCanvasTransform();
+    const PerspectiveTransform mapping = quad.uvToCanvasTransform();
     const QTransform &uvToCanvas = mapping.forward();
     const QRectF bounds(uv.x() - radiusUv, uv.y() - radiusUv, radiusUv * 2, radiusUv * 2);
     QPointF mapped;
@@ -64,17 +64,17 @@ QRect PaintEngine::applyDab(QPainter &painter, const PerspectiveFacet &facet, co
 }
 
 // 从给定 UV 位置开始一笔，并立即落下第一个笔触点。
-QRect PaintEngine::beginStroke(QImage &paintLayer, const PerspectiveFacet &facet, const QPointF &uv)
+QRect PaintEngine::beginStroke(QImage &paintLayer, const PerspectiveQuad &quad, const QPointF &uv)
 {
     m_lastUv = uv;
     QPainter painter(&paintLayer);
-    return applyDab(painter, facet, uv);
+    return applyDab(painter, quad, uv);
 }
 
 // 从上一 UV 位置向目标 UV 插值补间，沿笔迹均匀落下一串笔触点。
-QRect PaintEngine::drawStrokeTo(QImage &paintLayer, const PerspectiveFacet &facet, const QPointF &uv)
+QRect PaintEngine::drawStrokeTo(QImage &paintLayer, const PerspectiveQuad &quad, const QPointF &uv)
 {
-    const qreal radiusUv = uvRadius(facet, m_diameter);
+    const qreal radiusUv = uvRadius(quad, m_diameter);
     // 步长约为笔刷半径的 1/3，保证快速拖动时笔迹连续无断点。
     const qreal step = qMax(0.001, radiusUv * 0.35);
     const qreal distance = QLineF(m_lastUv, uv).length();
@@ -84,7 +84,7 @@ QRect PaintEngine::drawStrokeTo(QImage &paintLayer, const PerspectiveFacet &face
     QRect dirty;
     for (int i = 1; i <= count; ++i) {
         const QPointF uvi = m_lastUv + (uv - m_lastUv) * (qreal(i) / qreal(count));
-        const QRect r = applyDab(painter, facet, uvi);
+        const QRect r = applyDab(painter, quad, uvi);
         dirty = dirty.isEmpty() ? r : dirty.united(r);
     }
     m_lastUv = uv;

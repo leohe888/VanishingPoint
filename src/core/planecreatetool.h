@@ -12,7 +12,7 @@
 class PlaneCreateTool
 {
 public:
-    static constexpr int CornerCount = PerspectiveFacet::CornerCount;
+    static constexpr int CornerCount = PerspectiveQuad::CornerCount;
 
     void addPoint(const QPointF &point);           // 落下一个角点；已凑齐时忽略
     void removeLastPoint();                        // 回退最后一个角点；已空时忽略

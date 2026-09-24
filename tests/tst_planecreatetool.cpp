@@ -76,11 +76,11 @@ void PlaneCreateToolTest::createsExpectedPlane()
     PlaneCreateTool tool;
     addRectangle(tool);
     const PerspectivePlane plane = tool.makePlane(3);
-    QCOMPARE(plane.facet().canvasCorners()[0], QPointF(10, 10));
-    QCOMPARE(plane.facet().canvasCorners()[2], QPointF(110, 80));
-    QCOMPARE(plane.facet().surfaceCorners()[2], QPointF(100, 70));
+    QCOMPARE(plane.quad().canvasCorners()[0], QPointF(10, 10));
+    QCOMPARE(plane.quad().canvasCorners()[2], QPointF(110, 80));
+    QCOMPARE(plane.quad().surfaceCorners()[2], QPointF(100, 70));
     QCOMPARE(plane.surfaceGroupId(), 3);
-    QVERIFY(plane.facet().isValid());
+    QVERIFY(plane.quad().isValid());
 }
 
 void PlaneCreateToolTest::resetClearsState()

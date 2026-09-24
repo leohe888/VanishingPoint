@@ -1,6 +1,6 @@
 #pragma once
 
-#include "perspectivefacet.h"
+#include "perspectivequad.h"
 
 #include <QSize>
 #include <QVector>
@@ -10,15 +10,15 @@
 class PerspectivePlane
 {
 public:
-    using Corners = PerspectiveFacet::Corners;
-    static constexpr int CornerCount = PerspectiveFacet::CornerCount;
+    using Corners = PerspectiveQuad::Corners;
+    static constexpr int CornerCount = PerspectiveQuad::CornerCount;
 
     PerspectivePlane() = default;
     PerspectivePlane(Corners canvasCorners, Corners surfaceCorners)
-        : m_facet(std::move(canvasCorners), std::move(surfaceCorners)) {}
+        : m_quad(std::move(canvasCorners), std::move(surfaceCorners)) {}
 
-    const PerspectiveFacet &facet() const { return m_facet; }
-    PerspectiveFacet &facet() { return m_facet; }
+    const PerspectiveQuad &quad() const { return m_quad; }
+    PerspectiveQuad &quad() { return m_quad; }
 
     int surfaceGroupId() const { return m_surfaceGroupId; }
     void setSurfaceGroupId(int id) { m_surfaceGroupId = id; }
@@ -39,7 +39,7 @@ public:
     void setHasCustomAngle(bool adjusted) { m_hasCustomAngle = adjusted; }
 
 private:
-    PerspectiveFacet m_facet;
+    PerspectiveQuad m_quad;
     int m_surfaceGroupId = -1;
     quint8 m_lockedEdgeMask = 0;
     int m_parentPlaneIndex = -1;
@@ -48,10 +48,9 @@ private:
     bool m_hasCustomAngle = false;
 };
 
-// 集合查询与编辑算法不属于单个对象，保留为全局函数。
 int topmostPlaneIndexAt(const QVector<PerspectivePlane> &planes, const QPointF &point);
-bool resolveFacet(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
-                  const QPointF &point, PerspectiveFacet *facet);
+bool resolveQuad(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
+                  const QPointF &point, PerspectiveQuad *quad);
 
 bool translatePlaneOnSurface(const PerspectivePlane &source, const QPointF &dragPoint,
                              const QPointF &pressPoint, PerspectivePlane *result);

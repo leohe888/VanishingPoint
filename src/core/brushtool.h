@@ -35,12 +35,12 @@ public:
                        const QSize &canvasSize, const QPointF &point) const;
 
 private:
-    // 解析点对应的可绘制面片（facet）与其归一化 UV。
+    // 解析点对应的可绘制面片（quad）与其归一化 UV。
     // 面片退化，或点落在该面片地平线之外时返回 false。
     static bool resolveTarget(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
-                              const QPointF &point, PerspectiveFacet *facet, QPointF *uv);
+                              const QPointF &point, PerspectiveQuad *quad, QPointF *uv);
 
     PaintEngine m_engine;
-    PerspectiveFacet m_facet;          // 本笔锚定的面片
+    PerspectiveQuad m_quad;          // 本笔锚定的面片
     bool m_drawing = false;
 };

@@ -28,7 +28,7 @@ private:
     Mode m_mode = Mode::Idle;
     FloatingImage m_startImage;
     int m_activeHandle = -1;
-    int m_activeFacetIndex = -1;
+    int m_activeQuadIndex = -1;
     QPointF m_grabOffset;
     QPointF m_pressPosition;
 };

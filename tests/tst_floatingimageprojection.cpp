@@ -5,7 +5,7 @@
 
 namespace {
 
-PerspectiveFacet leftFacet()
+PerspectiveQuad leftQuad()
 {
     return {
         {QPointF(10, 10), QPointF(110, 10), QPointF(110, 80), QPointF(10, 80)},
@@ -13,7 +13,7 @@ PerspectiveFacet leftFacet()
     };
 }
 
-PerspectiveFacet rightFacet()
+PerspectiveQuad rightQuad()
 {
     return {
         {QPointF(110, 10), QPointF(230, 30), QPointF(230, 96), QPointF(110, 80)},
@@ -21,41 +21,41 @@ PerspectiveFacet rightFacet()
     };
 }
 
-FloatingImage imageAcrossFacetSeam()
+FloatingImage imageAcrossQuadSeam()
 {
     FloatingImage image;
     image.bitmap = QImage(200, 70, QImage::Format_ARGB32);
     image.bitmap.fill(Qt::red);
     image.placementOrigin = QPointF(0, 0);
     image.surfaceAttached = true;
-    image.hostFacetIndex = 0;
-    image.surfaceFacets = QVector<PerspectiveFacet>{leftFacet(), rightFacet()};
+    image.hostQuadIndex = 0;
+    image.surfaceQuads = QVector<PerspectiveQuad>{leftQuad(), rightQuad()};
     return image;
 }
 
-QPointF cornerAverage(const PerspectiveFacet &facet)
+QPointF cornerAverage(const PerspectiveQuad &quad)
 {
     QPointF sum;
-    for (const QPointF &corner : facet.canvasPolygon())
+    for (const QPointF &corner : quad.canvasPolygon())
         sum += corner / 4.0;
     return sum;
 }
 
-qreal centerDeviation(const PerspectiveFacet &facet)
+qreal centerDeviation(const PerspectiveQuad &quad)
 {
     FloatingImage image;
     image.bitmap = QImage(100, 70, QImage::Format_ARGB32);
     image.bitmap.fill(Qt::red);
-    image.placementOrigin = facet.surfaceCorners()[0];
+    image.placementOrigin = quad.surfaceCorners()[0];
     image.surfaceAttached = true;
-    image.hostFacetIndex = 0;
-    image.surfaceFacets = QVector<PerspectiveFacet>{facet};
+    image.hostQuadIndex = 0;
+    image.surfaceQuads = QVector<PerspectiveQuad>{quad};
 
     const auto projection = FloatingImageProjection::forImage(image);
     if (projection->patches().size() != 1)
         return -1;
     return QLineF(projection->patches().first().bitmapToCanvas.forward().map(QPointF(50, 35)),
-                  cornerAverage(facet)).length();
+                  cornerAverage(quad)).length();
 }
 
 } // namespace
@@ -66,10 +66,10 @@ class FloatingImageProjectionTest : public QObject
 
 private slots:
     void detachedImageProducesSinglePatch();
-    void attachedImageSpansEveryFacet();
-    void hitTestCoversEveryFacet();
-    void perspectiveFacetUsesProjectiveMapping();
-    void affineFacetUsesLinearMapping();
+    void attachedImageSpansEveryQuad();
+    void hitTestCoversEveryQuad();
+    void perspectiveQuadUsesProjectiveMapping();
+    void affineQuadUsesLinearMapping();
     void attachedCoordinatesRoundTrip();
     void transformToolScalesFromCorner();
     void transformToolRotatesAroundCenter();
@@ -87,32 +87,32 @@ void FloatingImageProjectionTest::detachedImageProducesSinglePatch()
     QCOMPARE(projection->canvasOutline().boundingRect(), QRectF(100, 50, 40, 30));
 }
 
-void FloatingImageProjectionTest::attachedImageSpansEveryFacet()
+void FloatingImageProjectionTest::attachedImageSpansEveryQuad()
 {
-    QCOMPARE(FloatingImageProjection::forImage(imageAcrossFacetSeam())->patches().size(), 2);
+    QCOMPARE(FloatingImageProjection::forImage(imageAcrossQuadSeam())->patches().size(), 2);
 }
 
-void FloatingImageProjectionTest::hitTestCoversEveryFacet()
+void FloatingImageProjectionTest::hitTestCoversEveryQuad()
 {
-    const auto projection = FloatingImageProjection::forImage(imageAcrossFacetSeam());
+    const auto projection = FloatingImageProjection::forImage(imageAcrossQuadSeam());
     QVERIFY(projection->hitTest(QPointF(60, 45)));
     QVERIFY(projection->hitTest(QPointF(170, 55)));
     QVERIFY(!projection->hitTest(QPointF(400, 400)));
 }
 
-void FloatingImageProjectionTest::perspectiveFacetUsesProjectiveMapping()
+void FloatingImageProjectionTest::perspectiveQuadUsesProjectiveMapping()
 {
-    QVERIFY(centerDeviation(rightFacet()) > 0.5);
+    QVERIFY(centerDeviation(rightQuad()) > 0.5);
 }
 
-void FloatingImageProjectionTest::affineFacetUsesLinearMapping()
+void FloatingImageProjectionTest::affineQuadUsesLinearMapping()
 {
-    QVERIFY(centerDeviation(leftFacet()) < 0.5);
+    QVERIFY(centerDeviation(leftQuad()) < 0.5);
 }
 
 void FloatingImageProjectionTest::attachedCoordinatesRoundTrip()
 {
-    const FloatingImage image = imageAcrossFacetSeam();
+    const FloatingImage image = imageAcrossQuadSeam();
     const QPointF placementPoint(150, 35);
     const QPointF canvasPoint = image.mapPlacementToCanvas(placementPoint);
     QPointF mappedBack;
