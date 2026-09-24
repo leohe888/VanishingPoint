@@ -55,11 +55,11 @@ void SceneRenderer::render(QPainter &painter, qreal viewScale, bool showGuides,
     if (!showGuides)
         return;
     for (int i = 0; i < m_doc.planes().size(); ++i) {
-        drawPlaneGuides(painter, m_doc.planes()[i], i == m_doc.selectedPlane(),
+        drawPlaneGuides(painter, m_doc.planes()[i].facet(), i == m_doc.selectedPlane(),
                         i == hoveredPlane, editHandlesVisible, gridSize, i);
     }
     if (extrudePreview)
-        drawPlaneGuides(painter, *extrudePreview, true, false, false, gridSize);
+        drawPlaneGuides(painter, extrudePreview->facet(), true, false, false, gridSize);
 
     // 先画连线：已确定角点之间的边，以及连到光标的预览边。
     painter.save();

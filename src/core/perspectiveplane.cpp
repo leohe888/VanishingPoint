@@ -169,7 +169,7 @@ bool resolveFacet(const QVector<PerspectivePlane> &planes, const QSize &canvasSi
         return false;
     const int index = topmostPlaneIndexAt(planes, point);
     if (index >= 0) {
-        *facet = planes[index];
+        *facet = planes[index].facet();
         return true;
     }
     if (canvasSize.isEmpty())
