@@ -1,7 +1,10 @@
 #pragma once
 
-#include "clonestampengine.h"
 #include "perspectiveplane.h"
+
+#include <QImage>
+#include <QRect>
+#include <QTransform>
 
 class QPainter;
 
@@ -13,13 +16,13 @@ class QPainter;
 class CloneTool
 {
 public:
-    // —— 笔刷参数（转发给引擎，越界值由引擎钳到合法区间） ——
-    void setDiameter(int value) { m_engine.setDiameter(value); }
-    void setHardness(int value) { m_engine.setHardness(value); }
-    void setOpacity(int value) { m_engine.setOpacity(value); }
-    int diameter() const { return m_engine.diameter(); }
-    int hardness() const { return m_engine.hardness(); }
-    int opacity() const { return m_engine.opacity(); }
+    // —— 笔刷参数（越界值钳到合法区间） ——
+    void setDiameter(int value) { m_diameter = qBound(1, value, 500); }
+    void setHardness(int value) { m_hardness = qBound(0, value, 100); }
+    void setOpacity(int value) { m_opacity = qBound(1, value, 100); }
+    int diameter() const { return m_diameter; }
+    int hardness() const { return m_hardness; }
+    int opacity() const { return m_opacity; }
     void setAligned(bool value);
     bool aligned() const { return m_aligned; }
 
@@ -39,12 +42,18 @@ public:
 
     // 光标移动：更新取样位置指示。源点已归位时只显示它本身。
     void hover(const QVector<PerspectivePlane> &planes, const QSize &canvasSize, const QPointF &point);
-    // 在光标处预览即将仿制过来的内容（所见即所得）：复用引擎的逐像素取样，
+    // 在光标处预览即将仿制过来的内容（所见即所得）：复用逐像素取样，
     // 与真实落笔完全一致，取样位置始终落在源点十字上，但不改变源点与落笔状态。
     void renderPreview(QPainter &painter, const QImage &source, const QVector<PerspectivePlane> &planes,
                        const QSize &canvasSize, const QPointF &point);
 
 private:
+    struct StampContext {
+        QImage source;
+        QTransform targetToCanvas, canvasToTarget, sourceToCanvas;
+        QPointF offset;
+    };
+
     // 目标面片的展开映射：落笔期间沿用锚定面片，否则取光标所在面片。
     PerspectiveTransform targetAt(const QVector<PerspectivePlane> &planes, const QSize &canvasSize,
                                  const QPointF &point) const;
@@ -52,7 +61,18 @@ private:
     QPointF anchoredOffset(const QPointF &position) const;
     QPointF originalMarker() const; // 未加偏移时的源点位置
 
-    CloneStampEngine m_engine;
+    static StampContext makeStampContext(const QImage &source, const QTransform &targetToCanvas,
+                                         const QTransform &sourceToCanvas, const QPointF &offset);
+    QRect dabRect(const StampContext &context, const QPointF &position) const;
+    bool renderDab(QImage &dab, const QRect &area, const QPointF &position,
+                   const StampContext &context) const;
+    QRect applyDab(QImage &layer, const QPointF &position);
+
+    StampContext m_stamp;
+    QPointF m_lastPosition;
+    int m_diameter = 42;
+    int m_hardness = 75;
+    int m_opacity = 100;
     PerspectiveTransform m_sourceMapping, m_targetMapping;
     bool m_hasSource = false, m_hasOffset = false, m_aligned = true, m_drawing = false;
     QPointF m_source; // 源点在展开曲面上的位置

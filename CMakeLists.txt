@@ -25,8 +25,6 @@ set(PROJECT_SOURCES
         src/core/canvasdocument.h
         src/core/brushtool.cpp
         src/core/brushtool.h
-        src/core/clonestampengine.cpp
-        src/core/clonestampengine.h
         src/core/clonetool.cpp
         src/core/clonetool.h
         src/core/floatingimage.cpp
@@ -35,8 +33,6 @@ set(PROJECT_SOURCES
         src/core/floatingimageprojection.h
         src/core/floatingimagetransformtool.cpp
         src/core/floatingimagetransformtool.h
-        src/core/paintengine.cpp
-        src/core/paintengine.h
         src/core/planeedittool.cpp
         src/core/planeedittool.h
         src/core/planecreatetool.cpp

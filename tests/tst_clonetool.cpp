@@ -19,6 +19,7 @@ private slots:
     void alignedMovesSourceWithCursor();
     void unalignedReturnsToOriginalSource();
     void unalignedPreviewFollowsDuringStroke();
+    void previewPreservesActiveStrokeSource();
     void previewDrawsSampledContent();
     void undoRemovesWholeStroke();
 
@@ -68,7 +69,7 @@ CloneTool CloneToolTest::readyTool()
     return tool;
 }
 
-// 参数越界时由引擎钳到合法区间
+// 参数越界时钳到合法区间
 void CloneToolTest::clampsParameters()
 {
     CloneTool tool;
@@ -213,6 +214,25 @@ void CloneToolTest::unalignedPreviewFollowsDuringStroke()
     tool.renderPreview(afterPainter, source, {}, after.size(), QPointF(140, 60));
     afterPainter.end();
     QCOMPARE(rgbAt(after, 140, 60), rgbAt(source, 60, 45)); // 抬笔后回到最开始的位置
+}
+
+void CloneToolTest::previewPreservesActiveStrokeSource()
+{
+    QImage layer = makeLayer();
+    const QImage source = makeSource();
+    QImage previewSource = source;
+    previewSource.fill(Qt::blue);
+    CloneTool tool = readyTool();
+    QVERIFY(tool.pickSource({}, layer.size(), QPointF(60, 45)));
+    QVERIFY(!tool.begin(layer, source, {}, layer.size(), QPointF(100, 60)).isEmpty());
+
+    QImage preview = makeLayer();
+    QPainter painter(&preview);
+    tool.renderPreview(painter, previewSource, {}, preview.size(), QPointF(120, 60));
+    painter.end();
+
+    QVERIFY(!tool.move(layer, QPointF(120, 60)).isEmpty());
+    QCOMPARE(rgbAt(layer, 120, 60), rgbAt(source, 80, 45));
 }
 
 // 光标预览落的就是即将仿制过来的内容，不是轮廓

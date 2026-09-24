@@ -6,9 +6,6 @@
 #include <QString>
 #include <QVector>
 
-// 创建平面工具：依次收集用户点击的 4 个角点，凑齐后生成一个透视平面。
-// 与 PlaneEditTool 一样只维护交互状态，不接触文档和视图；
-// 橡皮筋预览由 SceneRenderer 根据 points() 与当前光标位置绘制。
 class PlaneCreateTool
 {
 public:
