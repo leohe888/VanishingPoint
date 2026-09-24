@@ -7,7 +7,7 @@
 
 #include <utility>
 
-class PerspectivePlane final
+class PerspectivePlane
 {
 public:
     using Corners = PerspectiveFacet::Corners;
@@ -19,31 +19,6 @@ public:
 
     const PerspectiveFacet &facet() const { return m_facet; }
     PerspectiveFacet &facet() { return m_facet; }
-
-    const Corners &canvasCorners() const { return m_facet.canvasCorners(); }
-    const Corners &surfaceCorners() const { return m_facet.surfaceCorners(); }
-    void setCanvasCorners(const Corners &corners) { m_facet.setCanvasCorners(corners); }
-    void setSurfaceCorners(const Corners &corners) { m_facet.setSurfaceCorners(corners); }
-    void setCanvasCorner(int index, const QPointF &point) { m_facet.setCanvasCorner(index, point); }
-    void setSurfaceCorner(int index, const QPointF &point) { m_facet.setSurfaceCorner(index, point); }
-
-    QPolygonF canvasPolygon() const { return m_facet.canvasPolygon(); }
-    QPolygonF surfacePolygon() const { return m_facet.surfacePolygon(); }
-    QVector<QPointF> controlPoints() const { return m_facet.controlPoints(); }
-    bool isValid() const { return m_facet.isValid(); }
-    bool containsCanvasPoint(const QPointF &point) const { return m_facet.containsCanvasPoint(point); }
-    int controlPointIndexAt(const QPointF &point, qreal tolerance) const
-    { return m_facet.controlPointIndexAt(point, tolerance); }
-    int edgeIndexAt(const QPointF &point, qreal tolerance) const
-    { return m_facet.edgeIndexAt(point, tolerance); }
-    PerspectiveTransform surfaceToCanvasTransform() const { return m_facet.surfaceToCanvasTransform(); }
-    PerspectiveTransform uvToCanvasTransform() const { return m_facet.uvToCanvasTransform(); }
-    QPointF mapUvToCanvas(const QPointF &uv, bool *ok = nullptr) const
-    { return m_facet.mapUvToCanvas(uv, ok); }
-    QPointF mapCanvasToUv(const QPointF &point, bool *ok = nullptr) const
-    { return m_facet.mapCanvasToUv(point, ok); }
-    QPointF mapCanvasToSurface(const QPointF &point, bool *ok = nullptr) const
-    { return m_facet.mapCanvasToSurface(point, ok); }
 
     int surfaceGroupId() const { return m_surfaceGroupId; }
     void setSurfaceGroupId(int id) { m_surfaceGroupId = id; }

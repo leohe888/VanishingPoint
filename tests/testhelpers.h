@@ -14,7 +14,7 @@ inline PerspectivePlane makeTestPlane()
 inline PerspectivePlane makeSelfIntersectingPlane()
 {
     PerspectivePlane plane = makeTestPlane();
-    plane.setCanvasCorner(2, QPointF(10, 80));
-    plane.setCanvasCorner(3, QPointF(110, 80));
+    plane.facet().setCanvasCorner(2, QPointF(10, 80));
+    plane.facet().setCanvasCorner(3, QPointF(110, 80));
     return plane;
 }

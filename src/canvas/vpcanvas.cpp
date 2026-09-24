@@ -360,7 +360,7 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         int handle = -1;
         // 先检测控制点。后创建的平面在上层，先被检查
         for (int i = m_doc.planes().size() - 1; i >= 0; --i) {
-            const int candidateHandle = m_doc.planes()[i].controlPointIndexAt(point, tolerance);
+            const int candidateHandle = m_doc.planes()[i].facet().controlPointIndexAt(point, tolerance);
             if (candidateHandle >= 0) {
                 planeIndex = i;
                 handle = candidateHandle;
@@ -502,13 +502,13 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
                 continue;
             PerspectiveFacet face;
             for (int c = 0; c < 4; ++c) {
-                face.setCanvasCorner(c, plane.canvasCorners()[c]);
-                face.setSurfaceCorner(c, plane.surfaceCorners()[c]);
+                face.setCanvasCorner(c, plane.facet().canvasCorners()[c]);
+                face.setSurfaceCorner(c, plane.facet().surfaceCorners()[c]);
             }
             m_selectionFaces.append(face);
         }
         bool ok = false;
-        m_selectionPressSurface = host.mapCanvasToSurface(point, &ok);
+        m_selectionPressSurface = host.facet().mapCanvasToSurface(point, &ok);
         if (!ok) {
             clearSelection();
             return;
@@ -727,7 +727,7 @@ void VpCanvas::finishPlaneCreation()
     const PerspectivePlane plane = m_createTool.makePlane(m_doc.nextSurfaceGroupId());
     m_createTool.reset();
 
-    if (!plane.isValid()) {
+    if (!plane.facet().isValid()) {
         emit statusMessage(tr("无法创建：四个点必须依次组成非交叉的凸四边形，请重新设置。"));
         return;
     }
@@ -748,7 +748,7 @@ bool VpCanvas::extrudePlane(int sourcePlane, int edge)
         return false;
     PerspectivePlane plane = m_extrudePreview;
     // 拖出的面积太小当成误操作，不落盘
-    const QRectF bounds = plane.canvasPolygon().boundingRect();
+    const QRectF bounds = plane.facet().canvasPolygon().boundingRect();
     if (qAbs(bounds.width() * bounds.height()) <= 100.0)
         return false;
     plane.setParent(sourcePlane, edge); // 父子关系：删除平面时靠它解锁共用边
@@ -953,15 +953,15 @@ void VpCanvas::attachFloatingImageToPlane(int index, int planeIndex, const QPoin
             continue;
         PerspectiveFacet facet;
         for (int c = 0; c < 4; ++c) {
-            facet.setCanvasCorner(c, plane.canvasCorners()[c]);
-            facet.setSurfaceCorner(c, plane.surfaceCorners()[c]);
+            facet.setCanvasCorner(c, plane.facet().canvasCorners()[c]);
+            facet.setSurfaceCorner(c, plane.facet().surfaceCorners()[c]);
         }
         if (i == planeIndex)
             hostFacetIndex = surfaceFacets.size();
         surfaceFacets.append(facet);
     }
     bool ok = false;
-    const QPointF surfacePoint = host.mapCanvasToSurface(point, &ok);
+    const QPointF surfacePoint = host.facet().mapCanvasToSurface(point, &ok);
     if (!ok)
         return;
     m_doc.attachFloatingImage(

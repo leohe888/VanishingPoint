@@ -198,8 +198,8 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveFacet &f
                     if (other == planeIndex)
                         continue;
                     for (int oe = 0; oe < 4; ++oe) {
-                        const QPointF oa = m_doc.planes()[other].canvasCorners()[oe];
-                        const QPointF ob = m_doc.planes()[other].canvasCorners()[(oe + 1) % 4];
+                        const QPointF oa = m_doc.planes()[other].facet().canvasCorners()[oe];
+                        const QPointF ob = m_doc.planes()[other].facet().canvasCorners()[(oe + 1) % 4];
                         if ((QLineF(a, oa).length() < 0.01 && QLineF(b, ob).length() < 0.01) ||
                             (QLineF(a, ob).length() < 0.01 && QLineF(b, oa).length() < 0.01)) {
                             unavailableEdgeMask |= quint8(1u << edge);
