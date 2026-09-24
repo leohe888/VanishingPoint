@@ -21,8 +21,10 @@ set(PROJECT_SOURCES
         src/main.cpp
         src/canvas/vpcanvas.cpp
         src/canvas/vpcanvas.h
-        src/core/canvasdocument.cpp
-        src/core/canvasdocument.h
+        src/canvas/vpcontroller.cpp
+        src/canvas/vpcontroller.h
+        src/core/vpdocument.cpp
+        src/core/vpdocument.h
         src/core/brushtool.cpp
         src/core/brushtool.h
         src/core/clonetool.cpp
@@ -43,8 +45,6 @@ set(PROJECT_SOURCES
         src/core/perspectiveplane.h
         src/core/perspectivetransform.cpp
         src/core/perspectivetransform.h
-        src/core/scenecontentcache.cpp
-        src/core/scenecontentcache.h
         src/core/scenerenderer.cpp
         src/core/scenerenderer.h
         res.qrc

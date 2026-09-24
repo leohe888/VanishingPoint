@@ -1,13 +1,10 @@
 #pragma once
 
-#include "core/brushtool.h"
-#include "core/canvasdocument.h"
-#include "core/clonetool.h"
+#include "vpcontroller.h"
 #include "core/floatingimagetransformtool.h"
 #include "core/planecreatetool.h"
 #include "core/planeedittool.h"
 
-#include <QByteArray>
 #include <QColor>
 #include <QImage>
 #include <QPainterPath>
@@ -101,7 +98,6 @@ private:
     void deleteSelectedPlane();   // 删除当前选中的平面
     void reportCreateProgress();  // 状态栏提示创建进度
     bool cursorPreviewVisible() const; // 当前是否需要在光标处画预览
-    const QImage &cloneSource();  // 仿制取样的内容（按内容缓存）
     void drawCloneMarker(QPainter *painter); // 仿制源的绿色十字指示
 
     // 浮动图像：按下/拖动/松开三处入口，命中测试与吸附动作。图像优先于工具——
@@ -127,12 +123,11 @@ private:
     void fillSelectionFromPoint(const QPointF &point);
     void drawSelectionOutline(QPainter *painter);
 
-    CanvasDocument m_doc;
+    VpController m_controller;
+    VpDocument &m_doc; // 尚未迁移的平面、选区与浮动图像交互使用的模型引用
 
     PlaneCreateTool m_createTool;
     PlaneEditTool m_editTool;
-    BrushTool m_brushTool;
-    CloneTool m_cloneTool;
 
     Tool m_tool = Tool::CreatePlane; // 当前工具
 
@@ -144,9 +139,6 @@ private:
     int m_gridSize = 50; // 平面网格边长（图像像素），单位与展开曲面坐标一致
 
     QPointF m_cursorPoint;
-
-    QImage m_cloneSource;        // 仿制取样的内容快照
-    QByteArray m_cloneSourceKey; // 快照对应的内容键
 
     int m_antsPhase = 0; // 选中框虚线的相位，逐帧递增形成蚂蚁线
 

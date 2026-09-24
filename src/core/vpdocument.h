@@ -16,11 +16,11 @@
 //  - 平面只提供透视规则（几何），不持有绘画或图像内容；
 //  - 画笔笔触烘焙在画布同尺寸的绘画层上（画布坐标）；
 //  - 浮动图像各自携带吸附瞬间的几何快照，严格独立于平面。
-class CanvasDocument : public QObject
+class VpDocument : public QObject
 {
     Q_OBJECT
 public:
-    explicit CanvasDocument(QObject *parent = nullptr);
+    explicit VpDocument(QObject *parent = nullptr);
 
     // —— 背景（即“文档”） ——
     bool loadImage(const QString &fileName);       // 加载背景并重置文档状态

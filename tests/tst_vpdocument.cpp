@@ -1,10 +1,10 @@
 #include <QtTest>
 #include <QTemporaryDir>
 
-#include "core/canvasdocument.h"
+#include "core/vpdocument.h"
 #include "testhelpers.h"
 
-class CanvasDocumentTest : public QObject
+class VpDocumentTest : public QObject
 {
     Q_OBJECT
 
@@ -20,16 +20,16 @@ private slots:
     void removesSelectedFloatingImage();
 };
 
-void CanvasDocumentTest::rejectsInvalidPlane()
+void VpDocumentTest::rejectsInvalidPlane()
 {
-    CanvasDocument document;
+    VpDocument document;
     QCOMPARE(document.appendPlane(makeSelfIntersectingPlane()), -1);
     QVERIFY(document.planes().isEmpty());
 }
 
-void CanvasDocumentTest::commitsUndoAndRedo()
+void VpDocumentTest::commitsUndoAndRedo()
 {
-    CanvasDocument document;
+    VpDocument document;
     document.beginEdit();
     QCOMPARE(document.appendPlane(makeTestPlane()), 0);
     document.setSelectedPlane(0);
@@ -45,9 +45,9 @@ void CanvasDocumentTest::commitsUndoAndRedo()
     QCOMPARE(document.selectedPlane(), 0);
 }
 
-void CanvasDocumentTest::cancelEditRestoresPlane()
+void VpDocumentTest::cancelEditRestoresPlane()
 {
-    CanvasDocument document;
+    VpDocument document;
     document.beginEdit();
     document.appendPlane(makeTestPlane());
     document.cancelEdit();
@@ -55,7 +55,7 @@ void CanvasDocumentTest::cancelEditRestoresPlane()
     QVERIFY(!document.canUndo());
 }
 
-void CanvasDocumentTest::loadingImageResetsDocument()
+void VpDocumentTest::loadingImageResetsDocument()
 {
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
@@ -64,7 +64,7 @@ void CanvasDocumentTest::loadingImageResetsDocument()
     image.fill(Qt::white);
     QVERIFY(image.save(path));
 
-    CanvasDocument document;
+    VpDocument document;
     document.beginEdit();
     document.appendPlane(makeTestPlane());
     document.commitEdit(true);
@@ -77,9 +77,9 @@ void CanvasDocumentTest::loadingImageResetsDocument()
 }
 
 // 删除选中的平面：平面数减一，选中项落到相邻平面，且可撤销。
-void CanvasDocumentTest::removesSelectedPlane()
+void VpDocumentTest::removesSelectedPlane()
 {
-    CanvasDocument document;
+    VpDocument document;
     document.beginEdit();
     document.appendPlane(makeTestPlane());
     document.appendPlane(makeTestPlane());
@@ -94,9 +94,9 @@ void CanvasDocumentTest::removesSelectedPlane()
 }
 
 // 删平面按 parentPlaneIndex / parentEdgeIndex 解除共用边的锁定，不依赖两端点是否仍然几何重合。
-void CanvasDocumentTest::removesPlaneReleasesSharedEdge()
+void VpDocumentTest::removesPlaneReleasesSharedEdge()
 {
-    CanvasDocument document;
+    VpDocument document;
     document.beginEdit();
     PerspectivePlane parent = makeTestPlane();              // 父平面：下标 0
     parent.setEdgeLocked(1, true);
@@ -121,9 +121,9 @@ void CanvasDocumentTest::removesPlaneReleasesSharedEdge()
 }
 
 // 共边关系：父子平面互为共边，独立平面不算共边；删掉子平面后父平面解除共边。
-void CanvasDocumentTest::planeLinkageTracksSharedEdge()
+void VpDocumentTest::planeLinkageTracksSharedEdge()
 {
-    CanvasDocument document;
+    VpDocument document;
     document.beginEdit();
     document.appendPlane(makeTestPlane());       // 父平面：下标 0
     PerspectivePlane child = makeTestPlane();               // 子平面：下标 1
@@ -142,9 +142,9 @@ void CanvasDocumentTest::planeLinkageTracksSharedEdge()
 }
 
 // 粘贴：图像追加到画布左上角、未吸附，并自动成为选中项；可撤销。
-void CanvasDocumentTest::pastesImageAsSelectedFloatingImage()
+void VpDocumentTest::pastesImageAsSelectedFloatingImage()
 {
-    CanvasDocument document;
+    VpDocument document;
     QImage image(32, 24, QImage::Format_ARGB32);
     image.fill(Qt::red);
 
@@ -161,9 +161,9 @@ void CanvasDocumentTest::pastesImageAsSelectedFloatingImage()
 }
 
 // 删除选中的浮动图像：选中项落到删除位置上的下一张，且可撤销。
-void CanvasDocumentTest::removesSelectedFloatingImage()
+void VpDocumentTest::removesSelectedFloatingImage()
 {
-    CanvasDocument document;
+    VpDocument document;
     QImage image(8, 8, QImage::Format_ARGB32);
     image.fill(Qt::red);
     document.addFloatingImage(image);
@@ -178,5 +178,5 @@ void CanvasDocumentTest::removesSelectedFloatingImage()
     QCOMPARE(document.floatingImages().size(), 2);
 }
 
-QTEST_APPLESS_MAIN(CanvasDocumentTest)
-#include "tst_canvasdocument.moc"
+QTEST_APPLESS_MAIN(VpDocumentTest)
+#include "tst_vpdocument.moc"

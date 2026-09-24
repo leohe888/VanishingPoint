@@ -6,7 +6,7 @@
 #include <QPainterPath>
 
 class QPainter;
-class CanvasDocument;
+class VpDocument;
 struct FloatingImage;
 
 // 场景渲染器：把文档内容绘制到 QPainter。
@@ -19,7 +19,7 @@ struct FloatingImage;
 class SceneRenderer
 {
 public:
-    explicit SceneRenderer(const CanvasDocument &doc);
+    explicit SceneRenderer(const VpDocument &doc);
 
     // 渲染完整场景。showGuides 为 true 时额外绘制编辑辅助元素；
     // creationPoints 为创建平面过程中已点击的角点；
@@ -49,6 +49,6 @@ private:
                          bool hovered, bool showHandles, qreal gridSize,
                          int planeIndex = -1) const;
 
-    const CanvasDocument &m_doc;   // 被渲染的文档（只读）
+    const VpDocument &m_doc;   // 被渲染的文档（只读）
     qreal m_viewScale = 1.0;       // 当前视图缩放（用于辅助层线宽换算）
 };

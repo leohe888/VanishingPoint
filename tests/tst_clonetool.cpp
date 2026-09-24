@@ -2,7 +2,7 @@
 #include <QTemporaryDir>
 #include <QPainter>
 
-#include "core/canvasdocument.h"
+#include "core/vpdocument.h"
 #include "core/clonetool.h"
 #include "testhelpers.h"
 
@@ -263,7 +263,7 @@ void CloneToolTest::undoRemovesWholeStroke()
     background.fill(Qt::white);
     QVERIFY(background.save(path));
 
-    CanvasDocument document;
+    VpDocument document;
     QVERIFY(document.loadImage(path));
 
     CloneTool tool = readyTool();

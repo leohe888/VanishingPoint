@@ -1,4 +1,4 @@
-#include "canvasdocument.h"
+#include "vpdocument.h"
 
 #include <QPainter>
 
@@ -8,13 +8,13 @@ constexpr int MaxHistoryStates = 40;
 }
 
 // 构造函数：以空文档的初始状态作为第一份历史状态
-CanvasDocument::CanvasDocument(QObject *parent) : QObject(parent)
+VpDocument::VpDocument(QObject *parent) : QObject(parent)
 {
     resetHistory();
 }
 
 // 从文件加载背景图像，并清空平面、浮动图像与绘画层、重置历史记录
-bool CanvasDocument::loadImage(const QString &fileName)
+bool VpDocument::loadImage(const QString &fileName)
 {
     QImage image(fileName);
     if (image.isNull())
@@ -33,7 +33,7 @@ bool CanvasDocument::loadImage(const QString &fileName)
 }
 
 // 分配一个新的展开曲面分组号（比现有最大分组号大 1）
-int CanvasDocument::nextSurfaceGroupId() const
+int VpDocument::nextSurfaceGroupId() const
 {
     int nextSurfaceGroup = 0;
     for (const PerspectivePlane &existing : m_planes)
@@ -42,7 +42,7 @@ int CanvasDocument::nextSurfaceGroupId() const
 }
 
 // 绘画层是否含有任何不透明像素（供“清除绘画”按钮判断是否有内容可清除）
-bool CanvasDocument::hasPaintContent() const
+bool VpDocument::hasPaintContent() const
 {
     if (m_paintLayer.isNull())
         return false;
@@ -57,7 +57,7 @@ bool CanvasDocument::hasPaintContent() const
 }
 
 // 清空绘画层（不影响平面几何与浮动图像）
-void CanvasDocument::clearPainting()
+void VpDocument::clearPainting()
 {
     if (m_paintLayer.isNull())
         return;
@@ -68,7 +68,7 @@ void CanvasDocument::clearPainting()
 }
 
 // 开始一次绘画事务：浅拷贝当前绘画层作为撤销基线（隐式共享，O(1)）
-void CanvasDocument::beginPaintTransaction()
+void VpDocument::beginPaintTransaction()
 {
     m_paintBefore = m_paintLayer;
     m_paintDirtyRect = QRect();
@@ -76,7 +76,7 @@ void CanvasDocument::beginPaintTransaction()
 }
 
 // 累积本次绘画事务的脏矩形
-void CanvasDocument::addPaintDirty(const QRect &rect)
+void VpDocument::addPaintDirty(const QRect &rect)
 {
     if (rect.isEmpty())
         return;
@@ -84,7 +84,7 @@ void CanvasDocument::addPaintDirty(const QRect &rect)
 }
 
 // 追加一个平面并返回其下标；几何非法时不追加，返回 -1。
-int CanvasDocument::appendPlane(const PerspectivePlane &plane)
+int VpDocument::appendPlane(const PerspectivePlane &plane)
 {
     if (!plane.quad().isValid())
         return -1;
@@ -92,7 +92,7 @@ int CanvasDocument::appendPlane(const PerspectivePlane &plane)
     return m_planes.size() - 1;
 }
 
-bool CanvasDocument::setPlane(int index, const PerspectivePlane &plane)
+bool VpDocument::setPlane(int index, const PerspectivePlane &plane)
 {
     if (index < 0 || index >= m_planes.size() || !plane.quad().isValid())
         return false;
@@ -100,7 +100,7 @@ bool CanvasDocument::setPlane(int index, const PerspectivePlane &plane)
     return true;
 }
 
-bool CanvasDocument::setFloatingImage(int index, const FloatingImage &image)
+bool VpDocument::setFloatingImage(int index, const FloatingImage &image)
 {
     if (index < 0 || index >= m_floatingImages.size() || image.bitmap.isNull()
         || !qIsFinite(image.placementOrigin.x()) || !qIsFinite(image.placementOrigin.y())
@@ -114,7 +114,7 @@ bool CanvasDocument::setFloatingImage(int index, const FloatingImage &image)
 
 // 删除指定平面。内容已与平面解耦：浮动图像持有自己的几何快照，
 // 绘画层独立于平面，因此删除平面无需修正任何内容。
-void CanvasDocument::removePlane(int index)
+void VpDocument::removePlane(int index)
 {
     if (index < 0 || index >= m_planes.size())
         return;
@@ -151,7 +151,7 @@ void CanvasDocument::removePlane(int index)
 }
 
 // 追加一张浮动图像到画布左上角，返回其索引
-int CanvasDocument::addFloatingImage(const QImage &image)
+int VpDocument::addFloatingImage(const QImage &image)
 {
     FloatingImage floating;
     floating.bitmap = image.convertToFormat(QImage::Format_ARGB32);
@@ -164,7 +164,7 @@ int CanvasDocument::addFloatingImage(const QImage &image)
     return m_selectedFloatingImage;
 }
 
-int CanvasDocument::addFloatingImageOnSurface(const QImage &image,
+int VpDocument::addFloatingImageOnSurface(const QImage &image,
                                                const QVector<PerspectiveQuad> &surfaceQuads,
                                                int hostQuadIndex,
                                                const QPointF &surfaceOrigin)
@@ -185,14 +185,14 @@ int CanvasDocument::addFloatingImageOnSurface(const QImage &image,
     return m_selectedFloatingImage;
 }
 
-void CanvasDocument::lockPlaneEdge(int index, int edge)
+void VpDocument::lockPlaneEdge(int index, int edge)
 {
     if (index >= 0 && index < m_planes.size() && edge >= 0 && edge < 4)
         m_planes[index].setEdgeLocked(edge, true);
 }
 
 // 是否与相邻垂直平面共边：自己是子平面，或是别的平面的父平面。
-bool CanvasDocument::isPlaneLinked(int index) const
+bool VpDocument::isPlaneLinked(int index) const
 {
     if (index < 0 || index >= m_planes.size())
         return false;
@@ -206,7 +206,7 @@ bool CanvasDocument::isPlaneLinked(int index) const
 }
 
 // 删除浮动图像，并将选中项移动到删除位置上的下一张（若无则为上一张）。
-void CanvasDocument::removeFloatingImage(int index)
+void VpDocument::removeFloatingImage(int index)
 {
     if (index < 0 || index >= m_floatingImages.size())
         return;
@@ -222,7 +222,7 @@ void CanvasDocument::removeFloatingImage(int index)
 }
 
 // 仅移动图像位置（不改变吸附状态）
-void CanvasDocument::setSelectedFloatingImage(int index)
+void VpDocument::setSelectedFloatingImage(int index)
 {
     index = index >= 0 && index < m_floatingImages.size() ? index : -1;
     if (m_selectedFloatingImage == index)
@@ -231,7 +231,7 @@ void CanvasDocument::setSelectedFloatingImage(int index)
     emit imageSelectionChanged(index >= 0);
 }
 
-void CanvasDocument::setFloatingImageOrigin(int index, const QPointF &placementOrigin)
+void VpDocument::setFloatingImageOrigin(int index, const QPointF &placementOrigin)
 {
     if (index < 0 || index >= m_floatingImages.size())
         return;
@@ -239,7 +239,7 @@ void CanvasDocument::setFloatingImageOrigin(int index, const QPointF &placementO
 }
 
 // 把图像吸附到一组几何快照上（严格快照：此后平面增删改不再影响它）
-void CanvasDocument::attachFloatingImage(int index,
+void VpDocument::attachFloatingImage(int index,
                                          const QVector<PerspectiveQuad> &surfaceQuads,
                                          int hostQuadIndex, const QPointF &surfaceOrigin)
 {
@@ -253,7 +253,7 @@ void CanvasDocument::attachFloatingImage(int index,
 }
 
 // 让图像脱离曲面，回到画布坐标
-void CanvasDocument::detachFloatingImage(int index, const QPointF &canvasOrigin)
+void VpDocument::detachFloatingImage(int index, const QPointF &canvasOrigin)
 {
     if (index < 0 || index >= m_floatingImages.size())
         return;
@@ -265,7 +265,7 @@ void CanvasDocument::detachFloatingImage(int index, const QPointF &canvasOrigin)
 }
 
 // 撤销：回退到上一状态（结构 + 绘画层脏矩形反演）
-bool CanvasDocument::undo()
+bool VpDocument::undo()
 {
     if (m_historyIndex <= 0)
         return false;
@@ -280,7 +280,7 @@ bool CanvasDocument::undo()
 }
 
 // 重做：前进到下一状态
-bool CanvasDocument::redo()
+bool VpDocument::redo()
 {
     if (m_historyIndex + 1 >= m_history.size())
         return false;
@@ -295,7 +295,7 @@ bool CanvasDocument::redo()
 }
 
 // 清空历史并以当前状态作为初始状态（用于加载新文档）
-void CanvasDocument::resetHistory()
+void VpDocument::resetHistory()
 {
     m_editActive = false;
     m_editBefore = HistoryEntry();
@@ -316,7 +316,7 @@ void CanvasDocument::resetHistory()
 }
 
 // 提交一次状态变更：丢弃旧的重做分支，追加新状态并裁剪历史长度
-void CanvasDocument::beginEdit()
+void VpDocument::beginEdit()
 {
     if (m_editActive)
         return;
@@ -328,7 +328,7 @@ void CanvasDocument::beginEdit()
     m_editActive = true;
 }
 
-void CanvasDocument::commitEdit(bool changed)
+void VpDocument::commitEdit(bool changed)
 {
     if (!m_editActive)
         return;
@@ -344,7 +344,7 @@ void CanvasDocument::commitEdit(bool changed)
     }
 }
 
-void CanvasDocument::cancelEdit()
+void VpDocument::cancelEdit()
 {
     if (!m_editActive)
         return;
@@ -360,7 +360,7 @@ void CanvasDocument::cancelEdit()
     restoreStructure(before);
 }
 
-void CanvasDocument::commitHistory()
+void VpDocument::commitHistory()
 {
     while (m_history.size() > m_historyIndex + 1)
         m_history.removeLast();
@@ -395,7 +395,7 @@ void CanvasDocument::commitHistory()
 }
 
 // 仅恢复结构部分（平面 + 浮动图像 + 选中状态）
-void CanvasDocument::restoreStructure(const HistoryEntry &entry)
+void VpDocument::restoreStructure(const HistoryEntry &entry)
 {
     m_planes = entry.planes;
     m_selectedPlane = entry.selectedPlane;
@@ -404,7 +404,7 @@ void CanvasDocument::restoreStructure(const HistoryEntry &entry)
 }
 
 // 把像素直接覆盖回绘画层的指定矩形（用于脏矩形的撤销/重做）
-void CanvasDocument::applyPaint(const QRect &rect, const QImage &pixels)
+void VpDocument::applyPaint(const QRect &rect, const QImage &pixels)
 {
     if (rect.isEmpty() || pixels.isNull())
         return;

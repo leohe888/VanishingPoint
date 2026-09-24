@@ -5,7 +5,6 @@
 
 #include <QClipboard>
 #include <QCursor>
-#include <QDataStream>
 #include <QGuiApplication>
 #include <QFile>
 #include <QHoverEvent>
@@ -19,7 +18,7 @@ constexpr qreal ViewMargin = 16.0; // 图像与画布边缘的留白
 }
 
 VpCanvas::VpCanvas(QQuickItem *parent)
-    : QQuickPaintedItem(parent)
+    : QQuickPaintedItem(parent), m_doc(m_controller.document())
 {
     setAcceptHoverEvents(true); // 接受鼠标悬停事件
     setAcceptedMouseButtons(Qt::LeftButton); // 接受鼠标左键
@@ -44,7 +43,7 @@ VpCanvas::VpCanvas(QQuickItem *parent)
 
     // 选中消失（烘焙进绘画层、被删除）后变换工具已无从操作，自动退回编辑平面工具；
     // setTool 内部会放弃进行中的交互，toolChanged 负责把 QML 工具栏一起带回去。
-    connect(&m_doc, &CanvasDocument::imageSelectionChanged, this, [this](bool selected) {
+    connect(&m_doc, &VpDocument::imageSelectionChanged, this, [this](bool selected) {
         if (!selected && m_tool == Tool::Transform)
             setTool(Tool::EditPlane);
         update();
@@ -95,107 +94,107 @@ void VpCanvas::setTool(Tool tool)
 
 int VpCanvas::brushDiameter() const
 {
-    return m_brushTool.diameter();
+    return m_controller.brushDiameter();
 }
 
 // 越界值由引擎钳到合法区间
 void VpCanvas::setBrushDiameter(int value)
 {
-    if (m_brushTool.diameter() == value)
+    if (m_controller.brushDiameter() == value)
         return;
-    m_brushTool.setDiameter(value);
+    m_controller.setBrushDiameter(value);
     emit brushChanged();
 }
 
 int VpCanvas::brushHardness() const
 {
-    return m_brushTool.hardness();
+    return m_controller.brushHardness();
 }
 
 void VpCanvas::setBrushHardness(int value)
 {
-    if (m_brushTool.hardness() == value)
+    if (m_controller.brushHardness() == value)
         return;
-    m_brushTool.setHardness(value);
+    m_controller.setBrushHardness(value);
     emit brushChanged();
 }
 
 int VpCanvas::brushOpacity() const
 {
-    return m_brushTool.opacity();
+    return m_controller.brushOpacity();
 }
 
 void VpCanvas::setBrushOpacity(int value)
 {
-    if (m_brushTool.opacity() == value)
+    if (m_controller.brushOpacity() == value)
         return;
-    m_brushTool.setOpacity(value);
+    m_controller.setBrushOpacity(value);
     emit brushChanged();
 }
 
 QColor VpCanvas::brushColor() const
 {
-    return m_brushTool.color();
+    return m_controller.brushColor();
 }
 
 void VpCanvas::setBrushColor(const QColor &color)
 {
-    if (m_brushTool.color() == color)
+    if (m_controller.brushColor() == color)
         return;
-    m_brushTool.setColor(color);
+    m_controller.setBrushColor(color);
     emit brushChanged();
 }
 
 int VpCanvas::cloneDiameter() const
 {
-    return m_cloneTool.diameter();
+    return m_controller.cloneDiameter();
 }
 
 // 越界值由引擎钳到合法区间
 void VpCanvas::setCloneDiameter(int value)
 {
-    if (m_cloneTool.diameter() == value)
+    if (m_controller.cloneDiameter() == value)
         return;
-    m_cloneTool.setDiameter(value);
+    m_controller.setCloneDiameter(value);
     emit cloneChanged();
 }
 
 int VpCanvas::cloneHardness() const
 {
-    return m_cloneTool.hardness();
+    return m_controller.cloneHardness();
 }
 
 void VpCanvas::setCloneHardness(int value)
 {
-    if (m_cloneTool.hardness() == value)
+    if (m_controller.cloneHardness() == value)
         return;
-    m_cloneTool.setHardness(value);
+    m_controller.setCloneHardness(value);
     emit cloneChanged();
 }
 
 int VpCanvas::cloneOpacity() const
 {
-    return m_cloneTool.opacity();
+    return m_controller.cloneOpacity();
 }
 
 void VpCanvas::setCloneOpacity(int value)
 {
-    if (m_cloneTool.opacity() == value)
+    if (m_controller.cloneOpacity() == value)
         return;
-    m_cloneTool.setOpacity(value);
+    m_controller.setCloneOpacity(value);
     emit cloneChanged();
 }
 
 bool VpCanvas::cloneAligned() const
 {
-    return m_cloneTool.aligned();
+    return m_controller.cloneAligned();
 }
 
 void VpCanvas::setCloneAligned(bool aligned)
 {
-    if (m_cloneTool.aligned() == aligned)
+    if (m_controller.cloneAligned() == aligned)
         return;
-    m_cloneTool.setAligned(aligned);
+    m_controller.setCloneAligned(aligned);
     emit cloneChanged();
     update();
 }
@@ -278,24 +277,6 @@ void VpCanvas::setPlaneAngle(qreal angle)
 
 // 仿制取样的内容 = 背景 + 绘画层 + 浮动图像，即画面上看到的全部内容。
 // 按内容键缓存；落笔期间冻结，使整笔都取自同一份快照，也免得每次移动都重铺一遍。
-const QImage &VpCanvas::cloneSource()
-{
-    QByteArray key;
-    QDataStream stream(&key, QIODevice::WriteOnly);
-    stream << m_doc.background().cacheKey() << m_doc.paintLayer().cacheKey()
-           << qint64(m_doc.floatingImages().size());
-    for (const FloatingImage &image : m_doc.floatingImages())
-        stream << image.bitmap.cacheKey() << FloatingImageProjection::cacheKey(image);
-    if (m_cloneTool.drawing() || (key == m_cloneSourceKey && !m_cloneSource.isNull()))
-        return m_cloneSource;
-    m_cloneSourceKey = key;
-    m_cloneSource = QImage(m_doc.background().size(), QImage::Format_ARGB32_Premultiplied);
-    m_cloneSource.fill(Qt::transparent);
-    QPainter painter(&m_cloneSource);
-    SceneRenderer(m_doc).render(painter, 1.0, /*showGuides*/ false);
-    return m_cloneSource;
-}
-
 void VpCanvas::paint(QPainter *painter)
 {
     painter->fillRect(boundingRect(), QColor("#4D4D4D"));
@@ -313,11 +294,10 @@ void VpCanvas::paint(QPainter *painter)
     // 光标离开画布时不画预览：空点 (0,0) 同时也是合法的图像坐标
     const bool cursorOnCanvas = !m_cursorPoint.isNull();
     if (cursorOnCanvas && m_tool == Tool::Brush)
-        m_brushTool.renderPreview(*painter, m_doc.planes(), m_doc.background().size(), m_cursorPoint);
+        m_controller.renderBrushPreview(*painter, m_cursorPoint);
     if (m_tool == Tool::CloneStamp) {
         if (cursorOnCanvas)
-            m_cloneTool.renderPreview(*painter, cloneSource(), m_doc.planes(),
-                                      m_doc.background().size(), m_cursorPoint);
+            m_controller.renderClonePreview(*painter, m_cursorPoint);
         drawCloneMarker(painter);
     }
     drawFloatingImageHandles(painter);
@@ -328,9 +308,9 @@ void VpCanvas::paint(QPainter *painter)
 // 仿制源用绿色十字标出，线宽与臂长都按视图缩放换算，屏幕上尺寸恒定
 void VpCanvas::drawCloneMarker(QPainter *painter)
 {
-    if (!m_cloneTool.hasSource())
+    if (!m_controller.hasCloneSource())
         return;
-    const QPointF marker = m_cloneTool.marker();
+    const QPointF marker = m_controller.cloneMarker();
     const qreal arm = 7.0 / m_scale;
     painter->save();
     painter->setPen(QPen(QColor("#00e676"), 1.0 / m_scale));
@@ -416,36 +396,25 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         update();
         return;
     case Tool::Brush: {
-        // 事务要先开，否则撤销基线会带上第一个笔触点
-        m_doc.beginPaintTransaction();
-        const QRect dirty = m_brushTool.begin(m_doc.paintLayer(), m_doc.planes(),
-                                              m_doc.background().size(), point);
-        if (!m_brushTool.drawing())
-            return; // 没锚定到可绘制面片：事务保持为空，提交时不会记录绘画变更
-        m_doc.addPaintDirty(dirty);
-        update();
+        if (m_controller.beginBrush(point))
+            update();
         return;
     }
     case Tool::CloneStamp: {
         // Alt+单击只取源点，不落笔
         if (event->modifiers() & Qt::AltModifier) {
-            const bool picked = m_cloneTool.pickSource(m_doc.planes(), m_doc.background().size(), point);
+            const bool picked = m_controller.pickCloneSource(point);
             emit statusMessage(picked ? tr("已设置仿制源，按住 Alt 可重新取样")
                                       : tr("此处无法作为仿制源。"));
             update();
             return;
         }
-        if (!m_cloneTool.hasSource()) {
+        if (!m_controller.hasCloneSource()) {
             emit statusMessage(tr("请先按住 Alt 单击，设置仿制源。"));
             return;
         }
-        m_doc.beginPaintTransaction();
-        const QRect dirty = m_cloneTool.begin(m_doc.paintLayer(), cloneSource(), m_doc.planes(),
-                                              m_doc.background().size(), point);
-        if (!m_cloneTool.drawing())
-            return; // 没锚定到可绘制面片：事务保持为空，提交时不会记录绘画变更
-        m_doc.addPaintDirty(dirty);
-        update();
+        if (m_controller.beginClone(point))
+            update();
         return;
     }
     case Tool::Marquee: {
@@ -555,14 +524,14 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
         return;
     }
     case Tool::Brush:
-        if (m_brushTool.drawing()) {
-            m_doc.addPaintDirty(m_brushTool.move(m_doc.paintLayer(), m_cursorPoint));
+        if (m_controller.brushDrawing()) {
+            m_controller.moveBrush(m_cursorPoint);
             update();
         }
         return;
     case Tool::CloneStamp:
-        if (m_cloneTool.drawing()) {
-            m_doc.addPaintDirty(m_cloneTool.move(m_doc.paintLayer(), m_cursorPoint));
+        if (m_controller.cloneDrawing()) {
+            m_controller.moveClone(m_cursorPoint);
             update();
         }
         return;
@@ -598,16 +567,14 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
         return;
     }
     case Tool::Brush:
-        if (m_brushTool.drawing()) {
-            m_brushTool.end();
-            m_doc.commitHistory(); // 一笔落成，提交为一格历史
+        if (m_controller.brushDrawing()) {
+            m_controller.endBrush();
             update();
         }
         return;
     case Tool::CloneStamp:
-        if (m_cloneTool.drawing()) {
-            m_cloneTool.end();
-            m_doc.commitHistory(); // 一笔落成，提交为一格历史
+        if (m_controller.cloneDrawing()) {
+            m_controller.endClone();
             update();
         }
         return;
@@ -645,7 +612,7 @@ void VpCanvas::updateCursorPoint(const QPointF &widgetPoint)
 {
     m_cursorPoint = widgetToImage(widgetPoint);
     if (m_tool == Tool::CloneStamp)
-        m_cloneTool.hover(m_doc.planes(), m_doc.background().size(), m_cursorPoint);
+        m_controller.hoverClone(m_cursorPoint);
     if (cursorPreviewVisible())
         update();
 }
@@ -767,15 +734,8 @@ void VpCanvas::cancelInteraction()
 {
     m_createTool.reset();
     m_extrudePreviewReady = false; // 拖出垂直平面的预览随交互一起作废
-    // 进行中的笔触已经烘焙进绘画层，无法回退，只能提交
-    if (m_brushTool.drawing()) {
-        m_brushTool.end();
-        m_doc.commitHistory();
-    }
-    if (m_cloneTool.drawing()) {
-        m_cloneTool.end();
-        m_doc.commitHistory();
-    }
+    // 进行中的笔触已经烘焙进绘画层，切换工具时提交。
+    m_controller.finishActiveStrokes();
     // 平面拖动、图像拖动与 Ctrl 克隆都只改了结构或绘画预览，可以直接丢弃
     if (m_editPlaneIndex >= 0 || m_draggedFloatingImageIndex >= 0
         || m_selectionAction != SelectionAction::None) {
@@ -794,7 +754,7 @@ bool VpCanvas::cursorPreviewVisible() const
     if (m_tool == Tool::Brush)
         return true;
     if (m_tool == Tool::CloneStamp)
-        return m_cloneTool.hasSource();
+        return m_controller.hasCloneSource();
     return m_tool == Tool::CreatePlane && m_createTool.creating();
 }
 

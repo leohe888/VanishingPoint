@@ -40,21 +40,32 @@ add_vp_test(tst_planeedittool
     ${PROJECT_SOURCE_DIR}/src/core/planeedittool.cpp
     ${VP_GEOMETRY_SOURCES})
 
-add_vp_test(tst_canvasdocument
-    tst_canvasdocument.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/canvasdocument.cpp
+add_vp_test(tst_vpdocument
+    tst_vpdocument.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/vpdocument.cpp
     ${VP_GEOMETRY_SOURCES})
 
 add_vp_test(tst_brushtool
     tst_brushtool.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/canvasdocument.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/vpdocument.cpp
     ${PROJECT_SOURCE_DIR}/src/core/brushtool.cpp
     ${VP_GEOMETRY_SOURCES})
 
 add_vp_test(tst_clonetool
     tst_clonetool.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/canvasdocument.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/vpdocument.cpp
     ${PROJECT_SOURCE_DIR}/src/core/clonetool.cpp
+    ${VP_GEOMETRY_SOURCES})
+
+add_vp_test(tst_vpcontroller
+    tst_vpcontroller.cpp
+    ${PROJECT_SOURCE_DIR}/src/canvas/vpcontroller.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/vpdocument.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/brushtool.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/clonetool.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/floatingimage.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/floatingimageprojection.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/scenerenderer.cpp
     ${VP_GEOMETRY_SOURCES})
 
 add_vp_test(tst_floatingimageprojection

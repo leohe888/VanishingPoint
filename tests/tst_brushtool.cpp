@@ -3,7 +3,7 @@
 #include <QPainter>
 
 #include "core/brushtool.h"
-#include "core/canvasdocument.h"
+#include "core/vpdocument.h"
 #include "testhelpers.h"
 
 class BrushToolTest : public QObject
@@ -154,7 +154,7 @@ void BrushToolTest::undoRemovesWholeStroke()
     background.fill(Qt::white);
     QVERIFY(background.save(path));
 
-    CanvasDocument document;
+    VpDocument document;
     QVERIFY(document.loadImage(path));
 
     BrushTool tool;

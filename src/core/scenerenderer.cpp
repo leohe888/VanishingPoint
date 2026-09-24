@@ -1,6 +1,6 @@
 #include "scenerenderer.h"
 
-#include "canvasdocument.h"
+#include "vpdocument.h"
 #include "floatingimageprojection.h"
 
 #include <QFont>
@@ -13,7 +13,7 @@
 // 单位为画布像素，绘制时再按视图缩放换算。
 constexpr qreal HandleHalfSize = 4.0;
 
-SceneRenderer::SceneRenderer(const CanvasDocument &doc)
+SceneRenderer::SceneRenderer(const VpDocument &doc)
     : m_doc(doc)
 {
 }
