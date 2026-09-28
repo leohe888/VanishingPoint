@@ -15,6 +15,7 @@ qreal pointToSegmentDistance(const QPointF &point, const QPointF &start,
 {
     const QPointF segment = end - start;
     const qreal squaredLength = QPointF::dotProduct(segment, segment);
+    // 将投影参数限制在 [0, 1]，求到线段而非无限直线的距离；退化线段按起点处理。
     const qreal position = squaredLength < Epsilon
         ? 0.0
         : qBound(0.0, QPointF::dotProduct(point - start, segment) / squaredLength, 1.0);
@@ -78,11 +79,13 @@ bool PerspectiveQuad::isValid() const
         const QPointF a = m_canvasCorners[i];
         const QPointF b = m_canvasCorners[(i + 1) % CornerCount];
         const QPointF c = m_canvasCorners[(i + 2) % CornerCount];
+        // 排除过短的边，避免面片缩小到难以编辑的程度。
         if (QLineF(a, b).length() < 8.0)
             return false;
         const QPointF ab = b - a;
         const QPointF bc = c - b;
         const qreal cross = ab.x() * bc.y() - ab.y() * bc.x();
+        // 相邻边不能接近共线，且所有转角须同向，以排除凹四边形和自交四边形。
         if (qAbs(cross) < 4.0)
             return false;
         const qreal sign = cross > 0.0 ? 1.0 : -1.0;
@@ -90,8 +93,10 @@ bool PerspectiveQuad::isValid() const
             windingSign = sign;
         else if (sign != windingSign)
             return false;
+        // 鞋带公式累加有向面积的两倍，兼容两种角点绕序。
         twiceArea += a.x() * b.y() - b.x() * a.y();
     }
+    // 面积至少为 100 个画布坐标单位的平方，避免面片过小。
     if (qAbs(twiceArea) < 100.0)
         return false;
 
@@ -101,6 +106,8 @@ bool PerspectiveQuad::isValid() const
     if (!QTransform::quadToQuad(unit, canvasPolygon(), transform))
         return false;
 
+    // 透视映射需要除以齐次分母 w。w 在 UV 上是线性函数，四角非零且同号
+    // 可保证整个单位正方形内不会出现 w = 0，避免投影跨越无穷远。
     qreal denominatorSign = 0.0;
     for (const QPointF &uv : unit) {
         const qreal w = transform.m13() * uv.x() +

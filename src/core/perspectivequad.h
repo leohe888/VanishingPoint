@@ -11,7 +11,7 @@
 class PerspectiveQuad
 {
 public:
-    static constexpr int CornerCount = 4;
+    static constexpr int CornerCount = 4;   // 角点数量
     using Corners = std::array<QPointF, CornerCount>;
 
     PerspectiveQuad() = default;
@@ -27,6 +27,7 @@ public:
 
     QPolygonF canvasPolygon() const;
     QPolygonF surfacePolygon() const;
+    // 返回画布上的 8 个控制点：0～3 为角点，4～7 为对应边的中点。
     QVector<QPointF> controlPoints() const;
 
     bool isValid() const;
