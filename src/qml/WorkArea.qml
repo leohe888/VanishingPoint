@@ -7,6 +7,7 @@ Rectangle {
     border.width: 1
 
     property alias canvas: canvas
+    property alias controller: canvas.controller
 
     VpCanvas {
         id: canvas

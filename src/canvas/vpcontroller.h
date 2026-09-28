@@ -5,34 +5,67 @@
 #include "core/vpdocument.h"
 
 #include <QByteArray>
+#include <QObject>
 
 class QPainter;
 
-// 编辑命令与文档事务的入口。坐标均为图像坐标，不依赖 QQuickItem。
-// VpCanvas 接收 Qt 事件、换算坐标并请求重绘；控制器拥有文档和工具状态。
-class VpController final
+class VpController final : public QObject
 {
+    Q_OBJECT
+    Q_PROPERTY(Tool tool READ tool WRITE setTool NOTIFY toolChanged)
+    Q_PROPERTY(int brushDiameter READ brushDiameter WRITE setBrushDiameter NOTIFY brushChanged)
+    Q_PROPERTY(int brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushChanged)
+    Q_PROPERTY(int brushOpacity READ brushOpacity WRITE setBrushOpacity NOTIFY brushChanged)
+    Q_PROPERTY(QColor brushColor READ brushColor WRITE setBrushColor NOTIFY brushChanged)
+    Q_PROPERTY(int cloneDiameter READ cloneDiameter WRITE setCloneDiameter NOTIFY cloneChanged)
+    Q_PROPERTY(int cloneHardness READ cloneHardness WRITE setCloneHardness NOTIFY cloneChanged)
+    Q_PROPERTY(int cloneOpacity READ cloneOpacity WRITE setCloneOpacity NOTIFY cloneChanged)
+    Q_PROPERTY(bool cloneAligned READ cloneAligned WRITE setCloneAligned NOTIFY cloneChanged)
+    Q_PROPERTY(int gridSize READ gridSize WRITE setGridSize NOTIFY gridSizeChanged)
+    Q_PROPERTY(qreal planeAngle READ planeAngle WRITE setPlaneAngle NOTIFY planeAngleChanged)
+    Q_PROPERTY(bool planeAngleEditable READ planeAngleEditable NOTIFY planeAngleChanged)
+    Q_PROPERTY(QString planeAngleLockReason READ planeAngleLockReason NOTIFY planeAngleChanged)
+
 public:
+    enum Tool { CreatePlane, EditPlane, Marquee, CloneStamp, Brush, Transform };
+    Q_ENUM(Tool)
+
+    explicit VpController(QObject *parent = nullptr) : QObject(parent) {}
+
     VpDocument &document() { return m_document; }
     const VpDocument &document() const { return m_document; }
 
+    Tool tool() const { return m_tool; }
+    void setTool(Tool tool);
+
     int brushDiameter() const { return m_brushTool.diameter(); }
-    void setBrushDiameter(int value) { m_brushTool.setDiameter(value); }
+    void setBrushDiameter(int value);
     int brushHardness() const { return m_brushTool.hardness(); }
-    void setBrushHardness(int value) { m_brushTool.setHardness(value); }
+    void setBrushHardness(int value);
     int brushOpacity() const { return m_brushTool.opacity(); }
-    void setBrushOpacity(int value) { m_brushTool.setOpacity(value); }
+    void setBrushOpacity(int value);
     QColor brushColor() const { return m_brushTool.color(); }
-    void setBrushColor(const QColor &color) { m_brushTool.setColor(color); }
+    void setBrushColor(const QColor &color);
 
     int cloneDiameter() const { return m_cloneTool.diameter(); }
-    void setCloneDiameter(int value) { m_cloneTool.setDiameter(value); }
+    void setCloneDiameter(int value);
     int cloneHardness() const { return m_cloneTool.hardness(); }
-    void setCloneHardness(int value) { m_cloneTool.setHardness(value); }
+    void setCloneHardness(int value);
     int cloneOpacity() const { return m_cloneTool.opacity(); }
-    void setCloneOpacity(int value) { m_cloneTool.setOpacity(value); }
+    void setCloneOpacity(int value);
     bool cloneAligned() const { return m_cloneTool.aligned(); }
-    void setCloneAligned(bool aligned) { m_cloneTool.setAligned(aligned); }
+    void setCloneAligned(bool aligned);
+
+    int gridSize() const { return m_gridSize; }
+    void setGridSize(int value);
+    qreal planeAngle() const;
+    void setPlaneAngle(qreal angle);
+    bool planeAngleEditable() const;
+    QString planeAngleLockReason() const;
+
+    Q_INVOKABLE void pasteImage();
+    void notifyPlaneAngleChanged() { emit planeAngleChanged(); }
+    void postStatus(const QString &text) { emit statusMessage(text); }
 
     bool brushDrawing() const { return m_brushTool.drawing(); }
     bool beginBrush(const QPointF &point);
@@ -53,12 +86,26 @@ public:
     // 切换工具时，已写入绘画层的笔触提交为一格历史。
     void finishActiveStrokes();
 
+signals:
+    void aboutToChangeTool();
+    void toolChanged();
+    void brushChanged();
+    void cloneChanged();
+    void gridSizeChanged();
+    void planeAngleChanged();
+    void statusMessage(const QString &text);
+    void repaintRequested();
+    void focusRequested();
+
 private:
     const QImage &cloneSource();
+    bool canSetSelectedPlaneAngle() const;
 
     VpDocument m_document;
     BrushTool m_brushTool;
     CloneTool m_cloneTool;
     QImage m_cloneSource;
     QByteArray m_cloneSourceKey;
+    Tool m_tool = CreatePlane;
+    int m_gridSize = 50;
 };

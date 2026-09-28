@@ -6,20 +6,20 @@ import VanishingPoint 1.0
 Rectangle {
     id: root
 
-    property VpCanvas canvas
+    property VpController controller
 
     color: "#535353"
     border.color: "#3e3e3e"
     border.width: 1
 
     // 只显示当前工具有意义的选项
-    readonly property bool brushOptionsVisible: root.canvas !== null
-                                                && root.canvas.tool === VpCanvas.Brush
-    readonly property bool cloneOptionsVisible: root.canvas !== null
-                                                && root.canvas.tool === VpCanvas.CloneStamp
-    readonly property bool planeOptionsVisible: root.canvas !== null
-                                                && (root.canvas.tool === VpCanvas.CreatePlane
-                                                    || root.canvas.tool === VpCanvas.EditPlane)
+    readonly property bool brushOptionsVisible: root.controller !== null
+                                                && root.controller.tool === VpController.Brush
+    readonly property bool cloneOptionsVisible: root.controller !== null
+                                                && root.controller.tool === VpController.CloneStamp
+    readonly property bool planeOptionsVisible: root.controller !== null
+                                                && (root.controller.tool === VpController.CreatePlane
+                                                    || root.controller.tool === VpController.EditPlane)
 
     RowLayout {
         anchors.fill: parent
@@ -33,24 +33,24 @@ Rectangle {
             from: 1
             to: 500
             suffix: " px"
-            value: root.canvas ? root.canvas.brushDiameter : 42
-            onMoved: (value) => root.canvas.brushDiameter = value
+            value: root.controller ? root.controller.brushDiameter : 42
+            onMoved: (value) => root.controller.brushDiameter = value
         }
 
         OptionSlider {
             label: qsTr("硬度")
             from: 0
             to: 100
-            value: root.canvas ? root.canvas.brushHardness : 75
-            onMoved: (value) => root.canvas.brushHardness = value
+            value: root.controller ? root.controller.brushHardness : 75
+            onMoved: (value) => root.controller.brushHardness = value
         }
 
         OptionSlider {
             label: qsTr("不透明度")
             from: 1
             to: 100
-            value: root.canvas ? root.canvas.brushOpacity : 100
-            onMoved: (value) => root.canvas.brushOpacity = value
+            value: root.controller ? root.controller.brushOpacity : 100
+            onMoved: (value) => root.controller.brushOpacity = value
         }
 
         RowLayout {
@@ -68,7 +68,7 @@ Rectangle {
                 Layout.preferredHeight: 20
                 Layout.alignment: Qt.AlignVCenter
                 radius: 2
-                color: root.canvas ? root.canvas.brushColor : "#e85d4a"
+                color: root.controller ? root.controller.brushColor : "#e85d4a"
                 border.color: "#777777"
 
                 MouseArea {
@@ -82,8 +82,8 @@ Rectangle {
     ColorDialog {
         id: colorDialog
         title: qsTr("画笔颜色")
-        selectedColor: root.canvas ? root.canvas.brushColor : "#e85d4a"
-        onAccepted: root.canvas.brushColor = selectedColor
+        selectedColor: root.controller ? root.controller.brushColor : "#e85d4a"
+        onAccepted: root.controller.brushColor = selectedColor
     }
 
     RowLayout {
@@ -98,24 +98,24 @@ Rectangle {
             from: 1
             to: 500
             suffix: " px"
-            value: root.canvas ? root.canvas.cloneDiameter : 42
-            onMoved: (value) => root.canvas.cloneDiameter = value
+            value: root.controller ? root.controller.cloneDiameter : 42
+            onMoved: (value) => root.controller.cloneDiameter = value
         }
 
         OptionSlider {
             label: qsTr("硬度")
             from: 0
             to: 100
-            value: root.canvas ? root.canvas.cloneHardness : 75
-            onMoved: (value) => root.canvas.cloneHardness = value
+            value: root.controller ? root.controller.cloneHardness : 75
+            onMoved: (value) => root.controller.cloneHardness = value
         }
 
         OptionSlider {
             label: qsTr("不透明度")
             from: 1
             to: 100
-            value: root.canvas ? root.canvas.cloneOpacity : 100
-            onMoved: (value) => root.canvas.cloneOpacity = value
+            value: root.controller ? root.controller.cloneOpacity : 100
+            onMoved: (value) => root.controller.cloneOpacity = value
         }
 
         RowLayout {
@@ -133,12 +133,12 @@ Rectangle {
                 Layout.preferredHeight: 16
                 Layout.alignment: Qt.AlignVCenter
                 radius: 2
-                color: root.canvas && root.canvas.cloneAligned ? "#4bc3ff" : "#3e3e3e"
+                color: root.controller && root.controller.cloneAligned ? "#4bc3ff" : "#3e3e3e"
                 border.color: "#777777"
 
                 Text {
                     anchors.centerIn: parent
-                    visible: root.canvas ? root.canvas.cloneAligned : false
+                    visible: root.controller ? root.controller.cloneAligned : false
                     text: "✓"
                     color: "#0e3d52"
                     font.pixelSize: 11
@@ -146,7 +146,7 @@ Rectangle {
 
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: root.canvas.cloneAligned = !root.canvas.cloneAligned
+                    onClicked: root.controller.cloneAligned = !root.controller.cloneAligned
                 }
             }
         }
@@ -163,8 +163,8 @@ Rectangle {
             label: qsTr("网格大小")
             from: 1
             to: 1000
-            value: root.canvas ? root.canvas.gridSize : 50
-            onMoved: (value) => root.canvas.gridSize = value
+            value: root.controller ? root.controller.gridSize : 50
+            onMoved: (value) => root.controller.gridSize = value
         }
 
         OptionSlider {
@@ -172,9 +172,9 @@ Rectangle {
             from: 0
             to: 360
             suffix: "°"
-            enabled: root.canvas ? root.canvas.planeAngleEditable : false
-            value: root.canvas ? Math.round(root.canvas.planeAngle) : 90
-            onMoved: (value) => root.canvas.planeAngle = value
+            enabled: root.controller ? root.controller.planeAngleEditable : false
+            value: root.controller ? Math.round(root.controller.planeAngle) : 90
+            onMoved: (value) => root.controller.planeAngle = value
         }
 
         // 夹角不可调时把原因直接写在旁边，比 tooltip 更容易发现
@@ -184,8 +184,8 @@ Rectangle {
             elide: Text.ElideRight
             color: "#9a9a9a"
             font.pixelSize: 11
-            visible: root.canvas ? !root.canvas.planeAngleEditable : false
-            text: root.canvas ? root.canvas.planeAngleLockReason : ""
+            visible: root.controller ? !root.controller.planeAngleEditable : false
+            text: root.controller ? root.controller.planeAngleLockReason : ""
         }
     }
 }

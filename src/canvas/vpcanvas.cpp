@@ -3,14 +3,12 @@
 #include "core/floatingimageprojection.h"
 #include "core/scenerenderer.h"
 
-#include <QClipboard>
 #include <QCursor>
-#include <QGuiApplication>
-#include <QFile>
 #include <QHoverEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QQmlEngine>
 #include <QTimer>
 
 namespace {
@@ -25,6 +23,12 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     setActiveFocusOnTab(true);  // 允许通过 Tab 键获得焦点
     setAntialiasing(true);  // 开启抗锯齿
     setCursor(Qt::ArrowCursor); // 光标统一用箭头
+
+    QQmlEngine::setObjectOwnership(&m_controller, QQmlEngine::CppOwnership);
+    connect(&m_controller, &VpController::aboutToChangeTool,
+            this, &VpCanvas::cancelInteraction);
+    connect(&m_controller, &VpController::repaintRequested, this, [this] { update(); });
+    connect(&m_controller, &VpController::focusRequested, this, [this] { forceActiveFocus(); });
 
     constexpr auto DefaultBackgroundPath = R"(C:\Users\yixin\Pictures\3.jpg)";
     m_doc.loadImage(QString::fromUtf8(DefaultBackgroundPath));  // 启动时加载默认背景
@@ -44,239 +48,14 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     // 选中消失（烘焙进绘画层、被删除）后变换工具已无从操作，自动退回编辑平面工具；
     // setTool 内部会放弃进行中的交互，toolChanged 负责把 QML 工具栏一起带回去。
     connect(&m_doc, &VpDocument::imageSelectionChanged, this, [this](bool selected) {
-        if (!selected && m_tool == Tool::Transform)
-            setTool(Tool::EditPlane);
+        if (!selected && m_controller.tool() == Tool::Transform)
+            m_controller.setTool(Tool::EditPlane);
         update();
     });
 
     updateViewTransform();
 }
 
-VpCanvas::Tool VpCanvas::tool() const
-{
-    return m_tool;
-}
-
-// 切换工具：放弃进行中的交互，更新光标与提示。
-void VpCanvas::setTool(Tool tool)
-{
-    // 变换工具必须有选中的浮动图像，否则切过去也无从操作。拒绝时补发一次
-    // toolChanged：QML 工具栏在点击那一刻就已经点亮了按钮，不补发就会和画布脱节。
-    if (tool == Tool::Transform && m_doc.selectedFloatingImage() < 0) {
-        emit statusMessage(QObject::tr("请先选中一张浮动图像（粘贴或框选生成），再使用变换工具。"));
-        emit toolChanged();
-        return;
-    }
-
-    const auto statusForTool = [tool]() {
-        switch (tool) {
-        case Tool::CreatePlane: return QObject::tr("依次单击四个角点以创建平面");
-        case Tool::EditPlane: return QObject::tr("拖动内部平移平面，拖动控制点调整形状；Ctrl 从边缘拖出垂直平面；Alt 拖动共享边对边的中点调整夹角");
-        case Tool::Marquee: return QObject::tr("拖动创建透视选区；Shift 正方形；Alt 拖动复制内容；Ctrl 拖动克隆为浮动图像");
-        case Tool::CloneStamp: return QObject::tr("按住 Alt 单击设置仿制源，再在目标位置绘制");
-        case Tool::Brush: return QObject::tr("拖动以绘制笔触");
-        case Tool::Transform: return QObject::tr("拖动控制点缩放，角点外侧拖动旋转；Shift 等比缩放 / 15° 旋转；Alt 中心缩放");
-        }
-        return QString();
-    };
-
-    if (tool == m_tool) {
-        emit statusMessage(statusForTool());
-        return;
-    }
-    cancelInteraction();
-    m_tool = tool;
-    emit statusMessage(statusForTool());
-    emit planeAngleChanged(); // 选项栏随工具显隐，夹角一行的可用态要跟着刷
-    emit toolChanged();
-    update();
-}
-
-int VpCanvas::brushDiameter() const
-{
-    return m_controller.brushDiameter();
-}
-
-// 越界值由引擎钳到合法区间
-void VpCanvas::setBrushDiameter(int value)
-{
-    if (m_controller.brushDiameter() == value)
-        return;
-    m_controller.setBrushDiameter(value);
-    emit brushChanged();
-}
-
-int VpCanvas::brushHardness() const
-{
-    return m_controller.brushHardness();
-}
-
-void VpCanvas::setBrushHardness(int value)
-{
-    if (m_controller.brushHardness() == value)
-        return;
-    m_controller.setBrushHardness(value);
-    emit brushChanged();
-}
-
-int VpCanvas::brushOpacity() const
-{
-    return m_controller.brushOpacity();
-}
-
-void VpCanvas::setBrushOpacity(int value)
-{
-    if (m_controller.brushOpacity() == value)
-        return;
-    m_controller.setBrushOpacity(value);
-    emit brushChanged();
-}
-
-QColor VpCanvas::brushColor() const
-{
-    return m_controller.brushColor();
-}
-
-void VpCanvas::setBrushColor(const QColor &color)
-{
-    if (m_controller.brushColor() == color)
-        return;
-    m_controller.setBrushColor(color);
-    emit brushChanged();
-}
-
-int VpCanvas::cloneDiameter() const
-{
-    return m_controller.cloneDiameter();
-}
-
-// 越界值由引擎钳到合法区间
-void VpCanvas::setCloneDiameter(int value)
-{
-    if (m_controller.cloneDiameter() == value)
-        return;
-    m_controller.setCloneDiameter(value);
-    emit cloneChanged();
-}
-
-int VpCanvas::cloneHardness() const
-{
-    return m_controller.cloneHardness();
-}
-
-void VpCanvas::setCloneHardness(int value)
-{
-    if (m_controller.cloneHardness() == value)
-        return;
-    m_controller.setCloneHardness(value);
-    emit cloneChanged();
-}
-
-int VpCanvas::cloneOpacity() const
-{
-    return m_controller.cloneOpacity();
-}
-
-void VpCanvas::setCloneOpacity(int value)
-{
-    if (m_controller.cloneOpacity() == value)
-        return;
-    m_controller.setCloneOpacity(value);
-    emit cloneChanged();
-}
-
-bool VpCanvas::cloneAligned() const
-{
-    return m_controller.cloneAligned();
-}
-
-void VpCanvas::setCloneAligned(bool aligned)
-{
-    if (m_controller.cloneAligned() == aligned)
-        return;
-    m_controller.setCloneAligned(aligned);
-    emit cloneChanged();
-    update();
-}
-
-int VpCanvas::gridSize() const
-{
-    return m_gridSize;
-}
-
-// 网格既是平面的绘制辅助，也是选区平移时 Shift 吸附的步长，改完必须重绘
-void VpCanvas::setGridSize(int value)
-{
-    value = qBound(1, value, 1000);
-    if (m_gridSize == value)
-        return;
-    m_gridSize = value;
-    emit gridSizeChanged();
-    update();
-}
-
-qreal VpCanvas::planeAngle() const
-{
-    const int index = m_doc.selectedPlane();
-    if (index < 0 || index >= m_doc.planes().size())
-        return 90.0;
-    return m_doc.planes()[index].angleToParentDegrees();
-}
-
-// 只有从别的平面拖出的子平面才有夹角；若它自己又有子平面被手动调过角度，
-// 它作为父平面的朝向就已经被锁定，再改会连带重新解释整条共享曲面链。
-bool VpCanvas::canSetSelectedPlaneAngle() const
-{
-    const int index = m_doc.selectedPlane();
-    if (index < 0 || index >= m_doc.planes().size() || m_doc.planes()[index].parentPlaneIndex() < 0)
-        return false;
-    for (const PerspectivePlane &child : m_doc.planes()) {
-        if (child.parentPlaneIndex() == index && child.hasCustomAngle())
-            return false;
-    }
-    return true;
-}
-
-bool VpCanvas::planeAngleEditable() const
-{
-    return canSetSelectedPlaneAngle();
-}
-
-QString VpCanvas::planeAngleLockReason() const
-{
-    const int index = m_doc.selectedPlane();
-    if (index < 0 || index >= m_doc.planes().size())
-        return tr("请先选中一个平面。");
-    if (m_doc.planes()[index].parentPlaneIndex() < 0)
-        return tr("只有从别的平面拖出的子平面才有夹角，当前平面是独立平面。");
-    for (const PerspectivePlane &child : m_doc.planes()) {
-        if (child.parentPlaneIndex() == index && child.hasCustomAngle())
-            return tr("它的子平面调整过夹角，父平面角度已锁定，避免整条共享曲面链被重新解释。");
-    }
-    return QString();
-}
-
-// 改夹角 = 绕共用边把子平面转过去再重投影。共用边固定是子平面的第 0 条边
-// （extrudePerpendicularPlane 的约定，见它设的 lockedEdgeMask）。
-void VpCanvas::setPlaneAngle(qreal angle)
-{
-    if (!canSetSelectedPlaneAngle() || !qIsFinite(angle))
-        return;
-    const int index = m_doc.selectedPlane();
-    const PerspectivePlane candidate = rotatePlaneAroundEdge(
-        m_doc.planes()[index], 0, angle, m_doc.background().size());
-    m_doc.beginEdit();
-    if (m_doc.setPlane(index, candidate)) {
-        m_doc.commitEdit(true);
-        emit planeAngleChanged();
-        update();
-    } else {
-        m_doc.cancelEdit();
-    }
-}
-
-// 仿制取样的内容 = 背景 + 绘画层 + 浮动图像，即画面上看到的全部内容。
-// 按内容键缓存；落笔期间冻结，使整笔都取自同一份快照，也免得每次移动都重铺一遍。
 void VpCanvas::paint(QPainter *painter)
 {
     painter->fillRect(boundingRect(), QColor("#4D4D4D"));
@@ -287,15 +66,15 @@ void VpCanvas::paint(QPainter *painter)
     SceneRenderer(m_doc).render(*painter, m_scale, /*showGuides*/ true,
                                 m_createTool.points(),
                                 m_extrudePreviewReady ? &m_extrudePreview : nullptr,
-                                /*editHandlesVisible*/ m_tool == Tool::EditPlane,
+                                /*editHandlesVisible*/ m_controller.tool() == Tool::EditPlane,
                                 /*hoveredPlane*/ -1, m_antsPhase, /*drawContent*/ true,
-                                /*gridSize*/ m_gridSize,
-                                m_tool == Tool::CreatePlane ? m_cursorPoint : QPointF());
+                                /*gridSize*/ m_controller.gridSize(),
+                                m_controller.tool() == Tool::CreatePlane ? m_cursorPoint : QPointF());
     // 光标离开画布时不画预览：空点 (0,0) 同时也是合法的图像坐标
     const bool cursorOnCanvas = !m_cursorPoint.isNull();
-    if (cursorOnCanvas && m_tool == Tool::Brush)
+    if (cursorOnCanvas && m_controller.tool() == Tool::Brush)
         m_controller.renderBrushPreview(*painter, m_cursorPoint);
-    if (m_tool == Tool::CloneStamp) {
+    if (m_controller.tool() == Tool::CloneStamp) {
         if (cursorOnCanvas)
             m_controller.renderClonePreview(*painter, m_cursorPoint);
         drawCloneMarker(painter);
@@ -333,7 +112,7 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
     const QPointF point = widgetToImage(event->position());
     if (beginFloatingImageInteraction(point)) // 浮动图像浮在最上层，先于任何工具处理
         return;
-    switch (m_tool) {
+    switch (m_controller.tool()) {
     case Tool::EditPlane: {
         const qreal tolerance = qMax(8.0 / qMax(m_scale, 1e-6), 4.0);
         int planeIndex = -1;
@@ -354,17 +133,17 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         // 什么都没点到，则取消选择
         if (planeIndex < 0) {
             m_doc.setSelectedPlane(-1);
-            emit planeAngleChanged(); // 没有选中平面，夹角回到不可调
+            m_controller.notifyPlaneAngleChanged(); // 没有选中平面，夹角回到不可调
             update();
             return;
         }
 
         // 选中平面
         m_doc.setSelectedPlane(planeIndex);
-        emit planeAngleChanged();
+        m_controller.notifyPlaneAngleChanged();
         // 与相邻平面共边的平面不能整体平移，否则共用边会被撕开
         if (handle < 0 && m_doc.isPlaneLinked(planeIndex)) {
-            emit statusMessage(tr("该平面已与相邻平面共边，不能整体移动。"));
+            m_controller.postStatus(tr("该平面已与相邻平面共边，不能整体移动。"));
             update();
             return;
         }
@@ -381,9 +160,9 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
                          rotate, rotate ? 0 : -1);
         m_doc.beginEdit();
         if (extrude)
-            emit statusMessage(tr("拖动以拉出垂直平面，松开完成。"));
+            m_controller.postStatus(tr("拖动以拉出垂直平面，松开完成。"));
         else if (rotate)
-            emit statusMessage(tr("拖动以调整与父平面的夹角，松开完成。"));
+            m_controller.postStatus(tr("拖动以调整与父平面的夹角，松开完成。"));
         update();
         return;
     }
@@ -404,13 +183,13 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         // Alt+单击只取源点，不落笔
         if (event->modifiers() & Qt::AltModifier) {
             const bool picked = m_controller.pickCloneSource(point);
-            emit statusMessage(picked ? tr("已设置仿制源，按住 Alt 可重新取样")
+            m_controller.postStatus(picked ? tr("已设置仿制源，按住 Alt 可重新取样")
                                       : tr("此处无法作为仿制源。"));
             update();
             return;
         }
         if (!m_controller.hasCloneSource()) {
-            emit statusMessage(tr("请先按住 Alt 单击，设置仿制源。"));
+            m_controller.postStatus(tr("请先按住 Alt 单击，设置仿制源。"));
             return;
         }
         if (m_controller.beginClone(point))
@@ -431,7 +210,7 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
                 m_floatingImageTransform.beginMove(
                     m_doc.floatingImage(index), surface - m_selectionRect.topLeft());
                 clearSelection();
-                emit statusMessage(tr("已复制选区内容为浮动图像。"));
+                m_controller.postStatus(tr("已复制选区内容为浮动图像。"));
             }
             update();
             return;
@@ -504,7 +283,7 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
         updateFloatingImageInteraction(m_cursorPoint, event->modifiers());
         return;
     }
-    switch (m_tool) {
+    switch (m_controller.tool()) {
     case Tool::EditPlane: {
         if (m_editPlaneIndex < 0)
             return;
@@ -518,7 +297,7 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
         } else {
             m_doc.setPlane(m_editPlaneIndex, candidate);
             if (m_editTool.rotating())
-                emit planeAngleChanged(); // 角度滑杆随拖动实时跟走
+                m_controller.notifyPlaneAngleChanged(); // 角度滑杆随拖动实时跟走
         }
         update();
         return;
@@ -549,7 +328,7 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
         updateFloatingImageInteraction(widgetToImage(event->position()), event->modifiers());
     if (endFloatingImageInteraction())
         return;
-    switch (m_tool) {
+    switch (m_controller.tool()) {
     case Tool::EditPlane: {
         if (m_editPlaneIndex < 0)
             return;
@@ -588,7 +367,7 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
             const int index = cloneSelectionToFloatingImage();
             if (index >= 0) {
                 clearSelection();
-                emit statusMessage(tr("已把拖动结果生成为浮动图像，可直接拖动移动。"));
+                m_controller.postStatus(tr("已把拖动结果生成为浮动图像，可直接拖动移动。"));
                 update();
                 return;
             }
@@ -611,7 +390,7 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
 void VpCanvas::updateCursorPoint(const QPointF &widgetPoint)
 {
     m_cursorPoint = widgetToImage(widgetPoint);
-    if (m_tool == Tool::CloneStamp)
+    if (m_controller.tool() == Tool::CloneStamp)
         m_controller.hoverClone(m_cursorPoint);
     if (cursorPreviewVisible())
         update();
@@ -647,26 +426,12 @@ void VpCanvas::keyPressEvent(QKeyEvent *event)
         reportCreateProgress();
     } else if (m_doc.selectedFloatingImage() >= 0) {
         m_doc.removeFloatingImage(m_doc.selectedFloatingImage());
-        emit statusMessage(tr("已删除选中的图像。"));
+        m_controller.postStatus(tr("已删除选中的图像。"));
     } else {
         deleteSelectedPlane();
     }
     update();
     event->accept();
-}
-
-// 粘贴剪贴板里的位图。落成浮动图像而不是烘焙进绘画层，才能随平面做透视变换。
-void VpCanvas::pasteImage()
-{
-    const QImage image = QGuiApplication::clipboard()->image();
-    if (image.isNull()) {
-        emit statusMessage(tr("剪贴板中没有可粘贴的图像。"));
-        return;
-    }
-    m_doc.addFloatingImage(image); // 追加到画布左上角，并自动选中
-    forceActiveFocus();            // 接管键盘焦点，随后的 Delete 才能删掉它
-    emit statusMessage(tr("已粘贴图像，按 Delete 键删除。"));
-    update();
 }
 
 // 把控件坐标换算成图像坐标
@@ -695,7 +460,7 @@ void VpCanvas::finishPlaneCreation()
     m_createTool.reset();
 
     if (!plane.quad().isValid()) {
-        emit statusMessage(tr("无法创建：四个点必须依次组成非交叉的凸四边形，请重新设置。"));
+        m_controller.postStatus(tr("无法创建：四个点必须依次组成非交叉的凸四边形，请重新设置。"));
         return;
     }
     m_doc.beginEdit();
@@ -703,9 +468,9 @@ void VpCanvas::finishPlaneCreation()
     m_doc.setSelectedPlane(index);
     m_doc.commitEdit(true);
 
-    setTool(Tool::EditPlane);
-    emit planeAngleChanged(); // 新平面是独立平面，夹角滑杆转为不可调
-    emit statusMessage(tr("平面已创建，已自动进入编辑平面工具。"));
+    m_controller.setTool(Tool::EditPlane);
+    m_controller.notifyPlaneAngleChanged(); // 新平面是独立平面，夹角滑杆转为不可调
+    m_controller.postStatus(tr("平面已创建，已自动进入编辑平面工具。"));
 }
 
 // 把拖动预览落成一个与源平面垂直的新平面；返回是否真的产生了新平面。
@@ -725,8 +490,8 @@ bool VpCanvas::extrudePlane(int sourcePlane, int edge)
         return false;
     m_doc.setSelectedPlane(m_doc.planes().size() - 1);
     m_doc.lockPlaneEdge(sourcePlane, edge); // 共用边在源平面上不能再编辑
-    emit planeAngleChanged(); // 选中项变成新的子平面，夹角滑杆转为可用
-    emit statusMessage(tr("已拉出垂直平面。"));
+    m_controller.notifyPlaneAngleChanged(); // 选中项变成新的子平面，夹角滑杆转为可用
+    m_controller.postStatus(tr("已拉出垂直平面。"));
     return true;
 }
 
@@ -751,11 +516,11 @@ void VpCanvas::cancelInteraction()
 // 是否需要画光标预览（创建平面的橡皮筋、画笔与图章的光标预览）
 bool VpCanvas::cursorPreviewVisible() const
 {
-    if (m_tool == Tool::Brush)
+    if (m_controller.tool() == Tool::Brush)
         return true;
-    if (m_tool == Tool::CloneStamp)
+    if (m_controller.tool() == Tool::CloneStamp)
         return m_controller.hasCloneSource();
-    return m_tool == Tool::CreatePlane && m_createTool.creating();
+    return m_controller.tool() == Tool::CreatePlane && m_createTool.creating();
 }
 
 // 删除当前选中的平面；没有选中时什么也不做。
@@ -768,8 +533,8 @@ void VpCanvas::deleteSelectedPlane()
     if (index < 0)
         return;
     m_doc.removePlane(index);
-    emit planeAngleChanged(); // 删除会改变选中项，也可能解开上一级父平面的夹角锁定
-    emit statusMessage(tr("已删除选中的平面。"));
+    m_controller.notifyPlaneAngleChanged(); // 删除会改变选中项，也可能解开上一级父平面的夹角锁定
+    m_controller.postStatus(tr("已删除选中的平面。"));
     update();
 }
 
@@ -778,16 +543,16 @@ void VpCanvas::reportCreateProgress()
 {
     const int count = m_createTool.points().size();
     if (count == 0)
-        emit statusMessage(tr("已回退全部角点，请重新点击"));
+        m_controller.postStatus(tr("已回退全部角点，请重新点击"));
     else
-        emit statusMessage(tr("已设置 %1/%2 个角点").arg(count).arg(PlaneCreateTool::CornerCount));
+        m_controller.postStatus(tr("已设置 %1/%2 个角点").arg(count).arg(PlaneCreateTool::CornerCount));
 }
 
 // 按下时的图像处理。返回 true 表示这次按下已被图像消费，工具不再响应。
 // 顺序与 Photoshop 一致：先试控制点（仅变换工具），再试图像本体，最后才轮到烘焙。
 bool VpCanvas::beginFloatingImageInteraction(const QPointF &point)
 {
-    if (m_tool == Tool::Transform && m_doc.selectedFloatingImage() >= 0) {
+    if (m_controller.tool() == Tool::Transform && m_doc.selectedFloatingImage() >= 0) {
         const FloatingImage &image = m_doc.floatingImage(m_doc.selectedFloatingImage());
         const int handle = FloatingImageTransformTool::handleAt(image, point, m_scale);
         const int corner = handle < 0
@@ -817,7 +582,7 @@ bool VpCanvas::beginFloatingImageInteraction(const QPointF &point)
     if (hitImage) {
         // 选框工具下只有已选中的图像才拦截点击；点到未选中的图像留给选区建立，
         // 否则贴过图的平面上就再也拖不出新选区。
-        if (m_tool == Tool::Marquee && grabbed != m_doc.selectedFloatingImage())
+        if (m_controller.tool() == Tool::Marquee && grabbed != m_doc.selectedFloatingImage())
             return false;
         m_draggedFloatingImageIndex = grabbed;
         m_doc.setSelectedFloatingImage(grabbed);
@@ -850,7 +615,7 @@ void VpCanvas::updateFloatingImageInteraction(const QPointF &point,
         return;
     }
     const FloatingImage &start = m_floatingImageTransform.startImage();
-    if (m_tool == Tool::Transform && start.surfaceAttached) {
+    if (m_controller.tool() == Tool::Transform && start.surfaceAttached) {
         QPointF surface;
         if (start.mapCanvasToPlacement(point, &surface)) {
             m_doc.setFloatingImageOrigin(
@@ -973,14 +738,14 @@ void VpCanvas::bakeSelectedFloatingImage()
     m_floatingImageTransform.reset();
     m_draggedFloatingImageIndex = -1;
     m_floatingImageChanged = false;
-    emit statusMessage(tr("浮动图像已合并到绘画层。"));
+    m_controller.postStatus(tr("浮动图像已合并到绘画层。"));
     update();
 }
 
 // 变换工具下画出浮动图像的 8 个控制点；尺寸与线宽按视图缩放换算，屏幕上恒定。
 void VpCanvas::drawFloatingImageHandles(QPainter *painter)
 {
-    if (m_tool != Tool::Transform || m_doc.selectedFloatingImage() < 0)
+    if (m_controller.tool() != Tool::Transform || m_doc.selectedFloatingImage() < 0)
         return;
     const auto projection = FloatingImageProjection::forImage(
         m_doc.floatingImage(m_doc.selectedFloatingImage()));
@@ -1084,8 +849,8 @@ void VpCanvas::updateSelection(const QPointF &point, Qt::KeyboardModifiers modif
                 delta.setY(0);
             else
                 delta.setX(0);
-            delta.setX(qRound(delta.x() / m_gridSize) * m_gridSize);
-            delta.setY(qRound(delta.y() / m_gridSize) * m_gridSize);
+            delta.setX(qRound(delta.x() / m_controller.gridSize()) * m_controller.gridSize());
+            delta.setY(qRound(delta.y() / m_controller.gridSize()) * m_controller.gridSize());
         }
         m_selectionRect = m_selectionStartRect.translated(delta);
     } else if (m_selectionAction == SelectionAction::Fill) {
@@ -1292,7 +1057,7 @@ int VpCanvas::cloneSelectionToFloatingImage()
 // 白 1px 打底 + 黑虚线，线宽与虚线间距在屏幕上恒定。
 void VpCanvas::drawSelectionOutline(QPainter *painter)
 {
-    if (m_tool != Tool::Marquee || m_selectionRect.isEmpty())
+    if (m_controller.tool() != Tool::Marquee || m_selectionRect.isEmpty())
         return;
     painter->save();
     painter->resetTransform();

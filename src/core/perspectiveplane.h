@@ -40,12 +40,12 @@ public:
 
 private:
     PerspectiveQuad m_quad;
-    int m_surfaceGroupId = -1;
-    quint8 m_lockedEdgeMask = 0;
-    int m_parentPlaneIndex = -1;
-    int m_parentEdgeIndex = -1;
-    qreal m_angleToParentDegrees = 90.0;
-    bool m_hasCustomAngle = false;
+    int m_surfaceGroupId = -1;      // 平面所属的表面组 ID；默认 -1，表示未分组。
+    quint8 m_lockedEdgeMask = 0;    // 四条边的锁定状态位掩码。第 i 位为 1 表示第 i 条边锁定；默认都未锁定。
+    int m_parentPlaneIndex = -1;    // 父平面在平面列表中的索引；默认 -1，表示没有父平面。
+    int m_parentEdgeIndex = -1;     // 当前平面连接到父平面的边索引；默认 -1。
+    qreal m_angleToParentDegrees = 90.0;    // 当前平面相对父平面的夹角，单位为度；默认 90°。
+    bool m_hasCustomAngle = false;  // 是否由用户自定义了与父平面的夹角；默认 false。
 };
 
 int topmostPlaneIndexAt(const QVector<PerspectivePlane> &planes, const QPointF &point);

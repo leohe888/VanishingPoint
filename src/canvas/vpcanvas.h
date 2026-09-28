@@ -15,68 +15,15 @@
 class VpCanvas : public QQuickPaintedItem
 {
     Q_OBJECT
-    Q_PROPERTY(Tool tool READ tool WRITE setTool NOTIFY toolChanged)
-    Q_PROPERTY(int brushDiameter READ brushDiameter WRITE setBrushDiameter NOTIFY brushChanged)
-    Q_PROPERTY(int brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushChanged)
-    Q_PROPERTY(int brushOpacity READ brushOpacity WRITE setBrushOpacity NOTIFY brushChanged)
-    Q_PROPERTY(QColor brushColor READ brushColor WRITE setBrushColor NOTIFY brushChanged)
-    Q_PROPERTY(int cloneDiameter READ cloneDiameter WRITE setCloneDiameter NOTIFY cloneChanged)
-    Q_PROPERTY(int cloneHardness READ cloneHardness WRITE setCloneHardness NOTIFY cloneChanged)
-    Q_PROPERTY(int cloneOpacity READ cloneOpacity WRITE setCloneOpacity NOTIFY cloneChanged)
-    Q_PROPERTY(bool cloneAligned READ cloneAligned WRITE setCloneAligned NOTIFY cloneChanged)
-    Q_PROPERTY(int gridSize READ gridSize WRITE setGridSize NOTIFY gridSizeChanged)
-    Q_PROPERTY(qreal planeAngle READ planeAngle WRITE setPlaneAngle NOTIFY planeAngleChanged)
-    Q_PROPERTY(bool planeAngleEditable READ planeAngleEditable NOTIFY planeAngleChanged)
-    Q_PROPERTY(QString planeAngleLockReason READ planeAngleLockReason NOTIFY planeAngleChanged)
+    Q_PROPERTY(VpController *controller READ controller CONSTANT)
 
 public:
-    enum Tool { CreatePlane, EditPlane, Marquee, CloneStamp, Brush, Transform };
-    Q_ENUM(Tool)
+    using Tool = VpController::Tool;
 
     explicit VpCanvas(QQuickItem *parent = nullptr);
-
-    Tool tool() const;
-    void setTool(Tool tool);
-
-    // —— 画笔选项 ——
-    int brushDiameter() const;
-    void setBrushDiameter(int value);
-    int brushHardness() const;
-    void setBrushHardness(int value);
-    int brushOpacity() const;
-    void setBrushOpacity(int value);
-    QColor brushColor() const;
-    void setBrushColor(const QColor &color);
-
-    // —— 图章选项 ——
-    int cloneDiameter() const;
-    void setCloneDiameter(int value);
-    int cloneHardness() const;
-    void setCloneHardness(int value);
-    int cloneOpacity() const;
-    void setCloneOpacity(int value);
-    bool cloneAligned() const;
-    void setCloneAligned(bool aligned);
-
-    // —— 平面选项 ——
-    int gridSize() const;
-    void setGridSize(int value);
-    qreal planeAngle() const;             // 选中平面与父平面的夹角（度）；无选中时为 90
-    void setPlaneAngle(qreal angle);      // 只有子平面、且它没有被更下一级锁定时才生效
-    bool planeAngleEditable() const;
-    QString planeAngleLockReason() const; // 不可调整的原因；可调整时为空串
-
-    Q_INVOKABLE void pasteImage(); // 把剪贴板里的位图粘贴成一张浮动图像
+    VpController *controller() { return &m_controller; }
 
     void paint(QPainter *painter) override;
-
-signals:
-    void toolChanged();
-    void brushChanged();                      // 任一画笔选项变化
-    void cloneChanged();                      // 任一图章选项变化
-    void gridSizeChanged();                   // 网格边长变化
-    void planeAngleChanged();                 // 夹角数值或它的可编辑性变化
-    void statusMessage(const QString &text); // 提示栏文字
 
 protected:
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
@@ -93,7 +40,6 @@ private:
     void updateCursorPoint(const QPointF &widgetPoint); // 记录光标并通知仿制源、预览跟随
     void finishPlaneCreation();
     bool extrudePlane(int sourcePlane, int edge); // 把拖动预览落成新的垂直平面
-    bool canSetSelectedPlaneAngle() const;        // 选中平面是否是「可调夹角的子平面」
     void cancelInteraction();
     void deleteSelectedPlane();   // 删除当前选中的平面
     void reportCreateProgress();  // 状态栏提示创建进度
@@ -129,14 +75,12 @@ private:
     PlaneCreateTool m_createTool;
     PlaneEditTool m_editTool;
 
-    Tool m_tool = Tool::CreatePlane; // 当前工具
 
     int m_editPlaneIndex = -1; // 正在编辑的平面下标。-1 同时表示“没有进行中的平面编辑”。
 
     PerspectivePlane m_extrudePreview;             // 拖出垂直平面时的预览几何
     bool m_extrudePreviewReady = false; // 预览几何是否可用
 
-    int m_gridSize = 50; // 平面网格边长（图像像素），单位与展开曲面坐标一致
 
     QPointF m_cursorPoint;
 

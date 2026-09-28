@@ -9,9 +9,38 @@ class VpControllerTest : public QObject
     Q_OBJECT
 
 private slots:
+    void qmlPropertiesNotifyAndClamp();
+    void transformRequiresSelectedImage();
     void brushStrokeCommitsAsOneEdit();
     void cloneStrokeUsesDocumentContent();
 };
+
+void VpControllerTest::qmlPropertiesNotifyAndClamp()
+{
+    VpController controller;
+    QSignalSpy toolChanged(&controller, &VpController::toolChanged);
+    QSignalSpy brushChanged(&controller, &VpController::brushChanged);
+    QSignalSpy gridChanged(&controller, &VpController::gridSizeChanged);
+
+    QVERIFY(controller.setProperty("tool", VpController::Brush));
+    QCOMPARE(controller.tool(), VpController::Brush);
+    QCOMPARE(toolChanged.size(), 1);
+    QVERIFY(controller.setProperty("brushDiameter", 37));
+    QCOMPARE(controller.brushDiameter(), 37);
+    QCOMPARE(brushChanged.size(), 1);
+    QVERIFY(controller.setProperty("gridSize", 0));
+    QCOMPARE(controller.gridSize(), 1);
+    QCOMPARE(gridChanged.size(), 1);
+}
+
+void VpControllerTest::transformRequiresSelectedImage()
+{
+    VpController controller;
+    QSignalSpy status(&controller, &VpController::statusMessage);
+    controller.setTool(VpController::Transform);
+    QCOMPARE(controller.tool(), VpController::CreatePlane);
+    QCOMPARE(status.size(), 1);
+}
 
 void VpControllerTest::brushStrokeCommitsAsOneEdit()
 {

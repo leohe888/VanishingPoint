@@ -12,6 +12,8 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     qmlRegisterType<VpCanvas>("VanishingPoint", 1, 0, "VpCanvas");
+    qmlRegisterUncreatableType<VpController>("VanishingPoint", 1, 0, "VpController",
+                                              "由 VpCanvas 提供控制器实例");
 
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/src/qml/main.qml"));

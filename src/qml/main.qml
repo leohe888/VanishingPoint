@@ -18,7 +18,7 @@ Window {
             z: 1    // 提升工具栏的层级，因为右侧内容区域后绘制，覆盖了工具栏向右扩展的 Tooltip
             Layout.preferredWidth: 38
             Layout.fillHeight: true
-            onToolSelected: (toolId) => workArea.canvas.tool = toolId
+            onToolSelected: (toolId) => workArea.controller.tool = toolId
         }
 
         ColumnLayout {
@@ -28,7 +28,7 @@ Window {
             Layout.fillHeight: true
 
             ToolOptionsBar {
-                canvas: workArea.canvas
+                controller: workArea.controller
                 Layout.fillWidth: true
                 Layout.preferredHeight: 38
             }
@@ -50,13 +50,13 @@ Window {
     // 粘贴是窗口级快捷键：不必先点画布拿到焦点，也能直接粘贴。
     Shortcut {
         sequence: "Ctrl+V"
-        onActivated: workArea.canvas.pasteImage()
+        onActivated: workArea.controller.pasteImage()
     }
 
-    // 画布可能自行切换工具（例如创建完平面后进入编辑工具），工具栏需跟随同步。
+    // 创建完平面等操作可能切换工具，工具栏随控制器状态同步。
     Connections {
-        target: workArea.canvas
-        function onToolChanged() { toolBar.selectTool(workArea.canvas.tool) }
+        target: workArea.controller
+        function onToolChanged() { toolBar.selectTool(workArea.controller.tool) }
         function onStatusMessage(text) { hintBar.message = text }
     }
 }

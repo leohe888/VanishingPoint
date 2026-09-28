@@ -6,7 +6,7 @@ pragma ComponentBehavior: Bound
 Rectangle {
     id: root
 
-    property int currentTool: VpCanvas.CreatePlane
+    property int currentTool: VpController.CreatePlane
 
     property color backgroundColor: "#535353"
     property color hoverColor: "#454545"
@@ -19,12 +19,12 @@ Rectangle {
     Component.onCompleted: root.toolSelected(root.currentTool)
 
     readonly property var tools: [
-        { toolId: VpCanvas.EditPlane,   tooltip: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
-        { toolId: VpCanvas.CreatePlane, tooltip: qsTr("创建平面工具 (C)"),  icon: "perspective.png", shortcut: "C" },
-        { toolId: VpCanvas.Marquee,     tooltip: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M" },
-        { toolId: VpCanvas.CloneStamp,  tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S" },
-        { toolId: VpCanvas.Brush,       tooltip: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
-        { toolId: VpCanvas.Transform,   tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T" }
+        { toolId: VpController.EditPlane,   tooltip: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
+        { toolId: VpController.CreatePlane, tooltip: qsTr("创建平面工具 (C)"),  icon: "perspective.png", shortcut: "C" },
+        { toolId: VpController.Marquee,     tooltip: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M" },
+        { toolId: VpController.CloneStamp,  tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S" },
+        { toolId: VpController.Brush,       tooltip: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
+        { toolId: VpController.Transform,   tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T" }
     ]
 
     function selectTool(tool) {
