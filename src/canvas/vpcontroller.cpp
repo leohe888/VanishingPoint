@@ -24,6 +24,8 @@ void VpController::setTool(Tool tool)
         case Marquee: return tr("拖动创建透视选区；Shift 正方形；Alt 拖动复制内容；Ctrl 拖动克隆为浮动图像");
         case CloneStamp: return tr("按住 Alt 单击设置仿制源，再在目标位置绘制");
         case Brush: return tr("拖动以绘制笔触");
+        case Hand: return tr("拖动以滚动图像");
+        case Zoom: return tr("单击放大，按住 Alt 单击缩小");
         case Transform: return tr("拖动控制点缩放，角点外侧拖动旋转；Shift 等比缩放 / 15° 旋转；Alt 中心缩放");
         }
         return QString();

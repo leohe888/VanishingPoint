@@ -10,6 +10,8 @@
 #include <QPainter>
 #include <QQmlEngine>
 #include <QTimer>
+#include <QGuiApplication>
+#include <cmath>
 
 namespace {
 constexpr qreal ViewMargin = 16.0; // 图像与画布边缘的留白
@@ -23,6 +25,9 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     setActiveFocusOnTab(true);  // 允许通过 Tab 键获得焦点
     setAntialiasing(true);  // 开启抗锯齿
     setCursor(Qt::ArrowCursor); // 光标统一用箭头
+    connect(&m_controller, &VpController::toolChanged, this, [this] {
+        updateNavigationCursor(QGuiApplication::keyboardModifiers() & Qt::AltModifier);
+    });
 
     QQmlEngine::setObjectOwnership(&m_controller, QQmlEngine::CppOwnership);
     connect(&m_controller, &VpController::aboutToChangeTool,
@@ -109,6 +114,17 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
 {
     forceActiveFocus(); // 获得键盘焦点
     event->accept();    // 标记事件已处理
+    if (m_controller.tool() == Tool::Hand) {
+        m_fitView = false;
+        m_panning = true;
+        m_panPoint = event->position();
+        updateNavigationCursor();
+        return;
+    }
+    if (m_controller.tool() == Tool::Zoom) {
+        stepAt(event->modifiers() & Qt::AltModifier, event->position());
+        return;
+    }
     const QPointF point = widgetToImage(event->position());
     if (beginFloatingImageInteraction(point)) // 浮动图像浮在最上层，先于任何工具处理
         return;
@@ -239,6 +255,12 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
 void VpCanvas::mouseMoveEvent(QMouseEvent *event)
 {
     event->accept();
+    if (m_panning) {
+        m_offset += event->position() - m_panPoint;
+        m_panPoint = event->position();
+        updateViewTransform();
+        return;
+    }
     updateCursorPoint(event->position());
     if (m_marqueeTool.active() && (event->buttons() & Qt::LeftButton)) {
         updateSelection(m_cursorPoint, event->modifiers());
@@ -287,6 +309,13 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
 void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
     event->accept();
+    if (m_panning) {
+        m_offset += event->position() - m_panPoint;
+        m_panning = false;
+        updateViewTransform();
+        updateNavigationCursor();
+        return;
+    }
     // 缩放/旋转的最终几何取松开时的位置，避免漏掉最后一次移动；图像拖动
     // 可以在任何工具下进行，所以先于工具分派收尾。
     if (m_draggedFloatingImageIndex >= 0 && m_floatingImageTransform.isTransforming())
@@ -377,6 +406,11 @@ void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
 // 没有图像再退到删除选中的平面。
 void VpCanvas::keyPressEvent(QKeyEvent *event)
 {
+    if (event->key() == Qt::Key_Alt) {
+        updateNavigationCursor(true);
+        event->accept();
+        return;
+    }
     const int key = event->key();
     if (key != Qt::Key_Backspace && key != Qt::Key_Delete) {
         QQuickPaintedItem::keyPressEvent(event);    // 其他键交给基类
@@ -406,13 +440,123 @@ void VpCanvas::updateViewTransform()
     const QImage &background = m_doc.background();
     if (background.isNull() || width() <= 0 || height() <= 0)
         return;
-    const qreal sx = (width() - ViewMargin * 2) / background.width();   // 水平缩放比
-    const qreal sy = (height() - ViewMargin * 2) / background.height(); // 垂直缩放比
-    m_scale = qMin(sx, sy); // 缩放比取水平缩放比和垂直缩放比的最小值
-    if (m_scale <= 0)
-        m_scale = 1.0;
-    const QSizeF shown = QSizeF(background.size()) * m_scale;   // 计算缩放后图片尺寸
-    m_offset = QPointF((width() - shown.width()) / 2.0, (height() - shown.height()) / 2.0); // 计算偏移量，使图片在画布中居中
+    if (m_fitView) {
+        const qreal sx = qMax(1.0, width() - ViewMargin * 2) / background.width();
+        const qreal sy = qMax(1.0, height() - ViewMargin * 2) / background.height();
+        m_scale = qBound(0.063, m_fillView ? qMax(sx, sy) : qMin(sx, sy), 16.0);
+        m_offset = QPointF((width() - background.width() * m_scale) / 2,
+                           (height() - background.height() * m_scale) / 2);
+    }
+    const QSizeF shown = QSizeF(background.size()) * m_scale;
+    m_offset.setX(shown.width() <= width() ? (width() - shown.width()) / 2
+                                         : qBound(width() - shown.width(), m_offset.x(), 0.0));
+    m_offset.setY(shown.height() <= height() ? (height() - shown.height()) / 2
+                                           : qBound(height() - shown.height(), m_offset.y(), 0.0));
+    emit viewChanged();
+    update();
+}
+
+qreal VpCanvas::horizontalSize() const
+{
+    return qMin(1.0, width() / qMax(1.0, m_doc.background().width() * m_scale));
+}
+
+qreal VpCanvas::verticalSize() const
+{
+    return qMin(1.0, height() / qMax(1.0, m_doc.background().height() * m_scale));
+}
+
+qreal VpCanvas::horizontalPosition() const
+{
+    return horizontalSize() >= 1 ? 0 : -m_offset.x() / (m_doc.background().width() * m_scale);
+}
+
+qreal VpCanvas::verticalPosition() const
+{
+    return verticalSize() >= 1 ? 0 : -m_offset.y() / (m_doc.background().height() * m_scale);
+}
+
+void VpCanvas::scrollTo(qreal horizontal, qreal vertical)
+{
+    m_fitView = false;
+    m_offset = QPointF(-horizontal * m_doc.background().width() * m_scale,
+                      -vertical * m_doc.background().height() * m_scale);
+    updateViewTransform();
+}
+
+void VpCanvas::zoomAt(qreal scale, const QPointF &anchor)
+{
+    if (!std::isfinite(scale) || m_doc.background().isNull())
+        return;
+    const QPointF point = widgetToImage(anchor);
+    m_fitView = false;
+    m_scale = qBound(0.063, scale, 16.0);
+    m_offset = anchor - point * m_scale;
+    updateViewTransform();
+}
+
+void VpCanvas::setZoom(qreal scale)
+{
+    zoomAt(scale, QPointF(width() / 2, height() / 2));
+}
+
+void VpCanvas::stepAt(bool out, const QPointF &anchor)
+{
+    static constexpr qreal levels[] = {0.063, 0.125, 0.25, 0.333, 0.5, 0.667,
+                                      1, 2, 3, 4, 6, 8, 10, 12, 16};
+    int nearest = 0;
+    for (int i = 1; i < 15; ++i)
+        if (std::abs(levels[i] - m_scale) < std::abs(levels[nearest] - m_scale))
+            nearest = i;
+    zoomAt(levels[qBound(0, nearest + (out ? -1 : 1), 14)], anchor);
+}
+
+void VpCanvas::zoomStep(bool out)
+{
+    stepAt(out, QPointF(width() / 2, height() / 2));
+}
+
+void VpCanvas::fitView(bool fill)
+{
+    m_fitView = true;
+    m_fillView = fill;
+    updateViewTransform();
+}
+
+void VpCanvas::updateNavigationCursor(bool alt)
+{
+    if (m_controller.tool() == Tool::Hand) {
+        setCursor(m_panning ? Qt::ClosedHandCursor : Qt::OpenHandCursor);
+    } else if (m_controller.tool() == Tool::Zoom) {
+        QPixmap icon(32, 32);
+        icon.fill(Qt::transparent);
+        QPainter painter(&icon);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QPen(Qt::white, 3));
+        painter.drawEllipse(QRectF(3, 3, 18, 18));
+        painter.drawLine(19, 19, 28, 28);
+        painter.setPen(QPen(Qt::black, 1));
+        painter.drawEllipse(QRectF(3, 3, 18, 18));
+        painter.drawLine(19, 19, 28, 28);
+        painter.setPen(QPen(Qt::white, 2));
+        painter.drawLine(7, 12, 17, 12);
+        if (!alt)
+            painter.drawLine(12, 7, 12, 17);
+        painter.end();
+        setCursor(QCursor(icon, 12, 12));
+    } else {
+        setCursor(Qt::ArrowCursor);
+    }
+}
+
+void VpCanvas::keyReleaseEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Alt) {
+        updateNavigationCursor(false);
+        event->accept();
+        return;
+    }
+    QQuickPaintedItem::keyReleaseEvent(event);
 }
 
 void VpCanvas::finishPlaneCreation()
@@ -458,6 +602,7 @@ bool VpCanvas::extrudePlane(int sourcePlane, int edge)
 
 void VpCanvas::cancelInteraction()
 {
+    m_panning = false;
     m_createTool.reset();
     m_extrudePreviewReady = false; // 拖出垂直平面的预览随交互一起作废
     // 进行中的笔触已经烘焙进绘画层，切换工具时提交。

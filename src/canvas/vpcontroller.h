@@ -27,7 +27,7 @@ class VpController final : public QObject
     Q_PROPERTY(QString planeAngleLockReason READ planeAngleLockReason NOTIFY planeAngleChanged)
 
 public:
-    enum Tool { CreatePlane, EditPlane, Marquee, CloneStamp, Brush, Transform };
+    enum Tool { CreatePlane, EditPlane, Marquee, CloneStamp, Brush, Transform, Hand, Zoom };
     Q_ENUM(Tool)
 
     explicit VpController(QObject *parent = nullptr) : QObject(parent) {}

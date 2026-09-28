@@ -21,10 +21,12 @@ Rectangle {
     readonly property var tools: [
         { toolId: VpController.EditPlane,   tooltip: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
         { toolId: VpController.CreatePlane, tooltip: qsTr("创建平面工具 (C)"),  icon: "perspective.png", shortcut: "C" },
-        { toolId: VpController.Marquee,     tooltip: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M" },
-        { toolId: VpController.CloneStamp,  tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S" },
+        { toolId: VpController.Marquee,     tooltip: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M", separatorBefore: true },
+        { toolId: VpController.CloneStamp,  tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S", separatorBefore: true },
         { toolId: VpController.Brush,       tooltip: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
-        { toolId: VpController.Transform,   tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T" }
+        { toolId: VpController.Transform,   tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T", separatorBefore: true },
+        { toolId: VpController.Hand, tooltip: qsTr("抓手工具 (H)"), icon: "hand.png", shortcut: "H", separatorBefore: true },
+        { toolId: VpController.Zoom, tooltip: qsTr("缩放工具 (Z)"), icon: "magnifier.png", shortcut: "Z" }
     ]
 
     function selectTool(tool) {
@@ -46,16 +48,29 @@ Rectangle {
         Repeater {
             model: root.tools
 
-            delegate: ToolButton {
+            delegate: Column {
+                id: toolGroup
                 required property var modelData
-                toolId: modelData.toolId
-                tooltip: modelData.tooltip
-                iconSource: modelData.icon
-                shortcut: modelData.shortcut
-                selected: root.currentTool === modelData.toolId
-                hoverColor: root.hoverColor
-                selectedColor: root.selectedColor
-                onActivated: (tool) => root.selectTool(tool)
+                width: 28
+                spacing: 3
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    visible: toolGroup.modelData.separatorBefore === true
+                    color: "#3E3E3E"
+                }
+
+                ToolButton {
+                    toolId: toolGroup.modelData.toolId
+                    tooltip: toolGroup.modelData.tooltip
+                    iconSource: toolGroup.modelData.icon
+                    shortcut: toolGroup.modelData.shortcut
+                    selected: root.currentTool === toolGroup.modelData.toolId
+                    hoverColor: root.hoverColor
+                    selectedColor: root.selectedColor
+                    onActivated: (tool) => root.selectTool(tool)
+                }
             }
         }
     }

@@ -17,6 +17,13 @@ function(add_vp_test test_name)
     endif()
 endfunction()
 
+set(VP_CANVAS_TEST_SOURCES ${PROJECT_SOURCES})
+list(FILTER VP_CANVAS_TEST_SOURCES EXCLUDE REGEX "(src/main.cpp|res.qrc)$")
+list(TRANSFORM VP_CANVAS_TEST_SOURCES PREPEND "${PROJECT_SOURCE_DIR}/")
+add_vp_test(tst_canvasnavigation tst_canvasnavigation.cpp ${VP_CANVAS_TEST_SOURCES})
+target_link_libraries(tst_canvasnavigation PRIVATE Qt${QT_VERSION_MAJOR}::Quick)
+set_tests_properties(tst_canvasnavigation PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 set(VP_GEOMETRY_SOURCES
     ${PROJECT_SOURCE_DIR}/src/core/perspectivequad.cpp
     ${PROJECT_SOURCE_DIR}/src/core/perspectiveplane.cpp
