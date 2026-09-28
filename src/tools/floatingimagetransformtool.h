@@ -1,6 +1,6 @@
 #pragma once
 
-#include "floatingimage.h"
+#include "core/floatingimage.h"
 
 // State for one move, scale or rotation gesture. It does not own document history.
 class FloatingImageTransformTool

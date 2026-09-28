@@ -1,7 +1,7 @@
 #include <QtTest>
 
 #include "core/floatingimageprojection.h"
-#include "core/floatingimagetransformtool.h"
+#include "tools/floatingimagetransformtool.h"
 
 namespace {
 

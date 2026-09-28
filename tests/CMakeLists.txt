@@ -32,17 +32,17 @@ add_vp_test(tst_perspectivetransform
 
 add_vp_test(tst_planecreatetool
     tst_planecreatetool.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/planecreatetool.cpp
+    ${PROJECT_SOURCE_DIR}/src/tools/planecreatetool.cpp
     ${VP_GEOMETRY_SOURCES})
 
 add_vp_test(tst_planeedittool
     tst_planeedittool.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/planeedittool.cpp
+    ${PROJECT_SOURCE_DIR}/src/tools/planeedittool.cpp
     ${VP_GEOMETRY_SOURCES})
 
 add_vp_test(tst_marqueetool
     tst_marqueetool.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/marqueetool.cpp
+    ${PROJECT_SOURCE_DIR}/src/tools/marqueetool.cpp
     ${VP_GEOMETRY_SOURCES})
 
 add_vp_test(tst_vpdocument
@@ -53,21 +53,21 @@ add_vp_test(tst_vpdocument
 add_vp_test(tst_brushtool
     tst_brushtool.cpp
     ${PROJECT_SOURCE_DIR}/src/core/vpdocument.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/brushtool.cpp
+    ${PROJECT_SOURCE_DIR}/src/tools/brushtool.cpp
     ${VP_GEOMETRY_SOURCES})
 
 add_vp_test(tst_clonetool
     tst_clonetool.cpp
     ${PROJECT_SOURCE_DIR}/src/core/vpdocument.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/clonetool.cpp
+    ${PROJECT_SOURCE_DIR}/src/tools/clonetool.cpp
     ${VP_GEOMETRY_SOURCES})
 
 add_vp_test(tst_vpcontroller
     tst_vpcontroller.cpp
     ${PROJECT_SOURCE_DIR}/src/canvas/vpcontroller.cpp
     ${PROJECT_SOURCE_DIR}/src/core/vpdocument.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/brushtool.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/clonetool.cpp
+    ${PROJECT_SOURCE_DIR}/src/tools/brushtool.cpp
+    ${PROJECT_SOURCE_DIR}/src/tools/clonetool.cpp
     ${PROJECT_SOURCE_DIR}/src/core/floatingimage.cpp
     ${PROJECT_SOURCE_DIR}/src/core/floatingimageprojection.cpp
     ${PROJECT_SOURCE_DIR}/src/core/scenerenderer.cpp
@@ -77,5 +77,5 @@ add_vp_test(tst_floatingimageprojection
     tst_floatingimageprojection.cpp
     ${PROJECT_SOURCE_DIR}/src/core/floatingimage.cpp
     ${PROJECT_SOURCE_DIR}/src/core/floatingimageprojection.cpp
-    ${PROJECT_SOURCE_DIR}/src/core/floatingimagetransformtool.cpp
+    ${PROJECT_SOURCE_DIR}/src/tools/floatingimagetransformtool.cpp
     ${VP_GEOMETRY_SOURCES})

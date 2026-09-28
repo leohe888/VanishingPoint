@@ -1,6 +1,6 @@
 #include <QtTest>
 
-#include "core/planecreatetool.h"
+#include "tools/planecreatetool.h"
 
 class PlaneCreateToolTest : public QObject
 {

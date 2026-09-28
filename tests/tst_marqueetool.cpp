@@ -1,7 +1,7 @@
 #include <QtTest>
 #include <QPainter>
 
-#include "core/marqueetool.h"
+#include "tools/marqueetool.h"
 #include "testhelpers.h"
 
 namespace {

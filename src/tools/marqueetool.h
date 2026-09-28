@@ -1,7 +1,7 @@
 #pragma once
 
-#include "floatingimage.h"
-#include "perspectiveplane.h"
+#include "core/floatingimage.h"
+#include "core/perspectiveplane.h"
 
 #include <QPainterPath>
 #include <QRectF>

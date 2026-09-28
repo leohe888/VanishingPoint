@@ -3,7 +3,7 @@
 #include <QPainter>
 
 #include "core/vpdocument.h"
-#include "core/clonetool.h"
+#include "tools/clonetool.h"
 #include "testhelpers.h"
 
 class CloneToolTest : public QObject

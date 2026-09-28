@@ -1,6 +1,6 @@
 #pragma once
 
-#include "perspectiveplane.h"
+#include "core/perspectiveplane.h"
 
 #include <QImage>
 #include <QRect>
@@ -8,15 +8,9 @@
 
 class QPainter;
 
-// 图章工具：先用 Alt+单击取一个源点，之后在画布上拖动即可把源内容仿制过来。
-// 源点与落点各自解析成一块面片（平面之外退化为整张图像），偏移记在展开曲面上，
-// 因此仿制结果跟随透视，也能跨过共用曲面的相邻平面。
-// 对齐模式：偏移一经确定就跨笔保留，源点随光标一起移动；
-// 非对齐模式：每笔按落点重新锚定偏移，抬笔后源点归位。
 class CloneTool
 {
 public:
-    // —— 笔刷参数（越界值钳到合法区间） ——
     void setDiameter(int value) { m_diameter = qBound(1, value, 500); }
     void setHardness(int value) { m_hardness = qBound(0, value, 100); }
     void setOpacity(int value) { m_opacity = qBound(1, value, 100); }
@@ -28,7 +22,8 @@ public:
 
     bool hasSource() const { return m_hasSource; }
     bool drawing() const { return m_drawing; }
-    QPointF marker() const { return m_marker; } // 当前的取样位置指示（画面坐标）
+    QPointF marker() const { return m_marker; }
+
     // 取源点：解析点所在面片并记下它在展开曲面上的位置。
     bool pickSource(const QVector<PerspectivePlane> &planes, const QSize &canvasSize, const QPointF &point);
 

@@ -25,22 +25,22 @@ set(PROJECT_SOURCES
         src/canvas/vpcontroller.h
         src/core/vpdocument.cpp
         src/core/vpdocument.h
-        src/core/brushtool.cpp
-        src/core/brushtool.h
-        src/core/clonetool.cpp
-        src/core/clonetool.h
+        src/tools/brushtool.cpp
+        src/tools/brushtool.h
+        src/tools/clonetool.cpp
+        src/tools/clonetool.h
         src/core/floatingimage.cpp
         src/core/floatingimage.h
         src/core/floatingimageprojection.cpp
         src/core/floatingimageprojection.h
-        src/core/floatingimagetransformtool.cpp
-        src/core/floatingimagetransformtool.h
-        src/core/planeedittool.cpp
-        src/core/planeedittool.h
-        src/core/marqueetool.cpp
-        src/core/marqueetool.h
-        src/core/planecreatetool.cpp
-        src/core/planecreatetool.h
+        src/tools/floatingimagetransformtool.cpp
+        src/tools/floatingimagetransformtool.h
+        src/tools/planeedittool.cpp
+        src/tools/planeedittool.h
+        src/tools/marqueetool.cpp
+        src/tools/marqueetool.h
+        src/tools/planecreatetool.cpp
+        src/tools/planecreatetool.h
         src/core/perspectivequad.cpp
         src/core/perspectivequad.h
         src/core/perspectiveplane.cpp

@@ -1,10 +1,10 @@
 #pragma once
 
 #include "vpcontroller.h"
-#include "core/floatingimagetransformtool.h"
-#include "core/marqueetool.h"
-#include "core/planecreatetool.h"
-#include "core/planeedittool.h"
+#include "tools/floatingimagetransformtool.h"
+#include "tools/marqueetool.h"
+#include "tools/planecreatetool.h"
+#include "tools/planeedittool.h"
 
 #include <QColor>
 #include <QImage>

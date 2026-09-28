@@ -1,6 +1,6 @@
 #include "floatingimagetransformtool.h"
 
-#include "floatingimageprojection.h"
+#include "core/floatingimageprojection.h"
 
 #include <QLineF>
 #include <QtMath>

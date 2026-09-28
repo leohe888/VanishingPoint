@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/brushtool.h"
-#include "core/clonetool.h"
+#include "tools/brushtool.h"
+#include "tools/clonetool.h"
 #include "core/vpdocument.h"
 
 #include <QByteArray>

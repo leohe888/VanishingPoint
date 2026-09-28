@@ -1,6 +1,6 @@
 #include <QtTest>
 
-#include "core/planeedittool.h"
+#include "tools/planeedittool.h"
 #include "testhelpers.h"
 
 class PlaneEditToolTest : public QObject

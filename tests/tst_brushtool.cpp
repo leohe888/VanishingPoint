@@ -2,7 +2,7 @@
 #include <QTemporaryDir>
 #include <QPainter>
 
-#include "core/brushtool.h"
+#include "tools/brushtool.h"
 #include "core/vpdocument.h"
 #include "testhelpers.h"
 
