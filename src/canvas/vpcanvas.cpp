@@ -38,7 +38,7 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     antsTimer->setInterval(80);
     connect(antsTimer, &QTimer::timeout, this, [this] {
         if (!isVisible()
-            || (m_doc.selectedFloatingImage() < 0 && m_selectionRect.isEmpty()))
+            || (m_doc.selectedFloatingImage() < 0 && m_marqueeTool.rect().isEmpty()))
             return;
         m_antsPhase = (m_antsPhase + 1) % 8;
         update();
@@ -198,71 +198,36 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
     }
     case Tool::Marquee: {
         QPointF surface;
-        const bool insideSelection = !m_selectionRect.isEmpty()
-                                     && selectionPath().contains(point)
-                                     && pointToSelectionSurface(point, &surface);
-        // Alt+拖动：把选区内容复制成浮动图像，并直接进入拖动
+        const bool insideSelection = m_marqueeTool.contains(point)
+                                     && m_marqueeTool.mapToSurface(point, &surface);
+        // Alt 拖动：复制内容为浮动图像，并立即接续图像移动。
         if (insideSelection && (event->modifiers() & Qt::AltModifier)) {
-            const int index = copySelectionToFloatingImage(point);
+            const int index = appendSelectionImage(m_marqueeTool.copy(selectionSampleImage(), point));
             if (index >= 0) {
                 m_draggedFloatingImageIndex = index;
                 m_doc.beginEdit();
                 m_floatingImageTransform.beginMove(
-                    m_doc.floatingImage(index), surface - m_selectionRect.topLeft());
-                clearSelection();
+                    m_doc.floatingImage(index), surface - m_marqueeTool.rect().topLeft());
+                m_marqueeTool.clear();
                 m_controller.postStatus(tr("已复制选区内容为浮动图像。"));
             }
             update();
             return;
         }
         if (insideSelection) {
-            m_selectionPressSurface = surface;
-            m_selectionStartRect = m_selectionRect;
-            m_selectionAction = (event->modifiers() & Qt::ControlModifier)
-                                    ? SelectionAction::Fill : SelectionAction::Move;
-            if (m_selectionAction == SelectionAction::Fill) {
-                // 取样源 = 按下这一刻的完整画面；绘画层副本用于每帧重建预览
-                m_selectionSampleSource = QImage(m_doc.background().size(), QImage::Format_ARGB32_Premultiplied);
-                m_selectionSampleSource.fill(Qt::transparent);
-                QPainter sourcePainter(&m_selectionSampleSource);
-                SceneRenderer(m_doc).render(sourcePainter, 1.0, /*showGuides*/ false);
-                sourcePainter.end();
-                m_doc.beginEdit();
-                m_doc.beginPaintTransaction();
-                m_selectionPaintBefore = m_doc.paintLayer();
-                fillSelectionFromPoint(point);
+            if (event->modifiers() & Qt::ControlModifier) {
+                const QImage source = selectionSampleImage();
+                if (m_marqueeTool.beginFill(point, source, m_doc.paintLayer())) {
+                    m_doc.beginEdit();
+                    m_doc.beginPaintTransaction();
+                    updateSelection(point, event->modifiers());
+                }
+            } else {
+                m_marqueeTool.beginMove(point);
             }
-            update();
-            return;
+        } else {
+            m_marqueeTool.beginCreate(m_doc.planes(), point);
         }
-        // 点到平面外的空白：放弃选区
-        const int planeIndex = topmostPlaneIndexAt(m_doc.planes(), point);
-        if (planeIndex < 0) {
-            clearSelection();
-            update();
-            return;
-        }
-        // 选区记在整组共享曲面上：从任意一个平面起手都能跨越相邻平面
-        const PerspectivePlane &host = m_doc.planes()[planeIndex];
-        m_selectionFaces.clear();
-        for (const PerspectivePlane &plane : m_doc.planes()) {
-            if (plane.surfaceGroupId() != host.surfaceGroupId())
-                continue;
-            PerspectiveQuad face;
-            for (int c = 0; c < 4; ++c) {
-                face.setCanvasCorner(c, plane.quad().canvasCorners()[c]);
-                face.setSurfaceCorner(c, plane.quad().surfaceCorners()[c]);
-            }
-            m_selectionFaces.append(face);
-        }
-        bool ok = false;
-        m_selectionPressSurface = host.quad().mapCanvasToSurface(point, &ok);
-        if (!ok) {
-            clearSelection();
-            return;
-        }
-        m_selectionRect = QRectF(m_selectionPressSurface, QSizeF());
-        m_selectionAction = SelectionAction::Create;
         update();
         return;
     }
@@ -275,7 +240,7 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
 {
     event->accept();
     updateCursorPoint(event->position());
-    if (m_selectionAction != SelectionAction::None && (event->buttons() & Qt::LeftButton)) {
+    if (m_marqueeTool.active() && (event->buttons() & Qt::LeftButton)) {
         updateSelection(m_cursorPoint, event->modifiers());
         return;
     }
@@ -358,26 +323,22 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
         }
         return;
     case Tool::Marquee: {
-        if (m_selectionAction == SelectionAction::None)
+        if (!m_marqueeTool.active())
             return;
         updateSelection(widgetToImage(event->position()), event->modifiers());
-        if (m_selectionAction == SelectionAction::Fill) {
+        if (m_marqueeTool.action() == MarqueeTool::Action::Fill) {
             // 克隆结果不留在绘画层：先丢弃拖动期间的预览像素，再落成一张浮动图像
             m_doc.cancelEdit();
-            const int index = cloneSelectionToFloatingImage();
+            const int index = appendSelectionImage(m_marqueeTool.clone());
             if (index >= 0) {
-                clearSelection();
+                m_marqueeTool.clear();
                 m_controller.postStatus(tr("已把拖动结果生成为浮动图像，可直接拖动移动。"));
                 update();
                 return;
             }
         }
-        // 选区本身不写文档，退化成零面积时直接丢弃
-        if (m_selectionRect.width() < 1 || m_selectionRect.height() < 1)
-            clearSelection();
-        m_selectionAction = SelectionAction::None;
-        m_selectionSampleSource = QImage();
-        m_selectionPaintBefore = QImage();
+        // 结束交互并清理取样快照；有效选区继续保留。
+        m_marqueeTool.end();
         update();
         return;
     }
@@ -503,14 +464,14 @@ void VpCanvas::cancelInteraction()
     m_controller.finishActiveStrokes();
     // 平面拖动、图像拖动与 Ctrl 克隆都只改了结构或绘画预览，可以直接丢弃
     if (m_editPlaneIndex >= 0 || m_draggedFloatingImageIndex >= 0
-        || m_selectionAction != SelectionAction::None) {
+        || m_marqueeTool.active()) {
         m_editPlaneIndex = -1;
         m_floatingImageTransform.reset();
         m_draggedFloatingImageIndex = -1;
         m_floatingImageChanged = false;
         m_doc.cancelEdit();
     }
-    clearSelection();
+    m_marqueeTool.clear();
 }
 
 // 是否需要画光标预览（创建平面的橡皮筋、画笔与图章的光标预览）
@@ -758,312 +719,45 @@ void VpCanvas::drawFloatingImageHandles(QPainter *painter)
     painter->restore();
 }
 
-// 选区状态整体归零：只在工具切走、交互被取消、或选区退化成零面积时调用。
-// 因为选区本身不写文档，清空它不产生历史。
-void VpCanvas::clearSelection()
+// 取样和文档事务由画布协调，选区工具只负责计算。
+QImage VpCanvas::selectionSampleImage() const
 {
-    m_selectionFaces.clear();
-    m_selectionRect = QRectF();
-    m_selectionStartRect = QRectF();
-    m_selectionAction = SelectionAction::None;
-    m_selectionSampleSource = QImage();
-    m_selectionPaintBefore = QImage();
-}
-
-// 把画面上的点换算到选区所在曲面的展开坐标：优先用包住它的那个面片，
-// 都不包住时退回第一个面片外推。选区因此可以跨越共享曲面的多个平面。
-bool VpCanvas::pointToSelectionSurface(const QPointF &point, QPointF *surface) const
-{
-    if (!surface || m_selectionFaces.isEmpty())
-        return false;
-    for (int i = m_selectionFaces.size() - 1; i >= 0; --i) {
-        const PerspectiveQuad &face = m_selectionFaces[i];
-        if (!face.containsCanvasPoint(point))
-            continue;
-        bool ok = false;
-        *surface = face.mapCanvasToSurface(point, &ok);
-        if (ok)
-            return true;
-    }
-    bool ok = false;
-    *surface = m_selectionFaces.first().mapCanvasToSurface(point, &ok);
-    return ok;
-}
-
-// 选区轮廓：把展开坐标下的矩形按面片切开再逐片投影回画面，
-// 于是跨接缝的选区画出来会沿折线拐弯，而不是一个平面矩形。
-QPainterPath VpCanvas::selectionPath() const
-{
-    QPainterPath result;
-    if (m_selectionRect.isEmpty())
-        return result;
-    QPainterPath rectangle;
-    rectangle.addRect(m_selectionRect.normalized());
-    for (const PerspectiveQuad &face : m_selectionFaces) {
-        QPainterPath facePath;
-        facePath.addPolygon(face.surfacePolygon());
-        facePath.closeSubpath();
-        const QPainterPath clipped = rectangle.intersected(facePath);
-        const PerspectiveTransform mapping = face.surfaceToCanvasTransform();
-        if (!mapping.isValid())
-            continue;
-        for (const QPolygonF &surfacePolygon : clipped.toFillPolygons()) {
-            QPolygonF canvasPolygon;
-            for (const QPointF &surfacePoint : surfacePolygon) {
-                QPointF canvasPoint;
-                if (mapping.mapForward(surfacePoint, &canvasPoint))
-                    canvasPolygon.append(canvasPoint);
-            }
-            if (canvasPolygon.size() >= 3) {
-                QPainterPath patch;
-                patch.addPolygon(canvasPolygon);
-                patch.closeSubpath();
-                result = result.united(patch);
-            }
-        }
-    }
-    return result;
-}
-
-// 拖动过程中的选区：新建时从按下点拉到光标（Shift 取正方形），平移时整体位移
-// （Shift 锁单轴并对齐网格），Ctrl 克隆则持续把光标处的内容补进选区。
-void VpCanvas::updateSelection(const QPointF &point, Qt::KeyboardModifiers modifiers)
-{
-    QPointF surface;
-    if (!pointToSelectionSurface(point, &surface))
-        return;
-    if (m_selectionAction == SelectionAction::Create) {
-        QPointF delta = surface - m_selectionPressSurface;
-        if (modifiers & Qt::ShiftModifier) {
-            const qreal side = qMax(qAbs(delta.x()), qAbs(delta.y()));
-            delta.setX(delta.x() < 0 ? -side : side);
-            delta.setY(delta.y() < 0 ? -side : side);
-        }
-        m_selectionRect = QRectF(m_selectionPressSurface,
-                                 m_selectionPressSurface + delta).normalized();
-    } else if (m_selectionAction == SelectionAction::Move) {
-        QPointF delta = surface - m_selectionPressSurface;
-        if (modifiers & Qt::ShiftModifier) {
-            // 锁到位移较大的那个轴，再吸附到网格
-            if (qAbs(delta.x()) >= qAbs(delta.y()))
-                delta.setY(0);
-            else
-                delta.setX(0);
-            delta.setX(qRound(delta.x() / m_controller.gridSize()) * m_controller.gridSize());
-            delta.setY(qRound(delta.y() / m_controller.gridSize()) * m_controller.gridSize());
-        }
-        m_selectionRect = m_selectionStartRect.translated(delta);
-    } else if (m_selectionAction == SelectionAction::Fill) {
-        fillSelectionFromPoint(point);
-    }
-    update();
-}
-
-// Ctrl 克隆：把「按下时光标下方的区域」按单应搬进选区。每帧都从按下前的绘画层
-// 重建，避免重复移动把上一次的预览也当成取样内容叠上去。
-void VpCanvas::fillSelectionFromPoint(const QPointF &point)
-{
-    if (m_selectionSampleSource.isNull() || m_selectionPaintBefore.isNull())
-        return;
-
-    QPointF sourceAnchor;
-    if (!pointToSelectionSurface(point, &sourceAnchor))
-        return;
-    const QPointF sourceOffset = sourceAnchor - m_selectionPressSurface;
-    m_selectionFillOffset = sourceOffset;
-    const QPainterPath targetPath = selectionPath();
-    const QRect dirty = targetPath.boundingRect().toAlignedRect().adjusted(-1, -1, 1, 1)
-                            .intersected(m_doc.paintLayer().rect());
-    if (dirty.isEmpty())
-        return;
-
-    m_doc.paintLayer() = m_selectionPaintBefore;
-    QPainter painter(&m_doc.paintLayer());
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
-    QPainterPath selectionSurfacePath;
-    selectionSurfacePath.addRect(m_selectionRect.normalized());
-    // 每个「目标面 + 源面」组合是一片单应补丁，整片交给光栅器一次画完。
-    for (const PerspectiveQuad &targetFace : m_selectionFaces) {
-        QPainterPath targetSurfacePath;
-        targetSurfacePath.addPolygon(targetFace.surfacePolygon());
-        targetSurfacePath.closeSubpath();
-        const PerspectiveTransform targetMapping = targetFace.surfaceToCanvasTransform();
-        if (!targetMapping.isValid())
-            continue;
-        for (const PerspectiveQuad &sourceFace : m_selectionFaces) {
-            QPolygonF shiftedSourceSurface;
-            QPolygonF sourceCanvas;
-            QPolygonF targetCanvas;
-            for (int c = 0; c < 4; ++c) {
-                shiftedSourceSurface.append(sourceFace.surfaceCorners()[c] - sourceOffset);
-                sourceCanvas.append(sourceFace.canvasCorners()[c]);
-                QPointF mapped;
-                if (!targetMapping.mapForward(shiftedSourceSurface.last(), &mapped)) {
-                    targetCanvas.clear();
-                    break;
-                }
-                targetCanvas.append(mapped);
-            }
-            if (targetCanvas.size() != 4)
-                continue;
-
-            QPainterPath sourceDomain;
-            sourceDomain.addPolygon(shiftedSourceSurface);
-            sourceDomain.closeSubpath();
-            const QPainterPath surfacePatch = selectionSurfacePath
-                                                  .intersected(targetSurfacePath)
-                                                  .intersected(sourceDomain);
-            if (surfacePatch.isEmpty())
-                continue;
-
-            QPainterPath canvasClip;
-            for (const QPolygonF &polygon : surfacePatch.toFillPolygons()) {
-                QPolygonF mappedPolygon;
-                for (const QPointF &surfacePoint : polygon) {
-                    QPointF mapped;
-                    if (targetMapping.mapForward(surfacePoint, &mapped))
-                        mappedPolygon.append(mapped);
-                }
-                if (mappedPolygon.size() >= 3) {
-                    canvasClip.addPolygon(mappedPolygon);
-                    canvasClip.closeSubpath();
-                }
-            }
-            const PerspectiveTransform sourceToTarget(sourceCanvas, targetCanvas);
-            if (!sourceToTarget.isValid() || canvasClip.isEmpty())
-                continue;
-            painter.save();
-            painter.setClipPath(canvasClip, Qt::IntersectClip);
-            painter.setWorldTransform(sourceToTarget.forward());
-            painter.drawImage(QPointF(), m_selectionSampleSource);
-            painter.restore();
-        }
-    }
-    painter.end();
-    m_doc.addPaintDirty(dirty);
-}
-
-// Alt 拖动：把选区里的内容（背景 + 绘画层 + 浮动图像）抠成一张浮动图像，
-// 并吸附到选区所在的同一组面片上，于是它还能继续被拖动、缩放。
-int VpCanvas::copySelectionToFloatingImage(const QPointF &point)
-{
-    const QRectF rect = m_selectionRect.normalized();
-    if (rect.width() < 1 || rect.height() < 1 || m_selectionFaces.isEmpty())
-        return -1;
-    const QSize size(qMin(8192, qMax(1, qCeil(rect.width()))),
-                     qMin(8192, qMax(1, qCeil(rect.height()))));
     QImage source(m_doc.background().size(), QImage::Format_ARGB32_Premultiplied);
     source.fill(Qt::transparent);
-    {
-        QPainter sourcePainter(&source);
-        SceneRenderer(m_doc).render(sourcePainter, 1.0, /*showGuides*/ false);
-    }
-    QImage extracted(size, QImage::Format_ARGB32_Premultiplied);
-    extracted.fill(Qt::transparent);
-    QPainter painter(&extracted);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    int hostFace = 0;
-    QPointF pressSurface;
-    pointToSelectionSurface(point, &pressSurface);
-    for (int i = 0; i < m_selectionFaces.size(); ++i) {
-        const PerspectiveQuad &face = m_selectionFaces[i];
-        QPolygonF target;
-        for (int c = 0; c < 4; ++c)
-            target.append(face.surfaceCorners()[c] - rect.topLeft());
-        QPainterPath clip;
-        clip.addPolygon(target);
-        clip.closeSubpath();
-        QPainterPath outputBounds;
-        outputBounds.addRect(QRectF(QPointF(), QSizeF(size)));
-        clip = outputBounds.intersected(clip);
-        const PerspectiveTransform mapping(face.canvasPolygon(), target);
-        if (!mapping.isValid() || clip.isEmpty())
-            continue;
-        painter.save();
-        painter.setClipPath(clip);
-        painter.setWorldTransform(mapping.forward());
-        painter.drawImage(QPointF(), source);
-        painter.restore();
-        if (face.surfacePolygon().containsPoint(pressSurface, Qt::OddEvenFill))
-            hostFace = i;
-    }
+    QPainter painter(&source);
+    SceneRenderer(m_doc).render(painter, 1.0, /*showGuides*/ false);
     painter.end();
-    return m_doc.addFloatingImageOnSurface(extracted, m_selectionFaces, hostFace, rect.topLeft());
+    return source;
 }
 
-// Ctrl 拖动的结果不留在绘画层，而是落成一张浮动图像：与 fillSelectionFromPoint
-// 共用同一套「源面 → 目标面」单应，因此松手前后看到的像素不会跳变。
-int VpCanvas::cloneSelectionToFloatingImage()
+int VpCanvas::appendSelectionImage(const FloatingImage &image)
 {
-    const QRectF rect = m_selectionRect.normalized();
-    if (m_selectionSampleSource.isNull() || m_selectionFaces.isEmpty()
-        || rect.width() < 1 || rect.height() < 1) {
+    if (image.bitmap.isNull())
         return -1;
-    }
-    const QSize size(qMin(8192, qMax(1, qCeil(rect.width()))),
-                     qMin(8192, qMax(1, qCeil(rect.height()))));
-    QImage extracted(size, QImage::Format_ARGB32_Premultiplied);
-    extracted.fill(Qt::transparent);
-    QPainter painter(&extracted);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    return m_doc.addFloatingImageOnSurface(image.bitmap, image.surfaceQuads,
+                                          image.hostQuadIndex, image.placementOrigin);
+}
 
-    const QPointF origin = rect.topLeft();
-    QPainterPath bounds; // 位图范围，等价于选区矩形
-    bounds.addRect(QRectF(QPointF(), QSizeF(size)));
-    int hostFace = 0;
-    for (int i = 0; i < m_selectionFaces.size(); ++i) {
-        if (m_selectionFaces[i].surfacePolygon()
-                .containsPoint(m_selectionPressSurface, Qt::OddEvenFill)) {
-            hostFace = i;
-        }
-    }
-    for (const PerspectiveQuad &targetFace : m_selectionFaces) {
-        QPolygonF targetQuad;
-        for (int c = 0; c < 4; ++c)
-            targetQuad.append(targetFace.surfaceCorners()[c] - origin);
-        QPainterPath targetSurface;
-        targetSurface.addPolygon(targetQuad);
-        targetSurface.closeSubpath();
-        for (const PerspectiveQuad &sourceFace : m_selectionFaces) {
-            QPolygonF shifted; // 源面按拖动偏移搬到目标位置后，在位图中的四边形
-            for (int c = 0; c < 4; ++c)
-                shifted.append(sourceFace.surfaceCorners()[c] - m_selectionFillOffset - origin);
-            QPainterPath sourceDomain;
-            sourceDomain.addPolygon(shifted);
-            sourceDomain.closeSubpath();
-            const QPainterPath clip = bounds.intersected(targetSurface).intersected(sourceDomain);
-            if (clip.isEmpty())
-                continue;
-            QPolygonF sourceCanvas;
-            for (int c = 0; c < 4; ++c)
-                sourceCanvas.append(sourceFace.canvasCorners()[c]);
-            const PerspectiveTransform mapping(sourceCanvas, shifted);
-            if (!mapping.isValid())
-                continue;
-            painter.save();
-            painter.setClipPath(clip);
-            painter.setWorldTransform(mapping.forward());
-            painter.drawImage(QPointF(), m_selectionSampleSource);
-            painter.restore();
-        }
-    }
-    painter.end();
-    return m_doc.addFloatingImageOnSurface(extracted, m_selectionFaces, hostFace, rect.topLeft());
+void VpCanvas::updateSelection(const QPointF &point, Qt::KeyboardModifiers modifiers)
+{
+    const QRect dirty = m_marqueeTool.update(point, modifiers, m_controller.gridSize(),
+                                           &m_doc.paintLayer());
+    if (!dirty.isEmpty())
+        m_doc.addPaintDirty(dirty);
+    update();
 }
 
 // 选区轮廓按控件坐标描边（先 resetTransform 再整体缩放），
 // 白 1px 打底 + 黑虚线，线宽与虚线间距在屏幕上恒定。
 void VpCanvas::drawSelectionOutline(QPainter *painter)
 {
-    if (m_controller.tool() != Tool::Marquee || m_selectionRect.isEmpty())
+    if (m_controller.tool() != Tool::Marquee || m_marqueeTool.rect().isEmpty())
         return;
     painter->save();
     painter->resetTransform();
     const QPainterPath outline =
         QTransform::fromTranslate(m_offset.x(), m_offset.y())
-            .map(QTransform::fromScale(m_scale, m_scale).map(selectionPath()));
+            .map(QTransform::fromScale(m_scale, m_scale).map(m_marqueeTool.outline()));
     painter->setBrush(Qt::NoBrush);
     painter->setPen(QPen(Qt::white, 1));
     painter->drawPath(outline);

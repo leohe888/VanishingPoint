@@ -28,32 +28,36 @@ Rectangle {
         spacing: 18
         visible: root.brushOptionsVisible
 
-        OptionSlider {
+        OptionInput {
+            Layout.fillWidth: false
             label: qsTr("直径")
             from: 1
             to: 500
             suffix: " px"
             value: root.controller ? root.controller.brushDiameter : 42
-            onMoved: (value) => root.controller.brushDiameter = value
+            onEdited: (value) => root.controller.brushDiameter = value
         }
 
-        OptionSlider {
+        OptionInput {
+            Layout.fillWidth: false
             label: qsTr("硬度")
             from: 0
             to: 100
             value: root.controller ? root.controller.brushHardness : 75
-            onMoved: (value) => root.controller.brushHardness = value
+            onEdited: (value) => root.controller.brushHardness = value
         }
 
-        OptionSlider {
+        OptionInput {
+            Layout.fillWidth: false
             label: qsTr("不透明度")
             from: 1
             to: 100
             value: root.controller ? root.controller.brushOpacity : 100
-            onMoved: (value) => root.controller.brushOpacity = value
+            onEdited: (value) => root.controller.brushOpacity = value
         }
 
         RowLayout {
+            Layout.fillWidth: false
             spacing: 8
 
             Text {
@@ -77,6 +81,10 @@ Rectangle {
                 }
             }
         }
+
+        Item {
+            Layout.fillWidth: true
+        }
     }
 
     ColorDialog {
@@ -93,32 +101,36 @@ Rectangle {
         spacing: 18
         visible: root.cloneOptionsVisible
 
-        OptionSlider {
+        OptionInput {
+            Layout.fillWidth: false
             label: qsTr("直径")
             from: 1
             to: 500
             suffix: " px"
             value: root.controller ? root.controller.cloneDiameter : 42
-            onMoved: (value) => root.controller.cloneDiameter = value
+            onEdited: (value) => root.controller.cloneDiameter = value
         }
 
-        OptionSlider {
+        OptionInput {
+            Layout.fillWidth: false
             label: qsTr("硬度")
             from: 0
             to: 100
             value: root.controller ? root.controller.cloneHardness : 75
-            onMoved: (value) => root.controller.cloneHardness = value
+            onEdited: (value) => root.controller.cloneHardness = value
         }
 
-        OptionSlider {
+        OptionInput {
+            Layout.fillWidth: false
             label: qsTr("不透明度")
             from: 1
             to: 100
             value: root.controller ? root.controller.cloneOpacity : 100
-            onMoved: (value) => root.controller.cloneOpacity = value
+            onEdited: (value) => root.controller.cloneOpacity = value
         }
 
         RowLayout {
+            Layout.fillWidth: false
             spacing: 8
 
             Text {
@@ -150,6 +162,10 @@ Rectangle {
                 }
             }
         }
+
+        Item {
+            Layout.fillWidth: true
+        }
     }
 
     RowLayout {
@@ -159,33 +175,28 @@ Rectangle {
         spacing: 18
         visible: root.planeOptionsVisible
 
-        OptionSlider {
+        OptionInput {
+            Layout.fillWidth: false
             label: qsTr("网格大小")
             from: 1
             to: 1000
             value: root.controller ? root.controller.gridSize : 50
-            onMoved: (value) => root.controller.gridSize = value
+            onEdited: (value) => root.controller.gridSize = value
         }
 
-        OptionSlider {
+        OptionInput {
+            Layout.fillWidth: false
             label: qsTr("角度")
             from: 0
             to: 360
             suffix: "°"
             enabled: root.controller ? root.controller.planeAngleEditable : false
             value: root.controller ? Math.round(root.controller.planeAngle) : 90
-            onMoved: (value) => root.controller.planeAngle = value
+            onEdited: (value) => root.controller.planeAngle = value
         }
 
-        // 夹角不可调时把原因直接写在旁边，比 tooltip 更容易发现
-        Text {
-            Layout.alignment: Qt.AlignVCenter
+        Item {
             Layout.fillWidth: true
-            elide: Text.ElideRight
-            color: "#9a9a9a"
-            font.pixelSize: 11
-            visible: root.controller ? !root.controller.planeAngleEditable : false
-            text: root.controller ? root.controller.planeAngleLockReason : ""
         }
     }
 }

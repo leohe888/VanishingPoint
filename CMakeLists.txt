@@ -37,6 +37,8 @@ set(PROJECT_SOURCES
         src/core/floatingimagetransformtool.h
         src/core/planeedittool.cpp
         src/core/planeedittool.h
+        src/core/marqueetool.cpp
+        src/core/marqueetool.h
         src/core/planecreatetool.cpp
         src/core/planecreatetool.h
         src/core/perspectivequad.cpp

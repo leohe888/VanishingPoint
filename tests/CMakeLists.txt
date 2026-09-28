@@ -40,6 +40,11 @@ add_vp_test(tst_planeedittool
     ${PROJECT_SOURCE_DIR}/src/core/planeedittool.cpp
     ${VP_GEOMETRY_SOURCES})
 
+add_vp_test(tst_marqueetool
+    tst_marqueetool.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/marqueetool.cpp
+    ${VP_GEOMETRY_SOURCES})
+
 add_vp_test(tst_vpdocument
     tst_vpdocument.cpp
     ${PROJECT_SOURCE_DIR}/src/core/vpdocument.cpp
