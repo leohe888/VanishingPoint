@@ -203,17 +203,16 @@ bool translatePlaneOnSurface(const PerspectivePlane &source, const QPointF &drag
         return false;
 
     // 将按下位置和当前拖动位置映射到展开坐标；任一映射失败则终止。
-    bool pressOk = false, dragOk = false;
-    const QPointF press = source.quad().mapCanvasToSurface(pressPoint, &pressOk);
-    const QPointF drag = source.quad().mapCanvasToSurface(dragPoint, &dragOk);
-    if (!pressOk || !dragOk)
+    const PerspectiveTransform projection = source.quad().surfaceToCanvasTransform();
+    QPointF press;
+    QPointF drag;
+    if (!projection.mapInverse(pressPoint, &press) || !projection.mapInverse(dragPoint, &drag))
         return false;
 
     // 计算展开坐标中的位移，使四个角点沿平面移动相同距离。
     const QPointF delta = drag - press;
 
-    // 保存源平面的展开坐标到画布坐标变换，并复制源平面作为候选结果。
-    const PerspectiveTransform projection = source.quad().surfaceToCanvasTransform();
+    // 复制源平面作为候选结果，复用同一变换投影回画布。
     PerspectivePlane candidate = source;
     // 平移每个展开角点，再用原变换投影回画布；两组角点一起更新。
     for (int i = 0; i < PerspectiveQuad::CornerCount; ++i) {

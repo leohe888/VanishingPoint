@@ -646,9 +646,8 @@ void VpCanvas::attachFloatingImageToPlane(int index, int planeIndex, const QPoin
             hostQuadIndex = surfaceQuads.size();
         surfaceQuads.append(quad);
     }
-    bool ok = false;
-    const QPointF surfacePoint = host.quad().mapCanvasToSurface(point, &ok);
-    if (!ok)
+    QPointF surfacePoint;
+    if (!host.quad().surfaceToCanvasTransform().mapInverse(point, &surfacePoint))
         return;
     m_doc.attachFloatingImage(
         index, surfaceQuads, hostQuadIndex,
@@ -661,8 +660,8 @@ bool VpCanvas::moveSurfaceAttachedImage(int index, const QPointF &point)
 {
     const FloatingImage &image = m_doc.floatingImage(index);
     auto moveOnQuad = [this, index, &point](const PerspectiveQuad &quad) {
-        bool ok = false;
-        const QPointF surfacePoint = quad.mapCanvasToSurface(point, &ok);
+        QPointF surfacePoint;
+        const bool ok = quad.surfaceToCanvasTransform().mapInverse(point, &surfacePoint);
         if (ok)
             m_doc.setFloatingImageOrigin(
                 index, surfacePoint - m_floatingImageTransform.grabOffset());

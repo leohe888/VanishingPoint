@@ -67,12 +67,13 @@ QVector<QPointF> PerspectiveQuad::controlPoints() const
 
 bool PerspectiveQuad::isValid() const
 {
-    qreal windingSign = 0.0;
-    qreal twiceArea = 0.0;
     for (const QPointF &corner : m_canvasCorners) {
         if (!qIsFinite(corner.x()) || !qIsFinite(corner.y()))
             return false;
     }
+
+    qreal windingSign = 0.0;
+    qreal twiceArea = 0.0;
     for (int i = 0; i < CornerCount; ++i) {
         const QPointF a = m_canvasCorners[i];
         const QPointF b = m_canvasCorners[(i + 1) % CornerCount];
@@ -155,31 +156,4 @@ PerspectiveTransform PerspectiveQuad::uvToCanvasTransform() const
 {
     return {{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)},
             canvasPolygon()};
-}
-
-QPointF PerspectiveQuad::mapUvToCanvas(const QPointF &uv, bool *ok) const
-{
-    QPointF result;
-    const bool valid = uvToCanvasTransform().mapForward(uv, &result);
-    if (ok)
-        *ok = valid;
-    return result;
-}
-
-QPointF PerspectiveQuad::mapCanvasToUv(const QPointF &point, bool *ok) const
-{
-    QPointF result;
-    const bool valid = uvToCanvasTransform().mapInverse(point, &result);
-    if (ok)
-        *ok = valid;
-    return result;
-}
-
-QPointF PerspectiveQuad::mapCanvasToSurface(const QPointF &point, bool *ok) const
-{
-    QPointF result;
-    const bool valid = surfaceToCanvasTransform().mapInverse(point, &result);
-    if (ok)
-        *ok = valid;
-    return result;
 }

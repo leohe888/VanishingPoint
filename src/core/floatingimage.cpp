@@ -79,7 +79,9 @@ bool FloatingImage::mapCanvasToPlacement(const QPointF &point, QPointF *result,
     if (selectedQuad < 0 || selectedQuad >= surfaceQuads.size())
         return false;
 
-    bool mapped = false;
-    *result = surfaceQuads[selectedQuad].mapCanvasToSurface(point, &mapped);
+    QPointF surfacePoint;
+    const bool mapped = surfaceQuads[selectedQuad].surfaceToCanvasTransform()
+                            .mapInverse(point, &surfacePoint);
+    *result = surfacePoint;
     return mapped && std::isfinite(result->x()) && std::isfinite(result->y());
 }

@@ -14,9 +14,7 @@ bool MarqueeTool::beginCreate(const QVector<PerspectivePlane> &planes, const QPo
         if (plane.surfaceGroupId() == host.surfaceGroupId())
             m_selectionFaces.append(plane.quad());
     }
-    bool ok = false;
-    m_selectionPressSurface = host.quad().mapCanvasToSurface(point, &ok);
-    if (!ok) {
+    if (!host.quad().surfaceToCanvasTransform().mapInverse(point, &m_selectionPressSurface)) {
         clear();
         return false;
     }
@@ -98,14 +96,10 @@ bool MarqueeTool::mapToSurface(const QPointF &point, QPointF *surface) const
         const PerspectiveQuad &face = m_selectionFaces[i];
         if (!face.containsCanvasPoint(point))
             continue;
-        bool ok = false;
-        *surface = face.mapCanvasToSurface(point, &ok);
-        if (ok)
+        if (face.surfaceToCanvasTransform().mapInverse(point, surface))
             return true;
     }
-    bool ok = false;
-    *surface = m_selectionFaces.first().mapCanvasToSurface(point, &ok);
-    return ok;
+    return m_selectionFaces.first().surfaceToCanvasTransform().mapInverse(point, surface);
 }
 
 // 选区轮廓：把展开坐标下的矩形按面片切开再逐片投影回画面，

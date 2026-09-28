@@ -9,25 +9,11 @@ class QPainter;
 class VpDocument;
 struct FloatingImage;
 
-// 场景渲染器：把文档内容绘制到 QPainter。
-// 既用于屏幕显示（带编辑辅助层：网格、控制点、创建角点预览），
-// 也用于导出（仅文档内容本身）。viewScale 用于把辅助层线宽换算为
-// 恒定的屏幕像素宽度。
-//
-// 渲染顺序：背景 -> 绘画层 -> 浮动图像 -> 编辑辅助层。
-// 绘画层与浮动图像都不再附着于平面，因此渲染只依赖它们自身的数据。
 class SceneRenderer
 {
 public:
     explicit SceneRenderer(const VpDocument &doc);
 
-    // 渲染完整场景。showGuides 为 true 时额外绘制编辑辅助元素；
-    // creationPoints 为创建平面过程中已点击的角点；
-    // extrudePreview 为垂直平面的拖出预览（可为空）；
-    // editHandlesVisible 控制选中平面的控制点是否显示；
-    // hoveredPlane 为当前悬停平面的索引（用于高亮）。
-    // cursorPoint 为当前光标位置（画布坐标），仅用于创建平面时的橡皮筋预览，
-    // 传空点表示不绘制。
     void render(QPainter &painter, qreal viewScale, bool showGuides,
                 const QVector<QPointF> &creationPoints = {},
                 const PerspectivePlane *extrudePreview = nullptr,

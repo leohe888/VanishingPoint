@@ -37,10 +37,6 @@ public:
     PerspectiveTransform surfaceToCanvasTransform() const;
     PerspectiveTransform uvToCanvasTransform() const;
 
-    QPointF mapUvToCanvas(const QPointF &uv, bool *ok = nullptr) const;
-    QPointF mapCanvasToUv(const QPointF &point, bool *ok = nullptr) const;
-    QPointF mapCanvasToSurface(const QPointF &point, bool *ok = nullptr) const;
-
 private:
     Corners m_canvasCorners{};
     Corners m_surfaceCorners{};

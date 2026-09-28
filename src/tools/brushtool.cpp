@@ -24,9 +24,8 @@ bool BrushTool::resolveTarget(const QVector<PerspectivePlane> &planes, const QSi
     PerspectiveQuad target;
     if (!resolveQuad(planes, canvasSize, point, &target))
         return false;
-    bool valid = false;
-    const QPointF position = target.mapCanvasToUv(point, &valid);
-    if (!valid)
+    QPointF position;
+    if (!target.uvToCanvasTransform().mapInverse(point, &position))
         return false;
     *quad = target;
     *uv = position;
@@ -52,9 +51,8 @@ QRect BrushTool::move(QImage &layer, const QPointF &point)
 {
     if (!m_drawing)
         return {};
-    bool valid = false;
-    const QPointF uv = m_quad.mapCanvasToUv(point, &valid);
-    if (!valid)
+    QPointF uv;
+    if (!m_quad.uvToCanvasTransform().mapInverse(point, &uv))
         return {};
     return drawStrokeTo(layer, uv);
 }

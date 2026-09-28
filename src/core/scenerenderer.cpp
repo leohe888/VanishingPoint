@@ -170,15 +170,22 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveQuad &qu
              + QLineF(quad.canvasCorners()[1], quad.canvasCorners()[2]).length()) * 0.5;
         const int horizontalDivisions = qMax(1, qRound(horizontalLength / safeGridSize));
         const int verticalDivisions = qMax(1, qRound(verticalLength / safeGridSize));
+        const PerspectiveTransform projection = quad.uvToCanvasTransform();
         for (int i = 1; i < horizontalDivisions; ++i) {
             const qreal t = qreal(i) / horizontalDivisions;
-            painter.drawLine(quad.mapUvToCanvas(QPointF(t, 0)),
-                             quad.mapUvToCanvas(QPointF(t, 1)));
+            QPointF start;
+            QPointF end;
+            if (projection.mapForward(QPointF(t, 0), &start)
+                && projection.mapForward(QPointF(t, 1), &end))
+                painter.drawLine(start, end);
         }
         for (int i = 1; i < verticalDivisions; ++i) {
             const qreal t = qreal(i) / verticalDivisions;
-            painter.drawLine(quad.mapUvToCanvas(QPointF(0, t)),
-                             quad.mapUvToCanvas(QPointF(1, t)));
+            QPointF start;
+            QPointF end;
+            if (projection.mapForward(QPointF(0, t), &start)
+                && projection.mapForward(QPointF(1, t), &end))
+                painter.drawLine(start, end);
         }
         painter.restore();
     }
