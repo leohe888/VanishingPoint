@@ -2,7 +2,6 @@ import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Dialogs
-import QtQuick.Controls as Controls
 
 Window {
     width: 1280
@@ -32,9 +31,27 @@ Window {
 
             RowLayout {
                 Layout.fillWidth: true
-                Controls.Button { text: qsTr("打开图片"); onClicked: imageDialog.open() }
-                Controls.Button { text: qsTr("撤销"); enabled: workArea.controller.canUndo; onClicked: workArea.controller.undo() }
-                Controls.Button { text: qsTr("重做"); enabled: workArea.controller.canRedo; onClicked: workArea.controller.redo() }
+                z: 1
+                ToolButton {
+                    iconSource: "folder-open.png"
+                    tooltip: qsTr("打开图片")
+                    tooltipBelow: true
+                    onActivated: imageDialog.open()
+                }
+                ToolButton {
+                    iconSource: "undo.png"
+                    tooltip: qsTr("撤销")
+                    tooltipBelow: true
+                    enabled: workArea.controller.canUndo
+                    onActivated: workArea.controller.undo()
+                }
+                ToolButton {
+                    iconSource: "redo.png"
+                    tooltip: qsTr("重做")
+                    tooltipBelow: true
+                    enabled: workArea.controller.canRedo
+                    onActivated: workArea.controller.redo()
+                }
                 ToolOptionsBar {
                     controller: workArea.controller
                     Layout.fillWidth: true

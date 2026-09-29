@@ -7,6 +7,7 @@ Rectangle {
 
     property int toolId: -1
     property string tooltip: ""
+    property bool tooltipBelow: false
     property string iconSource: ""
     property string shortcut: ""
     property bool selected: false
@@ -16,10 +17,11 @@ Rectangle {
     width: 28
     height: 28
     radius: 2
+    opacity: root.enabled ? 1.0 : 0.35
     color: root.selected
            ? root.selectedColor
-           : (mouseArea.containsMouse ? root.hoverColor : "transparent")
-    border.width: (root.selected || mouseArea.containsMouse) ? 1 : 0
+           : (root.enabled && mouseArea.containsMouse ? root.hoverColor : "transparent")
+    border.width: (root.selected || (root.enabled && mouseArea.containsMouse)) ? 1 : 0
     border.color: "#777777"
 
     signal activated(int toolId)
@@ -41,20 +43,21 @@ Rectangle {
         onClicked: root.activated(root.toolId)
 
         ToolTip {
-            visible: mouseArea.containsMouse
+            visible: root.enabled && mouseArea.containsMouse && root.tooltip.length > 0
             text: root.tooltip
         }
     }
 
     Shortcut {
+        enabled: root.enabled && root.shortcut.length > 0
         sequence: root.shortcut
         onActivated: root.activated(root.toolId)
     }
 
     component ToolTip: Rectangle {
         property alias text: caption.text
-        x: parent.width + 7
-        y: (parent.height - height) / 2
+        x: root.tooltipBelow ? 0 : parent.width + 7
+        y: root.tooltipBelow ? parent.height + 7 : (parent.height - height) / 2
         width: caption.implicitWidth + 16
         height: 26
         radius: 3
