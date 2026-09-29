@@ -3,6 +3,7 @@
 #include <QTemporaryDir>
 
 #include "canvas/vpcontroller.h"
+#include "testhelpers.h"
 
 class VpControllerTest : public QObject
 {
@@ -10,7 +11,7 @@ class VpControllerTest : public QObject
 
 private slots:
     void qmlPropertiesNotifyAndClamp();
-    void transformRequiresSelectedImage();
+    void toolAvailabilityFollowsDocument();
     void brushStrokeCommitsAsOneEdit();
     void cloneStrokeUsesDocumentContent();
 };
@@ -18,6 +19,7 @@ private slots:
 void VpControllerTest::qmlPropertiesNotifyAndClamp()
 {
     VpController controller;
+    controller.document().appendPlane(makeTestPlane());
     QSignalSpy toolChanged(&controller, &VpController::toolChanged);
     QSignalSpy brushChanged(&controller, &VpController::brushChanged);
     QSignalSpy gridChanged(&controller, &VpController::gridSizeChanged);
@@ -33,13 +35,61 @@ void VpControllerTest::qmlPropertiesNotifyAndClamp()
     QCOMPARE(gridChanged.size(), 1);
 }
 
-void VpControllerTest::transformRequiresSelectedImage()
+void VpControllerTest::toolAvailabilityFollowsDocument()
 {
     VpController controller;
+    auto &doc = controller.document();
+    QSignalSpy availability(&controller, &VpController::toolAvailabilityChanged);
     QSignalSpy status(&controller, &VpController::statusMessage);
-    controller.setTool(VpController::Transform);
+    for (auto tool : {VpController::EditPlane, VpController::Marquee,
+                      VpController::CloneStamp, VpController::Brush, VpController::Transform}) {
+        QVERIFY(!controller.isToolEnabled(tool));
+        controller.setTool(tool);
+        QCOMPARE(controller.tool(), VpController::CreatePlane);
+    }
+    QCOMPARE(status.size(), 5);
+    QVERIFY(controller.isToolEnabled(VpController::CreatePlane));
+    QVERIFY(controller.isToolEnabled(VpController::Hand));
+    QVERIFY(controller.isToolEnabled(VpController::Zoom));
+    QVERIFY(!controller.beginBrush({30, 30}));
+    QVERIFY(!controller.pickCloneSource({30, 30}));
+    QVERIFY(!controller.beginClone({30, 30}));
+    doc.beginEdit();
+    QVERIFY(doc.appendPlane(makeTestPlane()) >= 0);
+    doc.commitEdit(true);
+    QCOMPARE(availability.size(), 1);
+    for (auto tool : {VpController::EditPlane, VpController::Marquee,
+                      VpController::CloneStamp, VpController::Brush}) {
+        QVERIFY(controller.isToolEnabled(tool));
+        controller.setTool(tool);
+        QCOMPARE(controller.tool(), tool);
+    }
+    controller.undo();
+    QVERIFY(!controller.isToolEnabled(VpController::Brush));
     QCOMPARE(controller.tool(), VpController::CreatePlane);
-    QCOMPARE(status.size(), 1);
+    controller.redo();
+    QVERIFY(controller.isToolEnabled(VpController::Brush));
+    controller.setTool(VpController::Brush);
+    doc.removePlane(0);
+    QCOMPARE(controller.tool(), VpController::CreatePlane);
+
+    QImage image(8, 8, QImage::Format_ARGB32);
+    image.fill(Qt::red);
+    doc.addFloatingImage(image);
+    QVERIFY(controller.isToolEnabled(VpController::Transform));
+    doc.setSelectedFloatingImage(-1);
+    controller.setTool(VpController::Transform);
+    QCOMPARE(controller.tool(), VpController::Transform);
+    QCOMPARE(doc.selectedFloatingImage(), 0);
+    controller.undo();
+    QVERIFY(!controller.isToolEnabled(VpController::Transform));
+    QCOMPARE(controller.tool(), VpController::CreatePlane);
+    controller.redo();
+    QVERIFY(controller.isToolEnabled(VpController::Transform));
+    doc.appendPlane(makeTestPlane());
+    controller.setTool(VpController::Transform);
+    doc.removeFloatingImage(0);
+    QCOMPARE(controller.tool(), VpController::EditPlane);
 }
 
 void VpControllerTest::brushStrokeCommitsAsOneEdit()
@@ -53,6 +103,8 @@ void VpControllerTest::brushStrokeCommitsAsOneEdit()
 
     VpController controller;
     QVERIFY(controller.document().loadImage(path));
+    controller.document().appendPlane(makeTestPlane());
+    controller.document().resetHistory();
     QVERIFY(controller.beginBrush(QPointF(30, 30)));
     controller.moveBrush(QPointF(60, 30));
     controller.endBrush();
@@ -80,6 +132,8 @@ void VpControllerTest::cloneStrokeUsesDocumentContent()
 
     VpController controller;
     QVERIFY(controller.document().loadImage(path));
+    controller.document().appendPlane(makeTestPlane());
+    controller.document().resetHistory();
     controller.setCloneDiameter(8);
     controller.setCloneHardness(100);
     QVERIFY(controller.pickCloneSource(QPointF(20, 20)));

@@ -76,6 +76,7 @@ public:
     bool editActive() const { return m_editActive; }
 
 signals:
+    void structureChanged();
     void imageSelectionChanged(bool selected);
     void canUndoChanged(bool available);           // 撤销可用性变化
     void canRedoChanged(bool available);           // 重做可用性变化

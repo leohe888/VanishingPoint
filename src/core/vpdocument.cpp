@@ -95,6 +95,7 @@ int VpDocument::appendPlane(const PerspectivePlane &plane)
     if (!plane.quad().isProjectable() || !qIsFinite(plane.angleToParentDegrees()))
         return -1;
     m_planes.append(plane);
+    emit structureChanged();
     return m_planes.size() - 1;
 }
 
@@ -340,6 +341,7 @@ void VpDocument::resetHistory()
     clearPaintTransaction();
     emit canUndoChanged(false);
     emit canRedoChanged(false);
+    emit structureChanged();
 }
 
 // 提交一次状态变更：丢弃旧的重做分支，追加新状态并裁剪历史长度
@@ -434,6 +436,7 @@ void VpDocument::commitHistory()
     }
     emit canUndoChanged(m_historyIndex > 0);
     emit canRedoChanged(false);
+    emit structureChanged();
 }
 
 // 仅恢复结构部分（平面 + 浮动图像 + 选中状态）
@@ -443,6 +446,7 @@ void VpDocument::restoreStructure(const HistoryEntry &entry)
     m_selectedPlane = entry.selectedPlane;
     m_floatingImages = entry.floatingImages;
     setSelectedFloatingImage(entry.selectedFloatingImage);
+    emit structureChanged();
 }
 
 // 把像素直接覆盖回绘画层的指定矩形（用于脏矩形的撤销/重做）

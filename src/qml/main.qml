@@ -20,6 +20,7 @@ Window {
             Layout.preferredWidth: 38
             Layout.fillHeight: true
             currentTool: workArea.controller.tool
+            controller: workArea.controller
             onToolSelected: (toolId) => workArea.controller.tool = toolId
         }
 

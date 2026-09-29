@@ -1,5 +1,7 @@
 #include "canvas/vpcanvas.h"
+#include "testhelpers.h"
 #include <QQmlApplicationEngine>
+#include <QQuickWindow>
 #include <QTemporaryDir>
 #include <QtTest>
 #include <qqml.h>
@@ -15,6 +17,29 @@ private slots:
         QVERIFY(!engine.rootObjects().isEmpty());
         auto *root=engine.rootObjects().first(); root->setProperty("visible",false);
         auto *canvas=root->findChild<VpCanvas*>(); QVERIFY(canvas);
+        auto *window = qobject_cast<QQuickWindow *>(root); QVERIFY(window);
+        const auto toolButton = [window](VpController::Tool tool) -> QObject * {
+            const auto find = [tool](auto &&self, QQuickItem *item) -> QQuickItem * {
+                if (item->property("toolId").isValid() && item->property("toolId").toInt() == tool)
+                    return item;
+                for (auto *child : item->childItems())
+                    if (auto *found = self(self, child))
+                        return found;
+                return nullptr;
+            };
+            return find(find, window->contentItem());
+        };
+        auto *brush = toolButton(VpController::Brush);
+        auto *transform = toolButton(VpController::Transform);
+        QVERIFY(brush); QVERIFY(transform);
+        QObject *brushShortcut = nullptr;
+        for (auto *object : brush->findChildren<QObject*>())
+            if (object->property("sequence").toString() == "B")
+                brushShortcut = object;
+        QVERIFY(brushShortcut);
+        QVERIFY(!brushShortcut->property("enabled").toBool());
+        QVERIFY(!brush->property("enabled").toBool());
+        QVERIFY(!transform->property("enabled").toBool());
         QTemporaryDir dir; auto path=dir.filePath("background.png");
         QImage image(64,64,QImage::Format_ARGB32); image.fill(Qt::white); QVERIFY(image.save(path));
         QVERIFY(canvas->controller()->openImage(QUrl::fromLocalFile(path)));
@@ -27,6 +52,21 @@ private slots:
         QVERIFY(redo); QVERIFY(QMetaObject::invokeMethod(redo,"activated",Qt::DirectConnection));
         QCOMPARE(doc.floatingImages().size(),1); QVERIFY(!canvas->controller()->canRedo());
         QVERIFY(canvas->controller()->canUndo());
+        QVERIFY(transform->property("enabled").toBool());
+        doc.removeFloatingImage(0);
+        QVERIFY(!transform->property("enabled").toBool());
+        doc.beginEdit(); doc.appendPlane(makeTestPlane()); doc.commitEdit(true);
+        QVERIFY(brush->property("enabled").toBool());
+        QVERIFY(brushShortcut->property("enabled").toBool());
+        canvas->controller()->undo();
+        QVERIFY(!brush->property("enabled").toBool());
+        QVERIFY(!brushShortcut->property("enabled").toBool());
+        canvas->controller()->redo();
+        QVERIFY(brush->property("enabled").toBool());
+        canvas->controller()->setTool(VpController::Brush);
+        QVERIFY(canvas->controller()->openImage(QUrl::fromLocalFile(path)));
+        QCOMPARE(canvas->controller()->tool(), VpController::CreatePlane);
+        QVERIFY(!brush->property("enabled").toBool());
     }
 };
 QTEST_MAIN(QmlIntegrationTest)

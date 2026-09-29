@@ -20,6 +20,7 @@ class VpController final : public QObject
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY historyChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY historyChanged)
     Q_PROPERTY(Tool tool READ tool WRITE setTool NOTIFY toolChanged)
+    Q_PROPERTY(int availableTools READ availableTools NOTIFY toolAvailabilityChanged)
     Q_PROPERTY(int brushDiameter READ brushDiameter WRITE setBrushDiameter NOTIFY brushChanged)
     Q_PROPERTY(int brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushChanged)
     Q_PROPERTY(int brushOpacity READ brushOpacity WRITE setBrushOpacity NOTIFY brushChanged)
@@ -43,6 +44,8 @@ public:
 
     Tool tool() const { return m_tool; }
     void setTool(Tool tool);
+    int availableTools() const;
+    bool isToolEnabled(Tool tool) const;
 
     int brushDiameter() const { return m_brushTool.diameter(); }
     void setBrushDiameter(int value);
@@ -110,6 +113,7 @@ signals:
     void documentReplaced();
     void historyChanged();
     void toolChanged();
+    void toolAvailabilityChanged();
     void brushChanged();
     void cloneChanged();
     void gridSizeChanged();
@@ -119,6 +123,7 @@ signals:
     void focusRequested();
 
 private:
+    void refreshToolAvailability();
     void finishPlaneCreation();
     bool extrudePlane(int sourcePlane, int edge);
     void deleteSelectedPlane();
@@ -153,5 +158,6 @@ private:
     QImage m_cloneSource;
     QByteArray m_cloneSourceKey;
     Tool m_tool = CreatePlane;
+    int m_availableTools = (1 << CreatePlane) | (1 << Hand) | (1 << Zoom);
     int m_gridSize = 50;
 };

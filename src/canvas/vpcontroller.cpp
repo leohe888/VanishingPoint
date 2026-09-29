@@ -15,6 +15,7 @@ VpController::VpController(QObject *parent) : QObject(parent)
 {
     connect(&m_document, &VpDocument::canUndoChanged, this, &VpController::historyChanged);
     connect(&m_document, &VpDocument::canRedoChanged, this, &VpController::historyChanged);
+    connect(&m_document, &VpDocument::structureChanged, this, &VpController::refreshToolAvailability);
     connect(&m_document, &VpDocument::documentAvailabilityChanged, this, [this] {
         m_cloneTool.resetSource();
         m_cloneSource = QImage();
@@ -23,17 +24,44 @@ VpController::VpController(QObject *parent) : QObject(parent)
         emit planeAngleChanged();
         emit repaintRequested();
     });
-    connect(&m_document, &VpDocument::imageSelectionChanged, this, [this](bool selected) {
-        if (!selected && m_tool == Transform)
-            setTool(EditPlane);
+    connect(&m_document, &VpDocument::imageSelectionChanged, this, [this] {
         emit repaintRequested();
     });
 }
 
+int VpController::availableTools() const
+{
+    int tools = (1 << CreatePlane) | (1 << Hand) | (1 << Zoom);
+    if (!m_document.planes().isEmpty())
+        tools |= (1 << EditPlane) | (1 << Marquee) | (1 << CloneStamp) | (1 << Brush);
+    if (!m_document.floatingImages().isEmpty())
+        tools |= 1 << Transform;
+    return tools;
+}
+
+bool VpController::isToolEnabled(Tool tool) const
+{
+    return tool >= CreatePlane && tool <= Zoom && (availableTools() & (1 << tool));
+}
+
+void VpController::refreshToolAvailability()
+{
+    const int tools = availableTools();
+    if (tools != m_availableTools) {
+        m_availableTools = tools;
+        emit toolAvailabilityChanged();
+    }
+    // 等结构事务结束再切换，避免取消正在烘焙或删除的内容。
+    if (!m_document.editActive() && !isToolEnabled(m_tool))
+        setTool(isToolEnabled(EditPlane) ? EditPlane : CreatePlane);
+}
+
 void VpController::setTool(Tool tool)
 {
-    if (tool == Transform && m_document.selectedFloatingImage() < 0) {
-        emit statusMessage(tr("请先选中一张浮动图像（粘贴或框选生成），再使用变换工具。"));
+    if (!isToolEnabled(tool)) {
+        emit statusMessage(tool == Transform
+            ? tr("请先粘贴或框选生成浮动图像，再使用变换工具。")
+            : tr("请先创建平面，再使用此工具。"));
         emit toolChanged();
         return;
     }
@@ -57,6 +85,10 @@ void VpController::setTool(Tool tool)
         return;
     }
     cancelInteraction();
+    if (!isToolEnabled(tool))
+        return;
+    if (tool == Transform && m_document.selectedFloatingImage() < 0)
+        m_document.setSelectedFloatingImage(m_document.floatingImages().size() - 1);
     m_tool = tool;
     emit statusMessage(statusForTool());
     emit planeAngleChanged();
@@ -202,6 +234,8 @@ void VpController::pasteImage()
 
 bool VpController::beginBrush(const QPointF &point)
 {
+    if (!isToolEnabled(Brush))
+        return false;
     m_document.beginPaintTransaction();
     const QRect dirty = m_brushTool.begin(m_document.paintLayer(), m_document.planes(),
                                           m_document.background().size(), point);
@@ -252,12 +286,13 @@ const QImage &VpController::cloneSource()
 
 bool VpController::pickCloneSource(const QPointF &point)
 {
-    return m_cloneTool.pickSource(m_document.planes(), m_document.background().size(), point);
+    return isToolEnabled(CloneStamp)
+        && m_cloneTool.pickSource(m_document.planes(), m_document.background().size(), point);
 }
 
 bool VpController::beginClone(const QPointF &point)
 {
-    if (!m_cloneTool.hasSource())
+    if (!isToolEnabled(CloneStamp) || !m_cloneTool.hasSource())
         return false;
     m_document.beginPaintTransaction();
     const QRect dirty = m_cloneTool.begin(m_document.paintLayer(), cloneSource(),
@@ -877,7 +912,7 @@ bool VpController::openImage(const QUrl &url)
         postStatus(tr("图片打开失败：文件不可读、格式不支持或超过 128 MiB 解码限制。"));
         return false;
     }
-    postStatus(tr("图片已打开，请创建平面或开始绘画。"));
+    postStatus(tr("图片已打开，请先创建平面。"));
     emit focusRequested();
     return true;
 }

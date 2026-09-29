@@ -1,5 +1,6 @@
 #include "canvas/vpcanvas.h"
 #include "core/scenerenderer.h"
+#include "testhelpers.h"
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QKeyEvent>
@@ -40,7 +41,6 @@ class AuditInteractionsTest : public QObject {
     void setup(AuditCanvas &canvas) {
         QVERIFY(canvas.controller()->document().loadImage(path));
         canvas.setSize(QSizeF(400,400)); canvas.setZoom(1);
-        canvas.controller()->setTool(VpController::EditPlane);
     }
     static QImage rendered(const VpDocument &doc) {
         QImage image(400,400,QImage::Format_ARGB32); image.fill(Qt::transparent);
@@ -66,6 +66,7 @@ private slots:
     }
     void pasteFinishesStroke() {
         AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
+        doc.appendPlane(makeTestPlane()); doc.resetHistory();
         controller->setTool(VpController::Brush); QVERIFY(controller->beginBrush({50,50}));
         QGuiApplication::clipboard()->setImage(bitmap(Qt::red)); controller->pasteImage();
         QVERIFY(!controller->brushDrawing()); controller->moveBrush({80,50}); controller->endBrush();
@@ -74,7 +75,7 @@ private slots:
     }
     void lockedCornerAndNoopPreserveHistory() {
         AuditCanvas canvas; setup(canvas); auto &doc=canvas.controller()->document(); auto p=plane();
-        p.setEdgeLocked(0,true); doc.appendPlane(p); doc.resetHistory();
+        p.setEdgeLocked(0,true); doc.appendPlane(p); doc.resetHistory(); canvas.controller()->setTool(VpController::EditPlane);
         canvas.pointer(QEvent::MouseButtonPress,{100,100}); canvas.pointer(QEvent::MouseButtonRelease,{110,110});
         QCOMPARE(doc.planes()[0].quad().canvasCorners()[0],QPointF(100,100)); QVERIFY(!doc.canUndo());
         doc.addFloatingImage(bitmap(Qt::red)); doc.undo(); QVERIFY(doc.canRedo());
@@ -83,7 +84,7 @@ private slots:
     }
     void extrapolatedMoveUsesReleaseAndCanUndo() {
         AuditCanvas canvas; setup(canvas); auto &doc=canvas.controller()->document(); auto p=plane();
-        doc.appendPlane(p); doc.addFloatingImageOnSurface(bitmap(Qt::red),{p.quad()},0,{250,100}); doc.resetHistory();
+        doc.appendPlane(p); doc.addFloatingImageOnSurface(bitmap(Qt::red),{p.quad()},0,{250,100}); doc.resetHistory(); canvas.controller()->setTool(VpController::EditPlane);
         canvas.pointer(QEvent::MouseButtonPress,{360,210}); canvas.pointer(QEvent::MouseButtonRelease,{370,210});
         QCOMPARE(doc.floatingImage(0).placementOrigin,QPointF(260,100)); QVERIFY(doc.canUndo());
         canvas.undo(); QCOMPARE(doc.floatingImage(0).placementOrigin,QPointF(250,100));
@@ -97,8 +98,31 @@ private slots:
         canvas.undo(); QCOMPARE(doc.floatingImages().size(),3); QCOMPARE(rendered(doc),before);
         canvas.redo(); QCOMPARE(rendered(doc),before);
     }
+    void bakingDisablesTransform_data() {
+        QTest::addColumn<bool>("hasPlane");
+        QTest::newRow("no-plane") << false;
+        QTest::newRow("with-plane") << true;
+    }
+    void bakingDisablesTransform() {
+        QFETCH(bool, hasPlane);
+        AuditCanvas canvas; setup(canvas);
+        auto *controller = canvas.controller(); auto &doc = controller->document();
+        if (hasPlane) doc.appendPlane(plane());
+        doc.resetHistory(); doc.addFloatingImage(bitmap(Qt::red));
+        controller->setTool(VpController::Transform);
+        controller->pointerPress({300,300}, 1, Qt::NoModifier);
+        QVERIFY(doc.floatingImages().isEmpty()); QVERIFY(doc.hasPaintContent());
+        QVERIFY(!controller->isToolEnabled(VpController::Transform));
+        QCOMPARE(controller->tool(), hasPlane ? VpController::EditPlane : VpController::CreatePlane);
+        controller->undo();
+        QCOMPARE(doc.floatingImages().size(), 1); QVERIFY(!doc.hasPaintContent());
+        QVERIFY(controller->isToolEnabled(VpController::Transform));
+        controller->redo();
+        QVERIFY(doc.floatingImages().isEmpty()); QVERIFY(doc.hasPaintContent());
+        QVERIFY(!controller->isToolEnabled(VpController::Transform));
+    }
     void releaseMovesPlaneWithoutMoveEvent() {
-        AuditCanvas canvas; setup(canvas); auto &doc=canvas.controller()->document(); doc.appendPlane(plane()); doc.resetHistory();
+        AuditCanvas canvas; setup(canvas); auto &doc=canvas.controller()->document(); doc.appendPlane(plane()); doc.resetHistory(); canvas.controller()->setTool(VpController::EditPlane);
         canvas.pointer(QEvent::MouseButtonPress,{150,150}); canvas.pointer(QEvent::MouseButtonRelease,{160,150});
         QCOMPARE(doc.planes()[0].quad().canvasCorners()[0],QPointF(110,100)); QVERIFY(doc.canUndo());
     }
@@ -110,7 +134,7 @@ private slots:
         QFETCH(QString,kind); AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
         doc.appendPlane(plane());
         if(kind=="image") doc.addFloatingImage(bitmap(Qt::red));
-        doc.resetHistory();
+        doc.resetHistory(); canvas.controller()->setTool(VpController::EditPlane);
         if(kind=="plane") {
             controller->pointerPress({150,150},1,Qt::NoModifier); controller->pointerMove({160,150},Qt::NoModifier);
         } else if(kind=="image") {
@@ -130,6 +154,7 @@ private slots:
     }
     void pasteFinishesCloneStroke() {
         AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
+        doc.appendPlane(makeTestPlane()); doc.resetHistory();
         controller->setTool(VpController::CloneStamp); QVERIFY(controller->pickCloneSource({20,20}));
         QVERIFY(controller->beginClone({50,50})); QGuiApplication::clipboard()->setImage(bitmap(Qt::red));
         controller->pasteImage(); QVERIFY(!controller->cloneDrawing()); controller->moveClone({80,50});
@@ -140,7 +165,7 @@ private slots:
         AuditCanvas canvas; setup(canvas); auto &doc=canvas.controller()->document(); auto parent=plane();
         parent.setEdgeLocked(0,true); doc.appendPlane(parent);
         auto child=plane(); child.setParent(0,0); child.setEdgeLocked(0,true);
-        doc.appendPlane(child); doc.appendPlane(child); doc.resetHistory(); doc.removePlane(1);
+        doc.appendPlane(child); doc.appendPlane(child); doc.resetHistory(); canvas.controller()->setTool(VpController::EditPlane); doc.removePlane(1);
         QVERIFY(doc.planes()[0].isEdgeLocked(0));
         auto candidate=doc.planes()[0]; candidate.quad().setCanvasCorner(0,{110,110});
         QVERIFY(!doc.setPlane(0,candidate));
@@ -153,13 +178,14 @@ private slots:
         auto child=plane(); child.setParent(0,0); child.setEdgeLocked(0,true); doc.appendPlane(child);
         auto grandchild=plane(); grandchild.quad().setCanvasCorners({QPointF(250,250),QPointF(350,250),QPointF(350,350),QPointF(250,350)});
         grandchild.setParent(1,2); grandchild.setHasCustomAngle(true); doc.appendPlane(grandchild);
-        doc.setSelectedPlane(1); doc.resetHistory(); QVERIFY(!controller->planeAngleEditable());
+        doc.setSelectedPlane(1); doc.resetHistory(); canvas.controller()->setTool(VpController::EditPlane); QVERIFY(!controller->planeAngleEditable());
         controller->setPlaneAngle(120); QCOMPARE(doc.planes()[1].angleToParentDegrees(),qreal(90));
         controller->pointerPress({150,200},1,Qt::AltModifier); controller->pointerRelease({140,210},Qt::AltModifier);
         QVERIFY(!doc.canUndo()); QCOMPARE(doc.planes()[1].quad().canvasCorners(),child.quad().canvasCorners());
     }
     void openingDocumentResetsToolsAndPreservesFailure() {
         AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
+        doc.appendPlane(makeTestPlane()); doc.resetHistory();
         QVERIFY(controller->pickCloneSource({20,20})); QVERIFY(controller->beginBrush({30,30}));
         QVERIFY(controller->openImage(QUrl::fromLocalFile(path)));
         QVERIFY(!controller->hasCloneSource()); QVERIFY(!controller->brushDrawing()); QVERIFY(!doc.hasPaintContent()); QVERIFY(!doc.canUndo());
@@ -170,18 +196,18 @@ private slots:
     void perspectiveClickAndUnchangedAngleDoNotCreateHistory() {
         AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
         auto p=plane(); p.quad().setCanvasCorners({QPointF(100,100),QPointF(240,100),QPointF(280,240),QPointF(80,240)});
-        doc.appendPlane(p); auto child=p; child.setParent(0,0); doc.appendPlane(child); doc.setSelectedPlane(1); doc.resetHistory();
+        doc.appendPlane(p); auto child=p; child.setParent(0,0); doc.appendPlane(child); doc.setSelectedPlane(1); doc.resetHistory(); canvas.controller()->setTool(VpController::EditPlane);
         controller->setPlaneAngle(90); QVERIFY(!doc.canUndo()); QVERIFY(!doc.planes()[1].hasCustomAngle());
         controller->pointerPress({180,240},1,Qt::AltModifier); controller->pointerRelease({180,240},Qt::AltModifier);
         QVERIFY(!doc.canUndo()); QVERIFY(doc.planes()[1]==child);
-        doc.removePlane(1); doc.resetHistory();
+        doc.removePlane(1); doc.resetHistory(); canvas.controller()->setTool(VpController::EditPlane);
         controller->pointerPress({170,170},1,Qt::NoModifier); controller->pointerRelease({170,170},Qt::NoModifier);
         QVERIFY(!doc.canUndo()); QVERIFY(doc.planes()[0]==p);
     }
     void extrusionCanUseAdjacentUnlockedEdgeAndCannotRepeatSharedEdge() {
         AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document(); auto p=plane();
         p.quad().setCanvasCorners({QPointF(100,100),QPointF(220,100),QPointF(220,200),QPointF(100,200)});
-        p.setEdgeLocked(0,true); doc.appendPlane(p); doc.resetHistory();
+        p.setEdgeLocked(0,true); doc.appendPlane(p); doc.resetHistory(); canvas.controller()->setTool(VpController::EditPlane);
         controller->pointerPress({220,150},1,Qt::ControlModifier); controller->pointerRelease({240,100},Qt::ControlModifier);
         QCOMPARE(doc.planes().size(),2); QVERIFY(doc.planes()[0].isEdgeLocked(1));
         controller->pointerPress({220,150},1,Qt::ControlModifier); controller->pointerRelease({260,100},Qt::ControlModifier);

@@ -7,6 +7,7 @@ Rectangle {
     id: root
 
     property int currentTool: VpController.CreatePlane
+    required property VpController controller
 
     property color backgroundColor: "#535353"
     property color hoverColor: "#454545"
@@ -60,6 +61,7 @@ Rectangle {
                 }
 
                 ToolButton {
+                    enabled: (root.controller.availableTools & (1 << toolGroup.modelData.toolId)) !== 0
                     toolId: toolGroup.modelData.toolId
                     tooltip: toolGroup.modelData.tooltip
                     iconSource: toolGroup.modelData.icon
