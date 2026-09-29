@@ -9,6 +9,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QTimer>
+#include <QQuickWindow>
 #include <QGuiApplication>
 #include <cmath>
 #include <array>
@@ -19,7 +20,7 @@ constexpr qreal ViewMargin = 16.0;
 }
 
 VpCanvas::VpCanvas(QQuickItem *parent)
-    : QQuickPaintedItem(parent)
+    : QQuickPaintedItem(parent), m_antsTimer(new QTimer(this))
 {
     setAcceptHoverEvents(true);
     setAcceptedMouseButtons(Qt::LeftButton);
@@ -27,19 +28,41 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     setAntialiasing(true);
     setCursor(Qt::ArrowCursor);
 
-    // 选中浮动图像或存在选区时让虚线跑起来；都没有就什么都不做，避免空转重绘。
-    auto *antsTimer = new QTimer(this);
-    antsTimer->setInterval(80);
-    connect(antsTimer, &QTimer::timeout, this, [this] {
-        if (!m_controller || !isVisible()
-            || (document().selectedFloatingImage() < 0 && m_controller->selectionRect().isEmpty()))
+    m_antsTimer->setInterval(80);
+    connect(m_antsTimer, &QTimer::timeout, this, [this] {
+        updateAntsAnimation();
+        if (!m_antsTimer->isActive())
             return;
         m_antsPhase = (m_antsPhase + 1) % 8;
         update();
     });
-    antsTimer->start();
+    connect(this, &QQuickItem::visibleChanged, this, &VpCanvas::updateAntsAnimation);
+    const auto observeWindow = [this](QQuickWindow *window) {
+        disconnect(m_windowVisibilityConnection);
+        if (window)
+            m_windowVisibilityConnection = connect(window, &QWindow::visibilityChanged,
+                                                   this, &VpCanvas::updateAntsAnimation);
+        updateAntsAnimation();
+    };
+    connect(this, &QQuickItem::windowChanged, this, observeWindow);
+    observeWindow(window());
 
     updateViewTransform();
+}
+
+void VpCanvas::updateAntsAnimation()
+{
+    const auto *view = window();
+    const bool animate = m_controller && isVisible() && view && view->isVisible()
+        && view->visibility() != QWindow::Minimized && document().hasLoadedImage()
+        && (document().selectedFloatingImage() >= 0
+            || (m_controller->tool() == Tool::Marquee && !m_controller->selectionRect().isEmpty()));
+    if (animate) {
+        if (!m_antsTimer->isActive())
+            m_antsTimer->start();
+    } else {
+        m_antsTimer->stop();
+    }
 }
 
 void VpCanvas::setController(VpController *controller)
@@ -53,8 +76,12 @@ void VpCanvas::setController(VpController *controller)
         connect(controller, &VpController::toolChanged, this, [this] {
             m_panning = false;
             updateNavigationCursor(QGuiApplication::keyboardModifiers() & Qt::AltModifier);
+            updateAntsAnimation();
         });
-        connect(controller, &VpController::repaintRequested, this, [this] { update(); });
+        connect(controller, &VpController::repaintRequested, this, [this] {
+            updateAntsAnimation();
+            update();
+        });
         connect(controller, &VpController::focusRequested, this, [this] { forceActiveFocus(); });
         connect(controller, &VpController::documentReplaced, this, &VpCanvas::resetView);
         connect(controller, &QObject::destroyed, this, [this] {
@@ -77,6 +104,7 @@ void VpCanvas::resetView()
     m_fitView = true;
     m_fillView = false;
     updateNavigationCursor();
+    updateAntsAnimation();
     updateViewTransform();
     emit viewChanged();
     update();

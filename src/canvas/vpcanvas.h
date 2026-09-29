@@ -12,6 +12,8 @@
 #include <QVariantList>
 #include <QQuickPaintedItem>
 
+class QTimer;
+
 class VpCanvas : public QQuickPaintedItem
 {
     Q_OBJECT
@@ -60,6 +62,7 @@ protected:
 
 private:
     void resetView();
+    void updateAntsAnimation();
     QPointF widgetToImage(const QPointF &widgetPoint) const;
     void updateViewTransform();
     void zoomAt(qreal scale, const QPointF &anchor);
@@ -78,6 +81,8 @@ private:
     bool m_cursorOnCanvas = false;
 
     int m_antsPhase = 0; // 选中框虚线的相位，逐帧递增形成蚂蚁线
+    QTimer *m_antsTimer;
+    QMetaObject::Connection m_windowVisibilityConnection;
 
     qreal m_scale = 1.0;
     QPointF m_offset;

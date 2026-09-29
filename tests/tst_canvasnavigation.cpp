@@ -4,12 +4,15 @@
 #include <QCursor>
 #include <QPainter>
 #include <QTemporaryDir>
+#include <QQuickWindow>
+#include <QTimer>
 #include <memory>
 #include <QtTest>
 
 class CanvasProbe : public VpCanvas
 {
 public:
+    using VpCanvas::VpCanvas;
     using VpCanvas::mousePressEvent;
     using VpCanvas::mouseMoveEvent;
     using VpCanvas::mouseReleaseEvent;
@@ -19,6 +22,92 @@ class CanvasNavigationTest : public QObject
 {
     Q_OBJECT
 private slots:
+    void antsTimerFollowsVisibleFloatingImage()
+    {
+        QTemporaryDir directory;
+        QImage image(200, 120, QImage::Format_RGB32);
+        image.fill(Qt::white);
+        const QString path = directory.filePath("background.png");
+        QVERIFY(image.save(path));
+        auto controller = std::make_unique<VpController>();
+        VpController other;
+        QQuickWindow window;
+        window.resize(200, 120);
+        CanvasProbe canvas(window.contentItem());
+        canvas.setSize({200, 120});
+        auto *timer = canvas.findChild<QTimer *>();
+        QVERIFY(timer);
+        QVERIFY(!timer->isActive());
+        canvas.setController(controller.get());
+        QVERIFY(controller->document().loadImage(path));
+        window.show();
+        QVERIFY(!timer->isActive());
+        auto &doc = controller->document();
+        doc.addFloatingImage(image);
+        QVERIFY(timer->isActive());
+        QSignalSpy ticks(timer, &QTimer::timeout);
+        QTRY_VERIFY(!ticks.isEmpty());
+        doc.undo(); QVERIFY(!timer->isActive());
+        doc.redo(); QVERIFY(timer->isActive());
+        doc.setSelectedFloatingImage(-1); QVERIFY(!timer->isActive());
+        doc.setSelectedFloatingImage(0); QVERIFY(timer->isActive());
+        canvas.setVisible(false); QVERIFY(!timer->isActive());
+        ticks.clear();
+        QTest::qWait(180);
+        QVERIFY(ticks.isEmpty());
+        canvas.setVisible(true); QVERIFY(timer->isActive());
+        window.hide(); QVERIFY(!timer->isActive());
+        window.show(); QVERIFY(timer->isActive());
+        window.showMinimized(); QVERIFY(!timer->isActive());
+        window.showNormal(); QVERIFY(timer->isActive());
+        canvas.setParentItem(nullptr); QVERIFY(!timer->isActive());
+        canvas.setParentItem(window.contentItem()); QVERIFY(timer->isActive());
+        canvas.setController(&other); QVERIFY(!timer->isActive());
+        doc.setSelectedFloatingImage(-1);
+        doc.setSelectedFloatingImage(0);
+        QVERIFY(!timer->isActive());
+        canvas.setController(controller.get()); QVERIFY(timer->isActive());
+        controller.reset(); QVERIFY(!timer->isActive());
+    }
+
+    void antsTimerFollowsMarqueeInteraction()
+    {
+        QTemporaryDir directory;
+        QImage image(200, 120, QImage::Format_RGB32);
+        image.fill(Qt::white);
+        const QString path = directory.filePath("background.png");
+        QVERIFY(image.save(path));
+        VpController controller;
+        QQuickWindow window;
+        window.resize(200, 120);
+        CanvasProbe canvas;
+        canvas.setParentItem(window.contentItem());
+        canvas.setSize({200, 120});
+        canvas.setController(&controller);
+        QVERIFY(controller.document().loadImage(path));
+        controller.document().appendPlane(makeTestPlane());
+        window.show();
+        auto *timer = canvas.findChild<QTimer *>();
+        QVERIFY(timer);
+        controller.setTool(VpTools::Marquee);
+        controller.pointerPress({20, 20}, 1, Qt::NoModifier);
+        QVERIFY(!timer->isActive());
+        controller.pointerMove({60, 50}, Qt::NoModifier);
+        QVERIFY(timer->isActive());
+        controller.pointerRelease({60, 50}, Qt::NoModifier);
+        QVERIFY(timer->isActive());
+        controller.setTool(VpTools::Hand);
+        QVERIFY(!timer->isActive());
+        controller.setTool(VpTools::Marquee);
+        controller.pointerPress({20, 20}, 1, Qt::NoModifier);
+        controller.pointerMove({60, 50}, Qt::NoModifier);
+        QVERIFY(timer->isActive());
+        controller.cancelInteraction();
+        QTRY_VERIFY(!timer->isActive());
+        QVERIFY(controller.openImage(QUrl::fromLocalFile(path)));
+        QVERIFY(!timer->isActive());
+    }
+
     void externalControllerSurvivesCanvas()
     {
         VpController controller;
