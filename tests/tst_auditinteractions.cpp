@@ -102,6 +102,71 @@ private slots:
         canvas.pointer(QEvent::MouseButtonPress,{150,150}); canvas.pointer(QEvent::MouseButtonRelease,{160,150});
         QCOMPARE(doc.planes()[0].quad().canvasCorners()[0],QPointF(110,100)); QVERIFY(doc.canUndo());
     }
+    void pasteCancelsPreview_data() {
+        QTest::addColumn<QString>("kind");
+        for (const QString kind : {"plane", "image", "fill"}) QTest::newRow(qPrintable(kind))<<kind;
+    }
+    void pasteCancelsPreview() {
+        QFETCH(QString,kind); AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
+        doc.appendPlane(plane());
+        if(kind=="image") doc.addFloatingImage(bitmap(Qt::red));
+        doc.resetHistory();
+        if(kind=="plane") {
+            controller->pointerPress({150,150},1,Qt::NoModifier); controller->pointerMove({160,150},Qt::NoModifier);
+        } else if(kind=="image") {
+            controller->pointerPress({10,10},1,Qt::NoModifier); controller->pointerMove({20,20},Qt::NoModifier);
+        } else {
+            controller->setTool(VpController::Marquee);
+            controller->pointerPress({120,120},1,Qt::NoModifier); controller->pointerRelease({160,160},Qt::NoModifier);
+            controller->pointerPress({140,140},1,Qt::ControlModifier); controller->pointerMove({145,140},Qt::ControlModifier);
+            QVERIFY(doc.hasPaintContent());
+        }
+        QGuiApplication::clipboard()->setImage(bitmap(Qt::blue)); controller->pasteImage();
+        QVERIFY(!doc.editActive()); QVERIFY(!doc.hasPaintContent());
+        QCOMPARE(doc.planes()[0].quad().canvasCorners()[0],QPointF(100,100));
+        canvas.undo(); QCOMPARE(doc.floatingImages().size(),kind=="image"?1:0);
+        if(kind=="image") QCOMPARE(doc.floatingImage(0).placementOrigin,QPointF());
+        canvas.redo(); QCOMPARE(doc.floatingImages().size(),kind=="image"?2:1);
+    }
+    void pasteFinishesCloneStroke() {
+        AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
+        controller->setTool(VpController::CloneStamp); QVERIFY(controller->pickCloneSource({20,20}));
+        QVERIFY(controller->beginClone({50,50})); QGuiApplication::clipboard()->setImage(bitmap(Qt::red));
+        controller->pasteImage(); QVERIFY(!controller->cloneDrawing()); controller->moveClone({80,50});
+        canvas.undo(); canvas.undo(); QVERIFY(!doc.hasPaintContent());
+        canvas.redo(); QVERIFY(doc.hasPaintContent());
+    }
+    void sharedEdgeSurvivesSiblingRemovalAndRejectsMutation() {
+        AuditCanvas canvas; setup(canvas); auto &doc=canvas.controller()->document(); auto parent=plane();
+        parent.setEdgeLocked(0,true); doc.appendPlane(parent);
+        auto child=plane(); child.setParent(0,0); child.setEdgeLocked(0,true);
+        doc.appendPlane(child); doc.appendPlane(child); doc.resetHistory(); doc.removePlane(1);
+        QVERIFY(doc.planes()[0].isEdgeLocked(0));
+        auto candidate=doc.planes()[0]; candidate.quad().setCanvasCorner(0,{110,110});
+        QVERIFY(!doc.setPlane(0,candidate));
+        doc.removePlane(1); QVERIFY(!doc.planes()[0].isEdgeLocked(0));
+        canvas.undo(); QVERIFY(doc.planes()[0].isEdgeLocked(0));
+    }
+    void angleLockRejectsBothInputAndAltDrag() {
+        AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
+        auto parent=plane(); doc.appendPlane(parent);
+        auto child=plane(); child.setParent(0,0); child.setEdgeLocked(0,true); doc.appendPlane(child);
+        auto grandchild=plane(); grandchild.quad().setCanvasCorners({QPointF(250,250),QPointF(350,250),QPointF(350,350),QPointF(250,350)});
+        grandchild.setParent(1,2); grandchild.setHasCustomAngle(true); doc.appendPlane(grandchild);
+        doc.setSelectedPlane(1); doc.resetHistory(); QVERIFY(!controller->planeAngleEditable());
+        controller->setPlaneAngle(120); QCOMPARE(doc.planes()[1].angleToParentDegrees(),qreal(90));
+        controller->pointerPress({150,200},1,Qt::AltModifier); controller->pointerRelease({140,210},Qt::AltModifier);
+        QVERIFY(!doc.canUndo()); QCOMPARE(doc.planes()[1].quad().canvasCorners(),child.quad().canvasCorners());
+    }
+    void openingDocumentResetsToolsAndPreservesFailure() {
+        AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
+        QVERIFY(controller->pickCloneSource({20,20})); QVERIFY(controller->beginBrush({30,30}));
+        QVERIFY(controller->openImage(QUrl::fromLocalFile(path)));
+        QVERIFY(!controller->hasCloneSource()); QVERIFY(!controller->brushDrawing()); QVERIFY(!doc.hasPaintContent()); QVERIFY(!doc.canUndo());
+        doc.addFloatingImage(bitmap(Qt::red)); const auto before=rendered(doc);
+        QVERIFY(!controller->openImage(QUrl::fromLocalFile(directory.filePath("missing.png"))));
+        QCOMPARE(rendered(doc),before); QVERIFY(doc.canUndo());
+    }
 };
 QTEST_MAIN(AuditInteractionsTest)
 #include "tst_auditinteractions.moc"

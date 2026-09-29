@@ -16,7 +16,6 @@ Rectangle {
 
     signal toolSelected(int toolId)
 
-    Component.onCompleted: root.toolSelected(root.currentTool)
 
     readonly property var tools: [
         { toolId: VpController.EditPlane,   tooltip: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
@@ -32,7 +31,6 @@ Rectangle {
     function selectTool(tool) {
         if (root.currentTool === tool)
             return
-        root.currentTool = tool
         root.toolSelected(tool)
     }
 

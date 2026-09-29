@@ -12,8 +12,10 @@
 #include <QTimer>
 #include <QGuiApplication>
 #include <cmath>
+#include <array>
 
 namespace {
+constexpr std::array<qreal,15> ZoomLevels{0.063,0.125,0.25,0.333,0.5,0.667,1,2,3,4,6,8,10,12,16};
 constexpr qreal ViewMargin = 16.0; // 图像与画布边缘的留白
 }
 
@@ -39,6 +41,13 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     // 控制器请求键盘焦点，画布主动获取焦点
     connect(&m_controller, &VpController::focusRequested, this, [this] { forceActiveFocus(); });
 
+    connect(&m_controller, &VpController::documentReplaced, this, [this] {
+        m_panning = false;
+        m_cursorOnCanvas = false;
+        m_cursorPoint = QPointF();
+        fitView();
+    });
+
     // 选中浮动图像或存在选区时让虚线跑起来；都没有就什么都不做，避免空转重绘。
     auto *antsTimer = new QTimer(this);
     antsTimer->setInterval(80);
@@ -57,6 +66,11 @@ VpCanvas::VpCanvas(QQuickItem *parent)
 void VpCanvas::paint(QPainter *painter)
 {
     painter->fillRect(boundingRect(), QColor("#4D4D4D"));
+    if (!document().hasLoadedImage()) {
+        painter->setPen(QColor("#dddddd"));
+        painter->drawText(boundingRect(), Qt::AlignCenter, tr("请打开一张图片开始操作（Ctrl+O）"));
+        return;
+    }
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
     painter->translate(m_offset);
@@ -73,7 +87,7 @@ void VpCanvas::paint(QPainter *painter)
         guides.cursorPoint = m_cursorPoint;
     renderer.renderGuides(*painter, m_scale, guides);
     // 光标离开画布时不画预览：空点 (0,0) 同时也是合法的图像坐标
-    const bool cursorOnCanvas = !m_cursorPoint.isNull();
+    const bool cursorOnCanvas = m_cursorOnCanvas;
     if (cursorOnCanvas && m_controller.tool() == Tool::Brush)
         m_controller.renderBrushPreview(*painter, m_cursorPoint);
     if (m_controller.tool() == Tool::CloneStamp) {
@@ -107,15 +121,10 @@ void VpCanvas::geometryChange(const QRectF &newGeometry, const QRectF &oldGeomet
         updateViewTransform();
 }
 
-
-
-
-
-
-
 // 记录光标位置；仿制源的取样指示与光标预览都依赖它，拖动期间同样要更新。
 void VpCanvas::updateCursorPoint(const QPointF &widgetPoint)
 {
+    m_cursorOnCanvas = true;
     m_cursorPoint = widgetToImage(widgetPoint);
     if (m_controller.tool() == Tool::CloneStamp)
         m_controller.hoverClone(m_cursorPoint);
@@ -133,6 +142,7 @@ void VpCanvas::hoverMoveEvent(QHoverEvent *event)
 // 离开画布时清掉光标预览，避免预览停在最后位置。
 void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
 {
+    m_cursorOnCanvas = false;
     m_cursorPoint = QPointF();
     if (m_controller.cursorPreviewVisible())
         update();
@@ -141,9 +151,6 @@ void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
 
 // 删除键按状态分派：创建平面时回退最后一个角点，否则删除选中的浮动图像，
 // 没有图像再退到删除选中的平面。
-
-
-
 
 void VpCanvas::keyPressEvent(QKeyEvent *event)
 {
@@ -235,13 +242,12 @@ void VpCanvas::setZoom(qreal scale)
 
 void VpCanvas::stepAt(bool out, const QPointF &anchor)
 {
-    static constexpr qreal levels[] = {0.063, 0.125, 0.25, 0.333, 0.5, 0.667,
-                                      1, 2, 3, 4, 6, 8, 10, 12, 16};
+    const auto &levels = ZoomLevels;
     int nearest = 0;
-    for (int i = 1; i < 15; ++i)
+    for (int i = 1; i < int(levels.size()); ++i)
         if (std::abs(levels[i] - m_scale) < std::abs(levels[nearest] - m_scale))
             nearest = i;
-    zoomAt(levels[qBound(0, nearest + (out ? -1 : 1), 14)], anchor);
+    zoomAt(levels[qBound(0, nearest + (out ? -1 : 1), int(levels.size()) - 1)], anchor);
 }
 
 void VpCanvas::zoomStep(bool out)
@@ -261,6 +267,7 @@ void VpCanvas::updateNavigationCursor(bool alt)
     if (m_controller.tool() == Tool::Hand) {
         setCursor(m_panning ? Qt::ClosedHandCursor : Qt::OpenHandCursor);
     } else if (m_controller.tool() == Tool::Zoom) {
+        static const auto makeCursor = [](bool out) {
         QPixmap icon(32, 32);
         icon.fill(Qt::transparent);
         QPainter painter(&icon);
@@ -273,10 +280,13 @@ void VpCanvas::updateNavigationCursor(bool alt)
         painter.drawLine(19, 19, 28, 28);
         painter.setPen(QPen(Qt::white, 2));
         painter.drawLine(7, 12, 17, 12);
-        if (!alt)
+        if (!out)
             painter.drawLine(12, 7, 12, 17);
         painter.end();
-        setCursor(QCursor(icon, 12, 12));
+        return QCursor(icon, 12, 12);
+        };
+        static const std::array<QCursor, 2> cursors{makeCursor(false), makeCursor(true)};
+        setCursor(cursors[alt ? 1 : 0]);
     } else {
         setCursor(Qt::ArrowCursor);
     }
@@ -292,49 +302,34 @@ void VpCanvas::keyReleaseEvent(QKeyEvent *event)
     QQuickPaintedItem::keyReleaseEvent(event);
 }
 
-
-
 // 把拖动预览落成一个与源平面垂直的新平面；返回是否真的产生了新平面。
-
-
-
 
 // 是否需要画光标预览（创建平面的橡皮筋、画笔与图章的光标预览）
 
-
 // 删除当前选中的平面；没有选中时什么也不做。
-
 
 // 状态栏提示创建进度；角点被回退干净时给出独立提示。
 
-
 // 按下时的图像处理。返回 true 表示这次按下已被图像消费，工具不再响应。
 // 顺序与 Photoshop 一致：先试控制点（仅变换工具），再试图像本体，最后才轮到烘焙。
-
 
 // 拖动中的图像：缩放/旋转交给工具自己算新几何；平移则沿快照曲面滑动（变换工具下
 // 已吸附的图像），或者按光标所在的平面吸附，落在平面外时脱离回画布坐标。
 // 越过极点线映射不出来时保持原位。
 
-
 // 结束拖动并提交；返回 false 表示当时没有图像在拖动。
-
 
 // 命中测试：判断画布坐标是否落在某张浮动图像上（从最上层开始），
 // 命中时返回该点相对图像左上角的抓取偏移。
 
-
 // 把图像吸附到目标平面所在的曲面分组：拷贝该分组的全部面片几何作为严格快照，
 // 此后平面的增删改都不再影响它。
-
 
 // 已吸附的图像沿它的快照曲面移动：优先用包住光标的那个面片，都不包住时退回宿主面片
 // 外推；连外推都映射不出来（越过极点线）才返回 false。
 
-
 // 把当前选中的浮动图像按当前几何画进绘画层并删除它：走的是与屏幕渲染完全相同的
 // 分段投影路径，因此肉眼看不到像素跳变。烘焙后内容并入绘画层，不再能单独操作。
-
 
 // 变换工具下画出浮动图像的 8 个控制点；尺寸与线宽按视图缩放换算，屏幕上恒定。
 void VpCanvas::drawFloatingImageHandles(QPainter *painter)
@@ -353,11 +348,6 @@ void VpCanvas::drawFloatingImageHandles(QPainter *painter)
 }
 
 // 取样和文档事务由画布协调，选区工具只负责计算。
-
-
-
-
-
 
 // 选区轮廓按控件坐标描边（先 resetTransform 再整体缩放），
 // 白 1px 打底 + 黑虚线，线宽与虚线间距在屏幕上恒定。
@@ -426,3 +416,11 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
 
 void VpCanvas::undo() { m_panning = false; m_controller.undo(); }
 void VpCanvas::redo() { m_panning = false; m_controller.redo(); }
+
+QVariantList VpCanvas::zoomLevels() const
+{
+    QVariantList levels;
+    for (qreal scale : ZoomLevels)
+        levels.append(scale);
+    return levels;
+}

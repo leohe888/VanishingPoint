@@ -23,3 +23,6 @@ foreach(name IN ITEMS canvasnavigation perspectiveplane perspectivetransform per
     add_vp_test(tst_${name} tst_${name}.cpp)
     set_tests_properties(tst_${name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endforeach()
+
+add_vp_test(tst_qmlintegration tst_qmlintegration.cpp ${PROJECT_SOURCE_DIR}/res.qrc)
+set_tests_properties(tst_qmlintegration PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

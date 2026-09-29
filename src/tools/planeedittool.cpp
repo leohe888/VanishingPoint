@@ -11,11 +11,11 @@ void PlaneEditTool::begin(const PerspectivePlane &plane, const QPointF &pressPoi
     m_pressPoint = pressPoint;
     m_controlPointIndex = controlPointIndex;
     m_edgeIndex = edgeIndex;
-    m_isExtruding = extrude;
+    m_mode = extrude ? Mode::Extrude : rotate ? Mode::Rotate
+        : controlPointIndex < 0 ? Mode::Move : controlPointIndex < 4 ? Mode::Corner : Mode::Edge;
     m_canvasSize = canvasSize;
-    m_isRotating = rotate;
     m_rotationEdgeIndex = rotationEdgeIndex;
-    if (m_isRotating && rotationEdgeIndex >= 0 &&
+    if ((m_mode == Mode::Rotate) && rotationEdgeIndex >= 0 &&
         rotationEdgeIndex < PerspectiveQuad::CornerCount) {
         const QPointF seamMidpoint =
             (plane.quad().canvasCorners()[rotationEdgeIndex] +
@@ -31,10 +31,10 @@ bool PlaneEditTool::update(const QPointF &point, PerspectivePlane *result)
     if (!result)
         return false;
     PerspectivePlane candidate = m_initialPlane;
-    if (m_isExtruding) {
+    if ((m_mode == Mode::Extrude)) {
         candidate = extrudePerpendicularPlane(
             m_initialPlane, m_edgeIndex, point, m_pressPoint, m_canvasSize);
-    } else if (m_isRotating) {
+    } else if ((m_mode == Mode::Rotate)) {
         const int edge = m_rotationEdgeIndex;
         const QPointF seamMidpoint =
             (m_initialPlane.quad().canvasCorners()[edge] +
@@ -53,10 +53,9 @@ bool PlaneEditTool::update(const QPointF &point, PerspectivePlane *result)
         candidate = rotatePlaneAroundEdge(
             m_initialPlane, edge,
             m_initialPlane.angleToParentDegrees() + m_accumulatedRotation, m_canvasSize);
-    } else if (m_controlPointIndex >= 0 &&
-               m_controlPointIndex < PerspectiveQuad::CornerCount) {
+    } else if (m_mode == Mode::Corner) {
         candidate.quad().setCanvasCorner(m_controlPointIndex, point);
-    } else if (m_controlPointIndex >= PerspectiveQuad::CornerCount) {
+    } else if (m_mode == Mode::Edge) {
         candidate = resizePlaneFromEdge(
             m_initialPlane, m_controlPointIndex - PerspectiveQuad::CornerCount,
             point, m_pressPoint);
@@ -64,7 +63,7 @@ bool PlaneEditTool::update(const QPointF &point, PerspectivePlane *result)
                    m_initialPlane, point, m_pressPoint, &candidate)) {
         return false;
     }
-    if (!candidate.quad().isValid() || (!m_isExtruding && !m_initialPlane.preservesLockedEdges(candidate)))
+    if (!candidate.quad().isValid() || (!(m_mode == Mode::Extrude) && !m_initialPlane.preservesLockedEdges(candidate)))
         return false;
     *result = candidate;
     return true;

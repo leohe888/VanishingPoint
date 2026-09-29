@@ -59,28 +59,22 @@ private:
 };
 
 /**
- * @brief 查找包含指定画布点的最上层透视平面。
+ * 查找包含指定画布点的最上层透视平面。
  *
  * 按索引从大到小检查平面，返回首个包含该点的平面索引。
  * 多个平面重叠时，列表中靠后的平面视为更上层。
  *
- * @param planes 按层叠顺序排列的平面列表，索引越大，层级越高。
- * @param point 待检测的点，使用画布坐标。
  * @return 命中平面在 planes 中的索引；列表为空或没有平面包含该点时返回 -1。
  */
 int topmostPlaneIndexAt(const QVector<PerspectivePlane> &planes, const QPointF &point);
 
 /**
- * @brief 根据画布点选取用于绘制或取样的四边形。
+ * 根据画布点选取用于绘制或取样的四边形。
  *
  * 优先复制包含该点的最上层平面的四边形；没有命中平面时，
  * 构造覆盖整个画布的矩形，其画布坐标与展开坐标相同。
  * 回退到画布矩形时，不要求 point 位于画布范围内。
  *
- * @param planes 待检测的平面列表，列表中靠后的平面优先。
- * @param canvasSize 回退矩形的画布尺寸，仅在没有命中平面时使用。
- * @param point 待检测的点，使用画布坐标。
- * @param[out] quad 接收选取结果的四边形指针，不能为 nullptr。
  * @return 成功写入 quad 时返回 true；输出指针为空，或没有命中平面且
  *         画布尺寸为空时返回 false，失败时不修改输出。
  */
@@ -88,16 +82,12 @@ bool resolveQuad(const QVector<PerspectivePlane> &planes, const QSize &canvasSiz
                   const QPointF &point, PerspectiveQuad *quad);
 
 /**
- * @brief 根据鼠标拖动在展开坐标中平移透视平面。
+ * 根据鼠标拖动在展开坐标中平移透视平面。
  *
  * 将按下位置与当前拖动位置映射到源平面的展开坐标，计算位移后，
  * 平移四个展开角点，并通过原有透视变换重新投影到画布。
  * 保留源平面的其他属性，仅在全部角点投影成功且结果有效时写入输出。
  *
- * @param source 要平移的源平面。
- * @param dragPoint 当前鼠标拖动位置，使用画布坐标。
- * @param pressPoint 鼠标按下位置，使用画布坐标。
- * @param[out] result 接收平移结果的平面指针，不能为 nullptr。
  * @return 成功写入 result 时返回 true；输出指针为空、拖动坐标非有限、
  *         坐标映射失败、投影坐标非有限或绝对值超过 1e7，或结果平面
  *         无效时返回 false，失败时不修改输出。
@@ -106,21 +96,17 @@ bool translatePlaneOnSurface(const PerspectivePlane &source, const QPointF &drag
                              const QPointF &pressPoint, PerspectivePlane *result);
 
 /**
- * @brief 根据鼠标拖动调整透视平面的一条边。
+ * 根据鼠标拖动调整透视平面的一条边。
  *
  * 对边保持不动，被拖边沿缩放方向移动，并根据原有透视关系计算新的端点。
  * 如果参数无效或无法得到有效结果，则返回未修改的源平面。
  *
- * @param source 要调整的源平面。
- * @param edgeIndex 被拖动边的索引，范围为 [0, PerspectivePlane::CornerCount)。
- * @param dragPoint 当前鼠标位置，使用画布坐标。
- * @param pressPoint 鼠标按下位置，使用画布坐标。
  * @return 调整后的平面；无法调整时返回 source。
  */
 PerspectivePlane resizePlaneFromEdge(const PerspectivePlane &source, int edgeIndex,
                                      const QPointF &dragPoint, const QPointF &pressPoint);
 /**
- * @brief 计算源平面的三维法线在指定画布点处的二维投影方向。
+ * 计算源平面的三维法线在指定画布点处的二维投影方向。
  *
  * 由两组对边的消失点恢复平面内的三维方向，再通过叉乘得到法线。
  * 假设两组边在空间中正交，相机主点位于背景中心；焦距由消失点估计，
@@ -128,10 +114,6 @@ PerspectivePlane resizePlaneFromEdge(const PerspectivePlane &source, int edgeInd
  * 法线消失点有限时，输出从 atPoint 指向该消失点的单位向量；
  * 消失点位于无穷远时，输出与 atPoint 无关的单位方向。
  *
- * @param source 源透视平面，使用其按边界顺序排列的四个画布角点。
- * @param atPoint 计算投影方向的位置，使用画布坐标。
- * @param backgroundSize 背景图像尺寸，用于估计相机主点和焦距，应为有效的正尺寸。
- * @param[out] direction 接收二维单位向量的指针，不能为 nullptr；函数不检查空指针。
  * @return 成功写入 direction 时返回 true；消失点或三维方向退化、
  *         投影无法转换为有限点，或最终二维方向长度非有限或过小时返回 false。
  *         失败时不修改输出。
@@ -141,7 +123,7 @@ bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atP
                               const QSize &backgroundSize, QPointF *direction);
 
 /**
- * @brief 根据鼠标拖动，从源平面的一条边构造与之垂直的新平面。
+ * 根据鼠标拖动，从源平面的一条边构造与之垂直的新平面。
  *
  * 将拖动位移投影到源平面法线的画布方向，确定新平面的伸出距离。
  * 新平面的角点 0、1 对应源边的两个端点，第 0 条边锁定；继承源平面的
@@ -149,11 +131,6 @@ bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atP
  * 法线方向依赖正交边和估计相机参数，外侧边优先按消失点构造，失败时
  * 尝试平行边方案。展开深度由画布边长比例估计，不是精确的三维长度。
  *
- * @param source 用于挤出新平面的源平面。
- * @param edgeIndex 共享边索引，范围为 [0, PerspectivePlane::CornerCount)。
- * @param dragPoint 当前鼠标位置，使用画布坐标。
- * @param pressPoint 鼠标按下位置，使用画布坐标。
- * @param backgroundSize 背景尺寸，用于估计相机主点和焦距。
  * @return 新构造的平面；参数无效时返回默认平面，几何计算失败或法线方向的
  *         拖动距离不足 2 个画布坐标单位时，可能返回部分初始化或退化的平面。
  * @note 本函数不做最终有效性检查，调用方须检查返回值的 quad().isValid()。
@@ -164,17 +141,13 @@ PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int e
                                            const QSize &backgroundSize);
 
 /**
- * @brief 将平面绕指定共享边做三维旋转，使其达到目标父子平面夹角。
+ * 将平面绕指定共享边做三维旋转，使其达到目标父子平面夹角。
  *
  * 根据源平面的消失点估计相机及平面姿态，将角点反投影到三维平面，
  * 按 targetAngleDegrees 与 source.angleToParentDegrees() 的差值旋转，
  * 再投影回画布。共享边端点和展开坐标保持不变，仅更新对侧两个画布角点。
  * 成功时记录归一化的目标夹角，并将 hasCustomAngle 设为 true。
  *
- * @param source 要旋转的平面，其当前夹角用于计算旋转增量。
- * @param edgeIndex 旋转轴所在边的索引，范围为 [0, PerspectivePlane::CornerCount)。
- * @param targetAngleDegrees 目标夹角，单位为度，须为有限值；不是旋转增量。
- * @param backgroundSize 背景尺寸，用于估计相机主点和焦距。
  * @return 旋转后的平面；参数无效、几何恢复失败、投影失败或结果四边形
  *         无效时返回未修改的 source。
  * @note 使用背景中心主点和正交消失方向的相机估计；不读取父平面的几何数据。

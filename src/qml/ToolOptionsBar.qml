@@ -28,32 +28,13 @@ Rectangle {
         spacing: 18
         visible: root.brushOptionsVisible
 
-        OptionInput {
-            Layout.fillWidth: false
-            label: qsTr("直径")
-            from: 1
-            to: 500
-            suffix: " px"
-            value: root.controller ? root.controller.brushDiameter : 42
-            onEdited: (value) => root.controller.brushDiameter = value
-        }
-
-        OptionInput {
-            Layout.fillWidth: false
-            label: qsTr("硬度")
-            from: 0
-            to: 100
-            value: root.controller ? root.controller.brushHardness : 75
-            onEdited: (value) => root.controller.brushHardness = value
-        }
-
-        OptionInput {
-            Layout.fillWidth: false
-            label: qsTr("不透明度")
-            from: 1
-            to: 100
-            value: root.controller ? root.controller.brushOpacity : 100
-            onEdited: (value) => root.controller.brushOpacity = value
+        StrokeOptions {
+            diameter: root.controller ? root.controller.brushDiameter : 42
+            hardness: root.controller ? root.controller.brushHardness : 75
+            strokeOpacity: root.controller ? root.controller.brushOpacity : 100
+            onDiameterEdited: (value) => root.controller.brushDiameter = value
+            onHardnessEdited: (value) => root.controller.brushHardness = value
+            onOpacityEdited: (value) => root.controller.brushOpacity = value
         }
 
         RowLayout {
@@ -101,32 +82,13 @@ Rectangle {
         spacing: 18
         visible: root.cloneOptionsVisible
 
-        OptionInput {
-            Layout.fillWidth: false
-            label: qsTr("直径")
-            from: 1
-            to: 500
-            suffix: " px"
-            value: root.controller ? root.controller.cloneDiameter : 42
-            onEdited: (value) => root.controller.cloneDiameter = value
-        }
-
-        OptionInput {
-            Layout.fillWidth: false
-            label: qsTr("硬度")
-            from: 0
-            to: 100
-            value: root.controller ? root.controller.cloneHardness : 75
-            onEdited: (value) => root.controller.cloneHardness = value
-        }
-
-        OptionInput {
-            Layout.fillWidth: false
-            label: qsTr("不透明度")
-            from: 1
-            to: 100
-            value: root.controller ? root.controller.cloneOpacity : 100
-            onEdited: (value) => root.controller.cloneOpacity = value
+        StrokeOptions {
+            diameter: root.controller ? root.controller.cloneDiameter : 42
+            hardness: root.controller ? root.controller.cloneHardness : 75
+            strokeOpacity: root.controller ? root.controller.cloneOpacity : 100
+            onDiameterEdited: (value) => root.controller.cloneDiameter = value
+            onHardnessEdited: (value) => root.controller.cloneHardness = value
+            onOpacityEdited: (value) => root.controller.cloneOpacity = value
         }
 
         RowLayout {
@@ -195,6 +157,13 @@ Rectangle {
             onEdited: (value) => root.controller.planeAngle = value
         }
 
+        Text {
+            Layout.fillWidth: true
+            color: "#cccccc"
+            font.pixelSize: 12
+            elide: Text.ElideRight
+            text: root.controller ? root.controller.planeAngleLockReason : ""
+        }
         Item {
             Layout.fillWidth: true
         }

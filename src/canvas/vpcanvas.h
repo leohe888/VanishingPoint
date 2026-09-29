@@ -7,6 +7,7 @@
 #include <QPainterPath>
 #include <QPointF>
 #include <QRectF>
+#include <QVariantList>
 #include <QQuickPaintedItem>
 
 class VpCanvas : public QQuickPaintedItem
@@ -14,6 +15,7 @@ class VpCanvas : public QQuickPaintedItem
     Q_OBJECT
     Q_PROPERTY(VpController *controller READ controller CONSTANT)
     Q_PROPERTY(qreal zoom READ zoom NOTIFY viewChanged)
+    Q_PROPERTY(QVariantList zoomLevels READ zoomLevels CONSTANT)
     Q_PROPERTY(qreal horizontalSize READ horizontalSize NOTIFY viewChanged)
     Q_PROPERTY(qreal verticalSize READ verticalSize NOTIFY viewChanged)
     Q_PROPERTY(qreal horizontalPosition READ horizontalPosition NOTIFY viewChanged)
@@ -26,6 +28,7 @@ public:
     VpController *controller() { return &m_controller; }
 
     void paint(QPainter *painter) override;
+    QVariantList zoomLevels() const;
     qreal zoom() const { return m_scale; }
     qreal horizontalSize() const;
     qreal verticalSize() const;
@@ -67,6 +70,7 @@ private:
 
     VpController m_controller;
     QPointF m_cursorPoint;
+    bool m_cursorOnCanvas = false;
 
     int m_antsPhase = 0; // 选中框虚线的相位，逐帧递增形成蚂蚁线
 

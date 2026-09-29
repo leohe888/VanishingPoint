@@ -1,6 +1,7 @@
 #include "vpdocument.h"
 
 #include <QPainter>
+#include <QImageReader>
 
 namespace {
 // 历史条目可能包含多张大纹理的脏矩形，因此限制历史数量以防内存失控。
@@ -16,16 +17,29 @@ VpDocument::VpDocument(QObject *parent) : QObject(parent)
 // 从文件加载背景图像，并清空平面、浮动图像与绘画层、重置历史记录
 bool VpDocument::loadImage(const QString &fileName)
 {
-    QImage image(fileName);
+    QImageReader reader(fileName);
+    reader.setAutoTransform(true);
+    const QSize size = reader.size();
+    if (!size.isValid() || qint64(size.width()) * size.height() * 4 > 128*1024*1024)
+        return false;
+    QImageReader::setAllocationLimit(128);
+    const QImage image = reader.read().convertToFormat(QImage::Format_ARGB32);
     if (image.isNull())
         return false;
-    m_background = image.convertToFormat(QImage::Format_ARGB32);
+    QImage painting(image.size(), QImage::Format_ARGB32);
+    if (painting.isNull())
+        return false;
+    painting.fill(Qt::transparent);
+    m_editActive = false;
+    m_editBefore = HistoryEntry();
+    m_editPaintBefore = QImage();
+    clearPaintTransaction();
+    m_background = image;
     m_planes.clear();
     m_floatingImages.clear();
     m_selectedPlane = -1;
     setSelectedFloatingImage(-1);
-    m_paintLayer = QImage(m_background.size(), QImage::Format_ARGB32);
-    m_paintLayer.fill(Qt::transparent);
+    m_paintLayer = painting;
     m_paintTransactionActive = false;
     resetHistory();
     emit documentAvailabilityChanged(true);
@@ -57,16 +71,6 @@ bool VpDocument::hasPaintContent() const
 }
 
 // 清空绘画层（不影响平面几何与浮动图像）
-void VpDocument::clearPainting()
-{
-    if (m_paintLayer.isNull())
-        return;
-    beginPaintTransaction();
-    addPaintDirty(m_paintLayer.rect());
-    m_paintLayer.fill(Qt::transparent);
-    if (!m_editActive)
-        commitHistory();
-}
 
 // 开始一次绘画事务：浅拷贝当前绘画层作为撤销基线（隐式共享，O(1)）
 void VpDocument::beginPaintTransaction()
@@ -87,7 +91,7 @@ void VpDocument::addPaintDirty(const QRect &rect)
 // 追加一个平面并返回其下标；几何非法时不追加，返回 -1。
 int VpDocument::appendPlane(const PerspectivePlane &plane)
 {
-    if (!plane.quad().isProjectable())
+    if (!plane.quad().isProjectable() || !qIsFinite(plane.angleToParentDegrees()))
         return -1;
     m_planes.append(plane);
     return m_planes.size() - 1;
@@ -95,7 +99,7 @@ int VpDocument::appendPlane(const PerspectivePlane &plane)
 
 bool VpDocument::setPlane(int index, const PerspectivePlane &plane)
 {
-    if (index < 0 || index >= m_planes.size() || !plane.quad().isProjectable() || !m_planes[index].preservesLockedEdges(plane))
+    if (index < 0 || index >= m_planes.size() || !plane.quad().isProjectable() || !qIsFinite(plane.angleToParentDegrees()) || !m_planes[index].preservesLockedEdges(plane))
         return false;
     m_planes[index] = plane;
     return true;

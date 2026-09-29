@@ -140,12 +140,7 @@ class PerspectivePlaneTest : public QObject
     Q_OBJECT
 
 private slots:
-    void validatesConvexPlane();
-    void rejectsSelfIntersection();
-    void findsHandles();
     void selectsTopmostPlane();
-    void rejectsNonFinitePlane();
-    void rejectsInvalidHitTestInput();
     void ignoresInvalidEdgeIndex();
     void defaultState();
     void copiesOwnCoordinatesAndMetadata();
@@ -182,23 +177,11 @@ private slots:
     void rotationRejectsDegenerateAndBehindCamera();
 };
 
-void PerspectivePlaneTest::validatesConvexPlane()
-{
-    QVERIFY(makeTestPlane().quad().isValid());
-}
 
-void PerspectivePlaneTest::rejectsSelfIntersection()
-{
-    QVERIFY(!makeSelfIntersectingPlane().quad().isValid());
-}
 
-void PerspectivePlaneTest::findsHandles()
-{
-    const PerspectivePlane plane = makeTestPlane();
-    QCOMPARE(plane.quad().controlPointIndexAt(QPointF(10, 10), 1.0), 0);
-    QCOMPARE(plane.quad().controlPointIndexAt(QPointF(60, 10), 1.0), 4);
-    QCOMPARE(plane.quad().controlPointIndexAt(QPointF(60, 45), 1.0), -1);
-}
+
+
+
 
 void PerspectivePlaneTest::selectsTopmostPlane()
 {
@@ -213,21 +196,9 @@ void PerspectivePlaneTest::selectsTopmostPlane()
     QCOMPARE(topmostPlaneIndexAt({lower, upper}, QPointF(500, 500)), -1);
 }
 
-void PerspectivePlaneTest::rejectsNonFinitePlane()
-{
-    PerspectivePlane plane = makeTestPlane();
-    QPointF invalidCorner = plane.quad().canvasCorners()[2];
-    invalidCorner.setX(std::numeric_limits<qreal>::quiet_NaN());
-    plane.quad().setCanvasCorner(2, invalidCorner);
-    QVERIFY(!plane.quad().isValid());
-}
 
-void PerspectivePlaneTest::rejectsInvalidHitTestInput()
-{
-    const PerspectivePlane plane = makeTestPlane();
-    QCOMPARE(plane.quad().controlPointIndexAt(QPointF(10, 10), -1.0), -1);
-    QCOMPARE(plane.quad().edgeIndexAt(QPointF(60, 10), -1.0), -1);
-}
+
+
 
 void PerspectivePlaneTest::ignoresInvalidEdgeIndex()
 {

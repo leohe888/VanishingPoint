@@ -12,6 +12,16 @@
 
 VpController::VpController(QObject *parent) : QObject(parent)
 {
+    connect(&m_document, &VpDocument::canUndoChanged, this, &VpController::historyChanged);
+    connect(&m_document, &VpDocument::canRedoChanged, this, &VpController::historyChanged);
+    connect(&m_document, &VpDocument::documentAvailabilityChanged, this, [this] {
+        m_cloneTool.resetSource();
+        m_cloneSource = QImage();
+        m_cloneSourceKey.clear();
+        emit documentReplaced();
+        emit planeAngleChanged();
+        emit repaintRequested();
+    });
     connect(&m_document, &VpDocument::imageSelectionChanged, this, [this](bool selected) {
         if (!selected && m_tool == Transform)
             setTool(EditPlane);
@@ -225,13 +235,15 @@ void VpController::renderBrushPreview(QPainter &painter, const QPointF &point) c
 
 const QImage &VpController::cloneSource()
 {
+    if (m_cloneTool.drawing())
+        return m_cloneSource;
     QByteArray key;
     QDataStream stream(&key, QIODevice::WriteOnly);
     stream << m_document.background().cacheKey() << m_document.paintLayer().cacheKey()
            << qint64(m_document.floatingImages().size());
     for (const FloatingImage &image : m_document.floatingImages())
         stream << image.bitmap.cacheKey() << FloatingImageProjection::cacheKey(image);
-    if (m_cloneTool.drawing() || (key == m_cloneSourceKey && !m_cloneSource.isNull()))
+    if (key == m_cloneSourceKey && !m_cloneSource.isNull())
         return m_cloneSource;
     m_cloneSourceKey = key;
     m_cloneSource = QImage(m_document.background().size(), QImage::Format_ARGB32_Premultiplied);
@@ -280,6 +292,8 @@ void VpController::hoverClone(const QPointF &point)
 
 void VpController::renderClonePreview(QPainter &painter, const QPointF &point)
 {
+    if (!m_cloneTool.hasSource())
+        return;
     m_cloneTool.renderPreview(painter, cloneSource(), m_document.planes(),
                               m_document.background().size(), point);
 }
@@ -581,7 +595,7 @@ void VpController::cancelInteraction()
         m_editPlaneIndex = -1;
         m_floatingImageTransform.reset();
         m_draggedFloatingImageIndex = -1;
-        m_floatingImageChanged = false;
+
         m_document.cancelEdit();
     }
     m_marqueeTool.clear();
@@ -675,11 +689,6 @@ void VpController::updateFloatingImageInteraction(const QPointF &point,
         if (m_floatingImageTransform.update(
                 point, modifiers & Qt::ShiftModifier, modifiers & Qt::AltModifier, &image)) {
             m_document.setFloatingImage(m_draggedFloatingImageIndex, image);
-            // 与起始几何比对后才算改动：按住控制点原地松手不该占一格历史
-            const FloatingImage &start = m_floatingImageTransform.startImage();
-            m_floatingImageChanged = image.placementOrigin != start.placementOrigin
-                                     || image.scaleFactors != start.scaleFactors
-                                     || image.rotationDegrees != start.rotationDegrees;
         }
         emit repaintRequested();
         return;
@@ -691,19 +700,15 @@ void VpController::updateFloatingImageInteraction(const QPointF &point,
             m_document.setFloatingImageOrigin(
                 m_draggedFloatingImageIndex,
                 surface - m_floatingImageTransform.grabOffset());
-            // 沿曲面滑动可能原地不动（越过极点线时保持原位），不算一次改动
-            m_floatingImageChanged =
-                m_document.floatingImage(m_draggedFloatingImageIndex).placementOrigin
-                != start.placementOrigin;
         }
     } else if (const int plane = topmostPlaneIndexAt(m_document.planes(), point); plane >= 0) {
         attachFloatingImageToPlane(m_draggedFloatingImageIndex, plane, point);
-        m_floatingImageChanged = true;
+
     } else if (!m_document.floatingImage(m_draggedFloatingImageIndex).surfaceAttached
                || !moveSurfaceAttachedImage(m_draggedFloatingImageIndex, point)) {
         m_document.detachFloatingImage(
             m_draggedFloatingImageIndex, point - m_floatingImageTransform.grabOffset());
-        m_floatingImageChanged = true;
+
     }
     emit repaintRequested();
 }
@@ -714,8 +719,8 @@ bool VpController::endFloatingImageInteraction()
         return false;
     m_floatingImageTransform.reset();
     m_draggedFloatingImageIndex = -1;
-    m_document.commitEdit(true); // 只是点了一下、几何没变就不占一格历史
-    m_floatingImageChanged = false;
+    m_document.commitEdit(true); // 模型按实际状态比较，空操作不占历史
+
     emit repaintRequested();
     return true;
 }
@@ -797,7 +802,7 @@ void VpController::bakeSelectedFloatingImage()
     m_document.commitEdit(true);
     m_floatingImageTransform.reset();
     m_draggedFloatingImageIndex = -1;
-    m_floatingImageChanged = false;
+
     postStatus(tr("浮动图像已合并到绘画层。"));
     emit repaintRequested();
 }
@@ -814,8 +819,10 @@ QImage VpController::selectionSampleImage() const
 
 int VpController::appendSelectionImage(const FloatingImage &image)
 {
-    if (image.bitmap.isNull())
+    if (image.bitmap.isNull()) {
+        postStatus(tr("无法提取选区：内容为空、尺寸超过 8192、输出超过 64 MiB 或内存不足。"));
         return -1;
+    }
     return m_document.addFloatingImageOnSurface(image.bitmap, image.surfaceQuads,
                                           image.hostQuadIndex, image.placementOrigin);
 }
@@ -862,4 +869,20 @@ void VpController::deleteSelection()
         }
     }
     emit repaintRequested();
+}
+
+bool VpController::openImage(const QUrl &url)
+{
+    if (!url.isLocalFile()) {
+        postStatus(tr("请选择本地图片文件。"));
+        return false;
+    }
+    cancelInteraction();
+    if (!m_document.loadImage(url.toLocalFile())) {
+        postStatus(tr("图片打开失败：文件不可读、格式不支持或超过 128 MiB 解码限制。"));
+        return false;
+    }
+    postStatus(tr("图片已打开，请创建平面或开始绘画。"));
+    emit focusRequested();
+    return true;
 }

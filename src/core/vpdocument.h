@@ -42,7 +42,6 @@ public:
     QImage &paintLayer() { return m_paintLayer; }
     const QImage &paintLayer() const { return m_paintLayer; }
     bool hasPaintContent() const;                  // 绘画层是否含有不透明像素
-    void clearPainting();                          // 清空绘画层
     void beginPaintTransaction();                  // 开始一次绘画事务（记录 before）
     void addPaintDirty(const QRect &rect);         // 累积绘画脏矩形
 

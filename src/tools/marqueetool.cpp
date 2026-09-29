@@ -14,7 +14,6 @@ QSize extractionSize(const QRectF &rect)
 }
 }
 
-
 bool MarqueeTool::beginCreate(const QVector<PerspectivePlane> &planes, const QPointF &point)
 {
     clear();

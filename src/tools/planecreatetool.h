@@ -3,7 +3,6 @@
 #include "core/perspectiveplane.h"
 
 #include <QPointF>
-#include <QString>
 #include <QVector>
 
 class PlaneCreateTool

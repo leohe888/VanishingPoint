@@ -34,3 +34,13 @@
 - 渲染拆为 renderContent/renderGuides，Guides 小值结构表达辅助选项；移除 hoveredPlane/drawContent 无需求分支和 m_viewScale 隐含状态。
 - 更新 architecture.md，明确预览写入与完整命令提交语义、快照用途和合并层序。
 - 验证：Debug 构建成功；**14/14 测试通过（25.82 秒）**，既有解析几何和交互回归均保留。
+
+## 阶段 4
+
+- 阶段 3 提交：`b310dbe`。完成 B13：Ctrl+O/打开按钮、加载失败提示、视图空文档提示；加载检查解码尺寸/分配失败，完整重置工具、仿制源、导航和历史，失败保留旧文档。
+- canUndo/canRedo 信号接入按钮；planeAngleLockReason 接入 UI；工具栏状态单向绑定；画笔/图章三参数复用 StrokeOptions；缩放档位由 C++ 单一来源提供，两种缩放光标缓存。
+- 删除未调用 getter（initialPlane、mode、inverse）、edgeIndexAt 及专属测试、clearPainting、无用 QString include、downlist.png、旧 Qt5 高 DPI 与构建模板；app.ico 正式接入窗口图标。hasPaintContent 保留为显式测试查询。
+- PlaneEditTool 使用明确 Mode；删除已失去用途的浮动图像 changed 标志。仿制预览无源时早退，落笔中不构建缓存键；保留原键缓存，未引入未经测量的修订号或缓冲池。
+- 移除 Plane 测试重复的 Quad 基础校验，以及 Transform 的重复角点数量/退化例；保留数值解析预期、密集往返与快照独立性测试。删减接口注释重复参数说明，修正焦距公式负号。
+- 新增平面/图像/选区中粘贴、图章中粘贴、共享边多子面删除、输入/Alt 双入口锁定、打开新文档及失败保留的回归；全部通过。
+- 增加加载真实 main.qml 并触发 redo 快捷键信号的集成测试。首次发现组件 opacity 与 Item FINAL 属性重名，改为 strokeOpacity；14 项 C++ 测试通过，修正后 QML 集成测试也通过（2.12 秒）。完整 15 项最终复测安排在阶段 5。

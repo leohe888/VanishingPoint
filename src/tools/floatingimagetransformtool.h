@@ -15,7 +15,6 @@ public:
                 FloatingImage *result) const;
     void reset() { m_mode = Mode::Idle; }
 
-    Mode mode() const { return m_mode; }
     bool isTransforming() const { return m_mode == Mode::Scale || m_mode == Mode::Rotate; }
     const FloatingImage &startImage() const { return m_startImage; }
     QPointF grabOffset() const { return m_grabOffset; }

@@ -55,9 +55,6 @@ private slots:
     void containsCanvasPoint();
     void hitsControlPoints_data();
     void hitsControlPoints();
-    void hitsEdges_data();
-    void hitsEdges();
-    void hitPriorityAndDegenerateEdges();
     void invalidHitInput_data();
     void invalidHitInput();
     void affineTransforms();
@@ -273,54 +270,11 @@ void PerspectiveQuadTest::hitsControlPoints()
     QCOMPARE(quad.controlPointIndexAt(point + QPointF(3, 4), 4.999), -1);
 }
 
-void PerspectiveQuadTest::hitsEdges_data()
-{
-    QTest::addColumn<QPointF>("point");
-    QTest::addColumn<qreal>("tolerance");
-    QTest::addColumn<int>("index");
-    QTest::newRow("top") << QPointF(60, 10) << qreal(0) << 0;
-    QTest::newRow("right") << QPointF(110, 45) << qreal(0) << 1;
-    QTest::newRow("bottom") << QPointF(60, 80) << qreal(0) << 2;
-    QTest::newRow("closing-edge") << QPointF(10, 45) << qreal(0) << 3;
-    QTest::newRow("top-at-tolerance") << QPointF(60, 5) << qreal(5) << 0;
-    QTest::newRow("right-at-tolerance") << QPointF(115, 45) << qreal(5) << 1;
-    QTest::newRow("bottom-at-tolerance") << QPointF(60, 85) << qreal(5) << 2;
-    QTest::newRow("left-at-tolerance") << QPointF(5, 45) << qreal(5) << 3;
-    QTest::newRow("outside-tolerance") << QPointF(60, 5) << qreal(4.999) << -1;
-    QTest::newRow("interior-miss") << QPointF(60, 45) << qreal(1) << -1;
-    // 延长线距离为 3，实际线段最近点为端点，距离 sqrt(34) > 5。
-    QTest::newRow("beyond-end") << QPointF(115, 7) << qreal(5) << -1;
-    QTest::newRow("before-start") << QPointF(5, 7) << qreal(5) << -1;
-    QTest::newRow("endpoint-at-tolerance") << QPointF(115, 10) << qreal(5) << 0;
-}
 
-void PerspectiveQuadTest::hitsEdges()
-{
-    QFETCH(QPointF, point);
-    QFETCH(qreal, tolerance);
-    QFETCH(int, index);
-    QCOMPARE(PerspectiveQuad(canvasRectangle(), surfaceRectangle()).edgeIndexAt(point, tolerance), index);
-}
 
-void PerspectiveQuadTest::hitPriorityAndDegenerateEdges()
-{
-    const PerspectiveQuad rectangle(canvasRectangle(), surfaceRectangle());
-    QCOMPARE(rectangle.controlPointIndexAt(QPointF(60, 10), 50), 0);
-    QCOMPARE(rectangle.controlPointIndexAt(QPointF(60, 45), 0), -1);
-    QCOMPARE(rectangle.edgeIndexAt(QPointF(110, 10), 0), 0);
-    QCOMPARE(rectangle.edgeIndexAt(QPointF(10, 10), 0), 0);
-    QCOMPARE(rectangle.edgeIndexAt(QPointF(110, 80), 0), 1);
-    const PerspectiveQuad collapsed;
-    QCOMPARE(collapsed.controlPointIndexAt(QPointF(), 0), 0);
-    QCOMPARE(collapsed.edgeIndexAt(QPointF(), 0), 0);
-    QCOMPARE(collapsed.edgeIndexAt(QPointF(3, 4), 5), 0);
-    QCOMPARE(collapsed.edgeIndexAt(QPointF(3, 4), 4.999), -1);
-    // 斜边的距离按垂直投影计算，而非 x/y 分量或边界框。
-    const PerspectiveQuad diamond(
-        {QPointF(0, 50), QPointF(50, 0), QPointF(100, 50), QPointF(50, 100)}, Corners{});
-    QCOMPARE(diamond.edgeIndexAt(QPointF(22, 22), 4.25), 0);
-    QCOMPARE(diamond.edgeIndexAt(QPointF(22, 22), 4.24), -1);
-}
+
+
+
 
 void PerspectiveQuadTest::invalidHitInput_data()
 {
@@ -346,7 +300,6 @@ void PerspectiveQuadTest::invalidHitInput()
     QFETCH(qreal, tolerance);
     const PerspectiveQuad quad(canvasRectangle(), surfaceRectangle());
     QCOMPARE(quad.controlPointIndexAt(point, tolerance), -1);
-    QCOMPARE(quad.edgeIndexAt(point, tolerance), -1);
 }
 
 void PerspectiveQuadTest::affineTransforms()

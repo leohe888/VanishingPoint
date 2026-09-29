@@ -7,19 +7,11 @@ RowLayout {
     id: root
     required property VpCanvas canvas
 
-    readonly property var zoomItems: [
-        {label: "6%", scale: 0.063}, {label: "12%", scale: 0.125},
-        {label: "25%", scale: 0.25}, {label: "33%", scale: 0.333},
-        {label: "50%", scale: 0.5}, {label: "66%", scale: 0.667},
-        {label: "", scale: 0}, {label: "100%", scale: 1}, {label: "", scale: 0},
-        {label: "200%", scale: 2}, {label: "300%", scale: 3},
-        {label: "400%", scale: 4}, {label: "600%", scale: 6},
-        {label: "800%", scale: 8}, {label: "1000%", scale: 10},
-        {label: "1200%", scale: 12}, {label: "1600%", scale: 16},
+    readonly property var zoomItems: root.canvas.zoomLevels.map((scale) => ({label: Math.floor(scale * 100) + "%", scale: scale})).concat([
         {label: "", scale: 0}, {label: qsTr("实际像素"), scale: 1},
         {label: qsTr("符合视图大小"), scale: -1},
         {label: qsTr("按屏幕大小缩放"), scale: -2}
-    ]
+    ])
     spacing: 3
     Image {
         Layout.preferredWidth: 13; Layout.preferredHeight: 13

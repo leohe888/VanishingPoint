@@ -244,3 +244,11 @@ QRect CloneTool::applyDab(QImage &layer, const QPointF &position)
     painter.drawImage(area.topLeft(), dab);
     return area;
 }
+
+void CloneTool::resetSource()
+{
+    end();
+    m_hasSource = m_hasOffset = false;
+    m_sourceMapping = m_targetMapping = PerspectiveTransform();
+    m_source = m_offset = m_marker = QPointF();
+}

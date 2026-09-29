@@ -335,7 +335,7 @@ bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atP
     const qreal imageExtent = qMax(backgroundSize.width(), backgroundSize.height());
     qreal focalLength = imageExtent * 1.2;
 
-    // 两个消失点均有限时，利用 f² = (vx - c)·(vy - c) 解出焦距。
+    // 两个消失点均有限时，利用 f² = -(vx - c)·(vy - c) 解出焦距。
     // 辅助函数会在估计不合理时回退到经验值；无穷远消失点则直接使用经验值。
     if (qAbs(vanishingX.z) > 1e-6 && qAbs(vanishingY.z) > 1e-6) {
         QPointF vx;

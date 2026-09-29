@@ -37,7 +37,6 @@ public:
     bool isProjectable() const;
     bool containsCanvasPoint(const QPointF &point) const;
     int controlPointIndexAt(const QPointF &point, qreal tolerance) const;
-    int edgeIndexAt(const QPointF &point, qreal tolerance) const;
 
     PerspectiveTransform surfaceToCanvasTransform() const;
     PerspectiveTransform uvToCanvasTransform() const;

@@ -10,12 +10,15 @@
 
 #include <QByteArray>
 #include <QObject>
+#include <QUrl>
 
 class QPainter;
 
 class VpController final : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool canUndo READ canUndo NOTIFY historyChanged)
+    Q_PROPERTY(bool canRedo READ canRedo NOTIFY historyChanged)
     Q_PROPERTY(Tool tool READ tool WRITE setTool NOTIFY toolChanged)
     Q_PROPERTY(int brushDiameter READ brushDiameter WRITE setBrushDiameter NOTIFY brushChanged)
     Q_PROPERTY(int brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushChanged)
@@ -67,6 +70,9 @@ public:
     bool planeAngleEditable() const;
     QString planeAngleLockReason() const;
 
+    Q_INVOKABLE bool openImage(const QUrl &url);
+    bool canUndo() const { return m_document.canUndo(); }
+    bool canRedo() const { return m_document.canRedo(); }
     Q_INVOKABLE void pasteImage();
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
@@ -103,6 +109,8 @@ public:
     void finishActiveStrokes();
 
 signals:
+    void documentReplaced();
+    void historyChanged();
     void toolChanged();
     void brushChanged();
     void cloneChanged();
@@ -135,17 +143,13 @@ private:
     PlaneEditTool m_editTool;
     MarqueeTool m_marqueeTool;
 
-
     int m_editPlaneIndex = -1; // 正在编辑的平面下标。-1 同时表示“没有进行中的平面编辑”。
 
     PerspectivePlane m_extrudePreview;             // 拖出垂直平面时的预览几何
     bool m_extrudePreviewReady = false; // 预览几何是否可用
 
-
     FloatingImageTransformTool m_floatingImageTransform; // 进行中的图像移动/缩放/旋转
     int m_draggedFloatingImageIndex = -1;
-    bool m_floatingImageChanged = false;
-
 
     BrushTool m_brushTool;
     CloneTool m_cloneTool;

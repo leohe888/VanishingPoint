@@ -16,7 +16,6 @@ public:
     bool mapForward(const QPointF &point, QPointF *result) const;
     bool mapInverse(const QPointF &point, QPointF *result) const;
     const QTransform &forward() const { return m_forward; }
-    const QTransform &inverse() const { return m_inverse; }
 
 private:
     QTransform m_forward;

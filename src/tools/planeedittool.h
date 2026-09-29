@@ -9,9 +9,8 @@ public:
                int edgeIndex, bool extrude, const QSize &canvasSize,
                bool rotate = false, int rotationEdgeIndex = -1);
     bool update(const QPointF &point, PerspectivePlane *result);
-    const PerspectivePlane &initialPlane() const { return m_initialPlane; }
-    bool extruding() const { return m_isExtruding; }
-    bool rotating() const { return m_isRotating; }
+    bool extruding() const { return m_mode == Mode::Extrude; }
+    bool rotating() const { return m_mode == Mode::Rotate; }
     int edgeIndex() const { return m_edgeIndex; }
 
 private:
@@ -19,8 +18,8 @@ private:
     QPointF m_pressPoint;
     int m_controlPointIndex = -1;
     int m_edgeIndex = -1;
-    bool m_isExtruding = false;
-    bool m_isRotating = false;
+    enum class Mode { Move, Corner, Edge, Extrude, Rotate };
+    Mode m_mode = Mode::Move;
     int m_rotationEdgeIndex = -1;
     qreal m_lastPointerAngle = 0.0;
     qreal m_accumulatedRotation = 0.0;

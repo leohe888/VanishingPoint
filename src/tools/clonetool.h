@@ -20,6 +20,7 @@ public:
     void setAligned(bool value);
     bool aligned() const { return m_aligned; }
 
+    void resetSource();
     bool hasSource() const { return m_hasSource; }
     bool drawing() const { return m_drawing; }
     QPointF marker() const { return m_marker; }

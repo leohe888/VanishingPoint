@@ -6,24 +6,6 @@
 
 #include <utility>
 
-namespace {
-
-constexpr qreal Epsilon = 1e-6;
-
-qreal pointToSegmentDistance(const QPointF &point, const QPointF &start,
-                             const QPointF &end)
-{
-    const QPointF segment = end - start;
-    const qreal squaredLength = QPointF::dotProduct(segment, segment);
-    // 将投影参数限制在 [0, 1]，求到线段而非无限直线的距离；退化线段按起点处理。
-    const qreal position = squaredLength < Epsilon
-        ? 0.0
-        : qBound(0.0, QPointF::dotProduct(point - start, segment) / squaredLength, 1.0);
-    return QLineF(point, start + segment * position).length();
-}
-
-} // namespace
-
 PerspectiveQuad::PerspectiveQuad(Corners canvasCorners, Corners surfaceCorners)
     : m_canvasCorners(std::move(canvasCorners)),
       m_surfaceCorners(std::move(surfaceCorners))
@@ -136,19 +118,6 @@ int PerspectiveQuad::controlPointIndexAt(const QPointF &point, qreal tolerance) 
     const QVector<QPointF> points = controlPoints();
     for (int i = 0; i < points.size(); ++i) {
         if (QLineF(points[i], point).length() <= tolerance)
-            return i;
-    }
-    return -1;
-}
-
-int PerspectiveQuad::edgeIndexAt(const QPointF &point, qreal tolerance) const
-{
-    if (!qIsFinite(point.x()) || !qIsFinite(point.y()) ||
-        !qIsFinite(tolerance) || tolerance < 0.0)
-        return -1;
-    for (int i = 0; i < CornerCount; ++i) {
-        if (pointToSegmentDistance(point, m_canvasCorners[i],
-                                   m_canvasCorners[(i + 1) % CornerCount]) <= tolerance)
             return i;
     }
     return -1;
