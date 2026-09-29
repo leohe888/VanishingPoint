@@ -20,7 +20,6 @@ Window {
             Layout.preferredWidth: 38
             Layout.fillHeight: true
             currentTool: vpController.tool
-            controller: vpController
             onToolSelected: (toolId) => vpController.tool = toolId
         }
 
@@ -54,7 +53,6 @@ Window {
                     onActivated: vpController.redo()
                 }
                 ToolOptionsBar {
-                    controller: vpController
                     Layout.fillWidth: true
                     Layout.preferredHeight: 38
                 }
@@ -68,7 +66,6 @@ Window {
 
             WorkArea {
                 id: workArea
-                controller: vpController
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }

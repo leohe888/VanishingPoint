@@ -137,3 +137,11 @@
 - 更新当前架构说明，保留前一阶段执行日志中的历史名称。沿用独立目录 build/tool-enum-validation 验证主程序，Debug 主程序及原目录全部测试目标编译成功。
 - CTest 15/15 通过，包括真实 QML 枚举访问与快捷键写入验证；git diff --check 通过。
 - 仅纳入本次命名修改与日志，ToolOptionsBar 使用选择性暂存，保留用户图标、资源、画布和样式改动。
+
+## QML 简化：直接使用上下文控制器
+
+- 删除 ToolBar、ToolOptionsBar、WorkArea 的 QML controller 属性及 main.qml 中对应的传递绑定。工具栏和选项栏直接读取、修改根上下文 vpController；WorkArea 内的 VpCanvas 保留 controller: vpController，C++ 画布注入接口保持不变。
+- 删除主程序和 QML 集成测试中的 qmlRegisterUncreatableType<VpController> 及显式 setObjectOwnership。控制器仍由 C++ 栈对象拥有，依靠构造顺序晚于引擎销毁；上下文不接管所有权。VpTools 枚举和 VpCanvas 注册仍保留。
+- 选项栏移除因可选控制器而存在的空值判断和默认值回退；应用界面依赖加载前提供的 vpController 上下文。
+- 扩展已有真实 QML 集成测试，验证工具禁用、快捷键切换、选项可见性、画笔直径的双向读写、垃圾回收后的默认 CppOwnership，以及窗口重建后继续撤销。独立目录 Debug 主程序和 QML 测试目标构建成功，相关集成测试 1/1 通过，git diff --check 通过。
+- 更新架构说明。ToolOptionsBar 和 main.qml 仅暂存本次简化变更，保留用户勾选图标、快捷键排版、画布缩放光标、资源和其他界面改动。

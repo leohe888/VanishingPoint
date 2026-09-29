@@ -6,20 +6,15 @@ import VanishingPoint 1.0
 Rectangle {
     id: root
 
-    property VpController controller
-
     color: "#535353"
     border.color: "#3e3e3e"
     border.width: 1
 
     // 只显示当前工具有意义的选项
-    readonly property bool brushOptionsVisible: root.controller !== null
-                                                && root.controller.tool === VpTools.Brush
-    readonly property bool cloneOptionsVisible: root.controller !== null
-                                                && root.controller.tool === VpTools.CloneStamp
-    readonly property bool planeOptionsVisible: root.controller !== null
-                                                && (root.controller.tool === VpTools.CreatePlane
-                                                    || root.controller.tool === VpTools.EditPlane)
+    readonly property bool brushOptionsVisible: vpController.tool === VpTools.Brush
+    readonly property bool cloneOptionsVisible: vpController.tool === VpTools.CloneStamp
+    readonly property bool planeOptionsVisible: vpController.tool === VpTools.CreatePlane
+                                               || vpController.tool === VpTools.EditPlane
 
     RowLayout {
         anchors.fill: parent
@@ -29,12 +24,12 @@ Rectangle {
         visible: root.brushOptionsVisible
 
         StrokeOptions {
-            diameter: root.controller ? root.controller.brushDiameter : 42
-            hardness: root.controller ? root.controller.brushHardness : 75
-            strokeOpacity: root.controller ? root.controller.brushOpacity : 100
-            onDiameterEdited: (value) => root.controller.brushDiameter = value
-            onHardnessEdited: (value) => root.controller.brushHardness = value
-            onOpacityEdited: (value) => root.controller.brushOpacity = value
+            diameter: vpController.brushDiameter
+            hardness: vpController.brushHardness
+            strokeOpacity: vpController.brushOpacity
+            onDiameterEdited: (value) => vpController.brushDiameter = value
+            onHardnessEdited: (value) => vpController.brushHardness = value
+            onOpacityEdited: (value) => vpController.brushOpacity = value
         }
 
         RowLayout {
@@ -53,7 +48,7 @@ Rectangle {
                 Layout.preferredHeight: 20
                 Layout.alignment: Qt.AlignVCenter
                 radius: 2
-                color: root.controller ? root.controller.brushColor : "#e85d4a"
+                color: vpController.brushColor
                 border.color: "#777777"
 
                 MouseArea {
@@ -71,8 +66,8 @@ Rectangle {
     ColorDialog {
         id: colorDialog
         title: qsTr("画笔颜色")
-        selectedColor: root.controller ? root.controller.brushColor : "#e85d4a"
-        onAccepted: root.controller.brushColor = selectedColor
+        selectedColor: vpController.brushColor
+        onAccepted: vpController.brushColor = selectedColor
     }
 
     RowLayout {
@@ -83,12 +78,12 @@ Rectangle {
         visible: root.cloneOptionsVisible
 
         StrokeOptions {
-            diameter: root.controller ? root.controller.cloneDiameter : 42
-            hardness: root.controller ? root.controller.cloneHardness : 75
-            strokeOpacity: root.controller ? root.controller.cloneOpacity : 100
-            onDiameterEdited: (value) => root.controller.cloneDiameter = value
-            onHardnessEdited: (value) => root.controller.cloneHardness = value
-            onOpacityEdited: (value) => root.controller.cloneOpacity = value
+            diameter: vpController.cloneDiameter
+            hardness: vpController.cloneHardness
+            strokeOpacity: vpController.cloneOpacity
+            onDiameterEdited: (value) => vpController.cloneDiameter = value
+            onHardnessEdited: (value) => vpController.cloneHardness = value
+            onOpacityEdited: (value) => vpController.cloneOpacity = value
         }
 
         RowLayout {
@@ -107,12 +102,12 @@ Rectangle {
                 Layout.preferredHeight: 16
                 Layout.alignment: Qt.AlignVCenter
                 radius: 2
-                color: root.controller && root.controller.cloneAligned ? "#4bc3ff" : "#3e3e3e"
+                color: vpController.cloneAligned ? "#4bc3ff" : "#3e3e3e"
                 border.color: "#777777"
 
                 Text {
                     anchors.centerIn: parent
-                    visible: root.controller ? root.controller.cloneAligned : false
+                    visible: vpController.cloneAligned
                     text: "✓"
                     color: "#0e3d52"
                     font.pixelSize: 11
@@ -120,7 +115,7 @@ Rectangle {
 
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: root.controller.cloneAligned = !root.controller.cloneAligned
+                    onClicked: vpController.cloneAligned = !vpController.cloneAligned
                 }
             }
         }
@@ -142,8 +137,8 @@ Rectangle {
             label: qsTr("网格大小")
             from: 1
             to: 1000
-            value: root.controller ? root.controller.gridSize : 50
-            onEdited: (value) => root.controller.gridSize = value
+            value: vpController.gridSize
+            onEdited: (value) => vpController.gridSize = value
         }
 
         OptionInput {
@@ -152,9 +147,9 @@ Rectangle {
             from: 0
             to: 360
             suffix: "°"
-            enabled: root.controller ? root.controller.planeAngleEditable : false
-            value: root.controller ? Math.round(root.controller.planeAngle) : 90
-            onEdited: (value) => root.controller.planeAngle = value
+            enabled: vpController.planeAngleEditable
+            value: Math.round(vpController.planeAngle)
+            onEdited: (value) => vpController.planeAngle = value
         }
 
         Item {

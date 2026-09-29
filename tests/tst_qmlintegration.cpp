@@ -13,16 +13,15 @@ private slots:
     void redoShortcutCallsRedo() {
         qmlRegisterUncreatableMetaObject(VpTools::staticMetaObject,"VanishingPoint",1,0,"VpTools","Enums only");
         qmlRegisterType<VpCanvas>("VanishingPoint",1,0,"VpCanvas");
-        qmlRegisterUncreatableType<VpController>("VanishingPoint",1,0,"VpController","Application owns controller");
         VpController controller;
         QQmlApplicationEngine engine;
-        QQmlEngine::setObjectOwnership(&controller, QQmlEngine::CppOwnership);
         engine.rootContext()->setContextProperty("vpController", &controller);
         engine.load(QUrl("qrc:/src/qml/main.qml"));
         QVERIFY(!engine.rootObjects().isEmpty());
         auto *root=engine.rootObjects().first(); root->setProperty("visible",false);
         auto *canvas=root->findChild<VpCanvas*>(); QVERIFY(canvas);
         QCOMPARE(canvas->controller(), &controller);
+        QCOMPARE(QQmlEngine::objectOwnership(&controller), QQmlEngine::CppOwnership);
         auto *window = qobject_cast<QQuickWindow *>(root); QVERIFY(window);
         const auto toolButton = [window](VpTools::Tool tool) -> QObject * {
             const auto find = [tool](auto &&self, QQuickItem *item) -> QQuickItem * {
@@ -75,6 +74,30 @@ private slots:
         QVERIFY(QMetaObject::invokeMethod(brushShortcut, "activated", Qt::DirectConnection));
         QCOMPARE(controller.tool(), VpTools::Brush);
         QVERIFY(brush->property("selected").toBool());
+        QObject *brushOptions = nullptr;
+        for (auto *object : root->findChildren<QObject *>()) {
+            if (object->property("brushOptionsVisible").isValid()) {
+                brushOptions = object;
+                break;
+            }
+        }
+        QVERIFY(brushOptions);
+        QVERIFY(brushOptions->property("brushOptionsVisible").toBool());
+        QObject *strokeOptions = nullptr;
+        for (auto *object : brushOptions->findChildren<QObject *>()) {
+            if (object->metaObject()->indexOfSignal("diameterEdited(int)") >= 0) {
+                strokeOptions = object;
+                break;
+            }
+        }
+        QVERIFY(strokeOptions);
+        controller.setBrushDiameter(37);
+        QCOMPARE(strokeOptions->property("diameter").toInt(), 37);
+        QVERIFY(QMetaObject::invokeMethod(strokeOptions, "diameterEdited", Qt::DirectConnection,
+                                         Q_ARG(int, 51)));
+        QCOMPARE(controller.brushDiameter(), 51);
+        engine.collectGarbage();
+        QCOMPARE(QQmlEngine::objectOwnership(&controller), QQmlEngine::CppOwnership);
         QVERIFY(canvas->controller()->openImage(QUrl::fromLocalFile(path)));
         QCOMPARE(canvas->controller()->tool(), VpTools::CreatePlane);
         QVERIFY(!brush->property("enabled").toBool());
@@ -91,6 +114,7 @@ private slots:
         auto *newRoot = recreated.rootObjects().first(); newRoot->setProperty("visible", false);
         auto *newCanvas = newRoot->findChild<VpCanvas*>(); QVERIFY(newCanvas);
         QCOMPARE(newCanvas->controller(), &controller);
+        QCOMPARE(QQmlEngine::objectOwnership(&controller), QQmlEngine::CppOwnership);
         QCOMPARE(controller.document().planes().size(), 1);
         newCanvas->undo(); QVERIFY(controller.document().planes().isEmpty());
     }
