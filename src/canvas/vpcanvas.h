@@ -65,11 +65,11 @@ private:
     void zoomAt(qreal scale, const QPointF &anchor);
     void stepAt(bool out, const QPointF &anchor);
     void updateNavigationCursor(bool alt = false);
-    void updateCursorPoint(const QPointF &widgetPoint); // 记录光标并通知仿制源、预览跟随
+    void updateCursorPoint(const QPointF &widgetPoint);
     const VpDocument &document() const { return m_controller->document(); }
-    void drawCloneMarker(QPainter *painter); // 仿制源的绿色十字指示
+    void drawCloneMarker(QPainter *painter);
 
-    void drawFloatingImageHandles(QPainter *painter); // 变换工具下的 8 个控制点
+    void drawFloatingImageHandles(QPainter *painter);
 
     void drawSelectionOutline(QPainter *painter);
 
