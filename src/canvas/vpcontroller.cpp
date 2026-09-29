@@ -489,7 +489,7 @@ void VpController::pointerMove(const QPointF &point, Qt::KeyboardModifiers modif
             m_extrudePreview = candidate;
             m_extrudePreviewReady = true;
         } else {
-            m_document.setPlane(m_editPlaneIndex, candidate);
+            m_document.setPlane(m_editPlaneIndex, candidate, m_editTool.resizing());
             if (m_editTool.rotating())
                 notifyPlaneAngleChanged(); // 角度滑杆随拖动实时跟走
         }

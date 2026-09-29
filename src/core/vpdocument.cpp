@@ -99,9 +99,11 @@ int VpDocument::appendPlane(const PerspectivePlane &plane)
     return m_planes.size() - 1;
 }
 
-bool VpDocument::setPlane(int index, const PerspectivePlane &plane)
+bool VpDocument::setPlane(int index, const PerspectivePlane &plane, bool allowSharedEdgeExtension)
 {
-    if (index < 0 || index >= m_planes.size() || !plane.quad().isProjectable() || !qIsFinite(plane.angleToParentDegrees()) || !m_planes[index].preservesLockedEdges(plane))
+    if (index < 0 || index >= m_planes.size() || !plane.quad().isProjectable()
+        || !qIsFinite(plane.angleToParentDegrees())
+        || !m_planes[index].preservesLockedEdges(plane, allowSharedEdgeExtension))
         return false;
     m_planes[index] = plane;
     return true;

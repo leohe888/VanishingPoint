@@ -615,27 +615,35 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
     return result;
 }
 
-bool PerspectivePlane::controlPointEditable(int handle, bool extrude) const
+bool PerspectivePlane::controlPointEditable(int handle, bool /*extrude*/) const
 {
     if (handle < 0 || handle >= 8)
         return false;
     if (handle < 4)
         return !isEdgeLocked(handle) && !isEdgeLocked((handle + 3) % 4);
     const int edge = handle - 4;
-    if (extrude)
-        return !isEdgeLocked(edge);
-    return !isEdgeLocked(edge) && !isEdgeLocked((edge + 1) % 4)
-        && !isEdgeLocked((edge + 3) % 4);
+    return !isEdgeLocked(edge);
 }
 
-bool PerspectivePlane::preservesLockedEdges(const PerspectivePlane &candidate) const
+bool PerspectivePlane::preservesLockedEdges(const PerspectivePlane &candidate, bool allowExtension) const
 {
     for (int edge = 0; edge < 4; ++edge) {
         if (!isEdgeLocked(edge))
             continue;
-        for (int corner : {edge, (edge + 1) % 4})
-            if (QLineF(quad().canvasCorners()[corner], candidate.quad().canvasCorners()[corner]).length() > 1e-7)
+        const QPointF start = quad().canvasCorners()[edge];
+        const QPointF direction = quad().canvasCorners()[(edge + 1) % 4] - start;
+        const qreal length = QLineF(QPointF(), direction).length();
+        if (length < Epsilon)
+            return false;
+        for (int corner : {edge, (edge + 1) % 4}) {
+            const QPointF point = candidate.quad().canvasCorners()[corner];
+            const QPointF offset = point - start;
+            const qreal distance = allowExtension
+                ? qAbs(direction.x() * offset.y() - direction.y() * offset.x()) / length
+                : QLineF(quad().canvasCorners()[corner], point).length();
+            if (!qIsFinite(distance) || distance > 1e-7)
                 return false;
+        }
     }
     return true;
 }

@@ -18,7 +18,24 @@ private slots:
     void planeLinkageTracksSharedEdge();
     void pastesImageAsSelectedFloatingImage();
     void removesSelectedFloatingImage();
+    void sharedEdgeExtensionRequiresExplicitPermission();
 };
+
+void VpDocumentTest::sharedEdgeExtensionRequiresExplicitPermission()
+{
+    VpDocument document;
+    auto original = makeTestPlane(); original.setEdgeLocked(0, true);
+    document.appendPlane(original); document.resetHistory();
+    const auto extended = resizePlaneFromEdge(original, 1, {130,45}, {110,45});
+    QVERIFY(extended.quad().canvasCorners() != original.quad().canvasCorners());
+    QVERIFY(!document.setPlane(0, extended));
+    document.beginEdit(); QVERIFY(document.setPlane(0, extended, true));
+    document.cancelEdit(); QVERIFY(document.planes()[0] == original);
+    QVERIFY(!document.canUndo());
+    auto bent = extended; bent.quad().setCanvasCorner(1, {130,20});
+    QVERIFY(!document.setPlane(0, bent, true));
+    QVERIFY(document.planes()[0] == original);
+}
 
 void VpDocumentTest::rejectsInvalidPlane()
 {

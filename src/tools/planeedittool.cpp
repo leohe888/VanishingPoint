@@ -73,7 +73,8 @@ bool PlaneEditTool::update(const QPointF &point, PerspectivePlane *result)
                    m_initialPlane, point, m_pressPoint, &candidate)) {
         return false;
     }
-    if (!candidate.quad().isValid() || (!(m_mode == Mode::Extrude) && !m_initialPlane.preservesLockedEdges(candidate)))
+    if (!candidate.quad().isValid() || (m_mode != Mode::Extrude
+        && !m_initialPlane.preservesLockedEdges(candidate, resizing())))
         return false;
     *result = candidate;
     return true;

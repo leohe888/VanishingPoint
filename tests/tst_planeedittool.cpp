@@ -13,6 +13,7 @@ private slots:
     void movesPlaneFromInterior();
     void rejectsInvalidCornerDrag();
     void extrudesPerpendicularPlaneFromEdgeMidpoint();
+    void extendsAdjacentEdgesWithoutBendingSeam();
 };
 
 void PlaneEditToolTest::dragsCorner()
@@ -86,6 +87,31 @@ void PlaneEditToolTest::extrudesPerpendicularPlaneFromEdgeMidpoint()
     PlaneEditTool tooShort;                            // 拖动距离过小时拉不出有效几何
     tooShort.begin(plane, QPointF(60, 10), 4, 0, true, QSize(1200, 800));
     QVERIFY(!tooShort.update(QPointF(60, 11), &result));
+}
+
+void PlaneEditToolTest::extendsAdjacentEdgesWithoutBendingSeam()
+{
+    for (int seam = 0; seam < 4; ++seam) {
+        auto plane = makeTestPlane(); plane.setEdgeLocked(seam, true);
+        for (int side : {1, 3}) {
+            const int edge = (seam + side) % 4;
+            const auto corners = plane.quad().canvasCorners();
+            const QPointF press = (corners[edge] + corners[(edge+1)%4]) / 2;
+            const QPointF axis = press - (corners[(edge+2)%4] + corners[(edge+3)%4]) / 2;
+            PlaneEditTool tool;
+            tool.begin(plane, press, 4 + edge, edge, false, QSize(1200, 800));
+            PerspectivePlane result;
+            QVERIFY(tool.update(press + axis / 5, &result));
+            QVERIFY(result.quad().canvasCorners() != corners);
+            QVERIFY(plane.preservesLockedEdges(result, true));
+            QVERIFY(!plane.preservesLockedEdges(result));
+            auto bent = result;
+            const QPointF seamDirection = corners[(seam+1)%4] - corners[seam];
+            bent.quad().setCanvasCorner(seam, result.quad().canvasCorners()[seam]
+                + QPointF(-seamDirection.y(), seamDirection.x()) / 10);
+            QVERIFY(!plane.preservesLockedEdges(bent, true));
+        }
+    }
 }
 
 QTEST_APPLESS_MAIN(PlaneEditToolTest)

@@ -11,6 +11,7 @@ public:
     bool update(const QPointF &point, PerspectivePlane *result);
     bool extruding() const { return m_mode == Mode::Extrude; }
     bool rotating() const { return m_mode == Mode::Rotate; }
+    bool resizing() const { return m_mode == Mode::Edge; }
     int edgeIndex() const { return m_edgeIndex; }
 
 private:

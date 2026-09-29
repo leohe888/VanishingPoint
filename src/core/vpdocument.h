@@ -30,7 +30,7 @@ public:
     // —— 平面 ——
     const QVector<PerspectivePlane> &planes() const { return m_planes; }
     int appendPlane(const PerspectivePlane &plane);           // 几何预览修改由 beginEdit/commitEdit 包围
-    bool setPlane(int index, const PerspectivePlane &plane);
+    bool setPlane(int index, const PerspectivePlane &plane, bool allowSharedEdgeExtension = false);
     void lockPlaneEdge(int index, int edge);
     bool isPlaneLinked(int index) const;           // 是否与相邻垂直平面共边
     int selectedPlane() const { return m_selectedPlane; }

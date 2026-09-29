@@ -213,6 +213,60 @@ private slots:
         controller->pointerPress({220,150},1,Qt::ControlModifier); controller->pointerRelease({260,100},Qt::ControlModifier);
         QCOMPARE(doc.planes().size(),2); QCOMPARE(doc.planes()[0].quad().canvasCorners(),p.quad().canvasCorners());
     }
+    void adjacentMidpointsExtendAfterExtrusion_data() {
+        QTest::addColumn<int>("planeIndex"); QTest::addColumn<int>("side");
+        QTest::newRow("parent-next") << 0 << 1;
+        QTest::newRow("parent-previous") << 0 << 3;
+        QTest::newRow("child-next") << 1 << 1;
+        QTest::newRow("child-previous") << 1 << 3;
+    }
+    void adjacentMidpointsExtendAfterExtrusion() {
+        QFETCH(int, planeIndex); QFETCH(int, side);
+        AuditCanvas canvas; setup(canvas); auto *controller = canvas.controller();
+        auto &doc = controller->document(); auto parent = plane();
+        parent.quad().setCanvasCorners({QPointF(100,100), QPointF(220,100), QPointF(220,200), QPointF(100,200)});
+        doc.appendPlane(parent); controller->setTool(VpController::EditPlane);
+        controller->pointerPress({220,150}, 1, Qt::ControlModifier);
+        controller->pointerRelease({240,100}, Qt::ControlModifier);
+        QCOMPARE(doc.planes().size(), 2);
+        doc.resetHistory(); doc.setSelectedPlane(planeIndex);
+        const auto original = doc.planes()[planeIndex];
+        const auto other = doc.planes()[1-planeIndex];
+        const int seam = planeIndex == 0 ? 1 : 0;
+        const int edge = (seam + side) % 4;
+        const auto corners = original.quad().canvasCorners();
+        const QPointF midpoint = (corners[edge] + corners[(edge+1)%4]) / 2;
+        QVERIFY(original.controlPointEditable(4 + edge));
+        QVERIFY(!original.controlPointEditable(4 + seam));
+        QVERIFY(!original.controlPointEditable(seam));
+        QVERIFY(!original.controlPointEditable((seam+1)%4));
+
+        QImage guides(400,400,QImage::Format_ARGB32); guides.fill(Qt::transparent);
+        QPainter painter(&guides); SceneRenderer::Guides options; options.editHandlesVisible = true;
+        SceneRenderer(doc).renderGuides(painter, 1, options); painter.end();
+        QCOMPARE(guides.pixelColor(midpoint.toPoint()), QColor("#f3f8fa"));
+
+        QPointF axis = midpoint - (corners[(edge+2)%4] + corners[(edge+3)%4]) / 2;
+        axis /= QLineF(QPointF(), axis).length();
+        controller->pointerPress(midpoint, 1, Qt::NoModifier);
+        controller->pointerMove(midpoint + axis * 10, Qt::NoModifier);
+        controller->pointerRelease(midpoint + axis * 20, Qt::NoModifier);
+        const auto extended = doc.planes()[planeIndex];
+        QVERIFY(extended.quad().canvasCorners() != corners);
+        QVERIFY(extended.quad().isProjectable());
+        QVERIFY(doc.planes()[1-planeIndex] == other);
+        QCOMPARE(extended.lockedEdgeMask(), original.lockedEdgeMask());
+        QCOMPARE(extended.parentPlaneIndex(), original.parentPlaneIndex());
+        QCOMPARE(extended.parentEdgeIndex(), original.parentEdgeIndex());
+        const QPointF seamVector = corners[(seam+1)%4] - corners[seam];
+        for (int corner : {seam, (seam+1)%4}) {
+            const QPointF offset = extended.quad().canvasCorners()[corner] - corners[seam];
+            QVERIFY(qAbs(seamVector.x()*offset.y() - seamVector.y()*offset.x()) < 1e-6);
+        }
+        QVERIFY(doc.canUndo()); controller->undo();
+        QVERIFY(doc.planes()[planeIndex] == original); QVERIFY(!doc.canUndo());
+        controller->redo(); QVERIFY(doc.planes()[planeIndex] == extended);
+    }
 };
 QTEST_MAIN(AuditInteractionsTest)
 #include "tst_auditinteractions.moc"

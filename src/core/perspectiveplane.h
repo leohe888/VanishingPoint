@@ -43,7 +43,8 @@ public:
             && a.m_angleToParentDegrees == b.m_angleToParentDegrees && a.m_hasCustomAngle == b.m_hasCustomAngle;
     }
     bool controlPointEditable(int handle, bool extrude = false) const;
-    bool preservesLockedEdges(const PerspectivePlane &candidate) const;
+    // 边中点延长允许改变接缝长度，但接缝仍须位于原直线上。
+    bool preservesLockedEdges(const PerspectivePlane &candidate, bool allowExtension = false) const;
 
     bool hasCustomAngle() const { return m_hasCustomAngle; }
     void setHasCustomAngle(bool adjusted) { m_hasCustomAngle = adjusted; }
