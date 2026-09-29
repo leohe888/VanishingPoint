@@ -5,6 +5,7 @@
 #include <QRadialGradient>
 #include <QTransform>
 #include <QtMath>
+#include <cmath>
 
 namespace {
 
@@ -40,6 +41,7 @@ QRect BrushTool::begin(QImage &layer, const QVector<PerspectivePlane> &planes, c
     if (layer.isNull() || !resolveTarget(planes, canvasSize, point, &quad, &uv))
         return {};
     m_quad = quad;
+    m_mapping = quad.uvToCanvasTransform();
     m_drawing = true;
     m_lastUv = uv;
     QPainter painter(&layer);
@@ -52,7 +54,7 @@ QRect BrushTool::move(QImage &layer, const QPointF &point)
     if (!m_drawing)
         return {};
     QPointF uv;
-    if (!m_quad.uvToCanvasTransform().mapInverse(point, &uv))
+    if (!m_mapping.mapInverse(point, &uv))
         return {};
     return drawStrokeTo(layer, uv);
 }
@@ -74,15 +76,11 @@ QRect BrushTool::applyDab(QPainter &painter, const PerspectiveQuad &quad, const 
     const qreal radiusUv = uvRadius(quad, m_diameter);
     const qreal hardness = m_hardness / 100.0;
 
-    const PerspectiveTransform mapping = quad.uvToCanvasTransform();
+    const PerspectiveTransform mapping = (&quad == &m_quad) ? m_mapping : quad.uvToCanvasTransform();
     const QTransform &uvToCanvas = mapping.forward();
     const QRectF bounds(uv.x() - radiusUv, uv.y() - radiusUv, radiusUv * 2, radiusUv * 2);
-    QPointF mapped;
-    if (!mapping.isValid())
+    if (!mapping.isValid() || !PerspectiveTransform::mapsDomain(uvToCanvas, bounds))
         return {};
-    for (const QPointF &corner : {bounds.topLeft(), bounds.topRight(), bounds.bottomLeft(), bounds.bottomRight()})
-        if (!mapping.mapForward(corner, &mapped))
-            return {};
 
     QRadialGradient gradient(uv, radiusUv);
     QColor core = m_brushColor;
@@ -105,8 +103,8 @@ QRect BrushTool::applyDab(QPainter &painter, const PerspectiveQuad &quad, const 
     painter.drawEllipse(QPointF(uv), radiusUv, radiusUv);
     painter.restore();
 
-    const QRectF uvBounds(uv.x() - radiusUv, uv.y() - radiusUv, radiusUv * 2.0, radiusUv * 2.0);
-    return uvToCanvas.mapRect(uvBounds).toAlignedRect().adjusted(-1, -1, 1, 1);
+    return uvToCanvas.mapRect(bounds).intersected(QRectF(0, 0, painter.device()->width(), painter.device()->height()))
+        .toAlignedRect().adjusted(-1, -1, 1, 1);
 }
 
 QRect BrushTool::drawStrokeTo(QImage &layer, const QPointF &uv)
@@ -116,7 +114,11 @@ QRect BrushTool::drawStrokeTo(QImage &layer, const QPointF &uv)
     const qreal distance = QLineF(m_lastUv, uv).length();
     if (distance < 1e-12)
         return {};
-    const int count = qMax(1, int(qCeil(distance / step)));
+    const qreal requested = std::ceil(distance / step);
+    if (!qIsFinite(requested) || requested > 2048
+        || !PerspectiveTransform::mapsDomain(m_mapping.forward(), QRectF(m_lastUv, uv).normalized()))
+        return {};
+    const int count = qMax(1, int(requested));
 
     QPainter painter(&layer);
     QRect dirty;

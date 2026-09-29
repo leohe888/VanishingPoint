@@ -3,6 +3,18 @@
 #include <QPainter>
 #include <QtMath>
 
+namespace {
+QSize extractionSize(const QRectF &rect)
+{
+    if (!qIsFinite(rect.width()) || !qIsFinite(rect.height()) || rect.width() < 1 || rect.height() < 1
+        || rect.width() > 8192 || rect.height() > 8192)
+        return {};
+    const QSize size(qCeil(rect.width()), qCeil(rect.height()));
+    return qint64(size.width()) * size.height() * 4 <= 64*1024*1024 ? size : QSize();
+}
+}
+
+
 bool MarqueeTool::beginCreate(const QVector<PerspectivePlane> &planes, const QPointF &point)
 {
     clear();
@@ -190,8 +202,9 @@ QRect MarqueeTool::fillFromPoint(const QPointF &point, QImage &paintLayer)
     if (dirty.isEmpty())
         return {};
 
-    paintLayer = m_selectionPaintBefore;
     QPainter painter(&paintLayer);
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    painter.drawImage(dirty, m_selectionPaintBefore, dirty);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
@@ -265,10 +278,13 @@ FloatingImage MarqueeTool::copy(const QImage &source, const QPointF &point) cons
     const QRectF rect = m_selectionRect.normalized();
     if (source.isNull() || rect.width() < 1 || rect.height() < 1 || m_selectionFaces.isEmpty())
         return {};
-    const QSize size(qMin(8192, qMax(1, qCeil(rect.width()))),
-                     qMin(8192, qMax(1, qCeil(rect.height()))));
+    const QSize size = extractionSize(rect);
+    if (size.isEmpty())
+        return {};
 
     QImage extracted(size, QImage::Format_ARGB32_Premultiplied);
+    if (extracted.isNull())
+        return {};
     extracted.fill(Qt::transparent);
     QPainter painter(&extracted);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
@@ -310,9 +326,12 @@ FloatingImage MarqueeTool::clone() const
         || rect.width() < 1 || rect.height() < 1) {
         return {};
     }
-    const QSize size(qMin(8192, qMax(1, qCeil(rect.width()))),
-                     qMin(8192, qMax(1, qCeil(rect.height()))));
+    const QSize size = extractionSize(rect);
+    if (size.isEmpty())
+        return {};
     QImage extracted(size, QImage::Format_ARGB32_Premultiplied);
+    if (extracted.isNull())
+        return {};
     extracted.fill(Qt::transparent);
     QPainter painter(&extracted);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);

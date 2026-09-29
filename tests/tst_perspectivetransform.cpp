@@ -49,7 +49,7 @@ private slots:
     void roundTripsPoints();
     void mapsPointsOutsideQuad();
     void failsOnNullResult();
-    void mapsBeyondHorizonWithoutError();
+    void rejectsBeyondHorizon();
     void rejectsWrongCornerCounts_data();
     void rejectsWrongCornerCounts();
     void rejectsDegenerateInputs_data();
@@ -63,9 +63,9 @@ private slots:
     void exposesForwardAndInverseTransforms();
     void ownsCalibrationSnapshot();
     void copiesAndReassignsValidity();
-    void delegatesHorizonPointsToQt();
-    void delegatesNonFinitePointsToQt_data();
-    void delegatesNonFinitePointsToQt();
+    void rejectsHorizonPoints();
+    void rejectsNonFinitePoints_data();
+    void rejectsNonFinitePoints();
 };
 
 void PerspectiveTransformTest::defaultInstanceIsInvalid()
@@ -175,7 +175,7 @@ void PerspectiveTransformTest::failsOnNullResult()
     QVERIFY(!transform.mapInverse(QPointF(0, 0), nullptr));
 }
 
-void PerspectiveTransformTest::mapsBeyondHorizonWithoutError()
+void PerspectiveTransformTest::rejectsBeyondHorizon()
 {
     const PerspectiveTransform transform(trapezoidSurface(), trapezoidCanvas());
     QVERIFY(transform.isValid());
@@ -191,11 +191,9 @@ void PerspectiveTransformTest::mapsBeyondHorizonWithoutError()
         probeY = horizonY - 100.0;
     QVERIFY(forward.m23() * probeY + forward.m33() <= 0);
 
-    // 本类只做映射、不校验定义域：越界时照样返回 true，给的是有限但无意义的坐标
-    QPointF result;
-    QVERIFY(transform.mapForward(QPointF(0, probeY), &result));
-    QVERIFY(qIsFinite(result.x()) && qIsFinite(result.y()));
-    QVERIFY(qAbs(result.x()) > 1e4 || qAbs(result.y()) > 1e4);
+    QPointF result(123,456);
+    QVERIFY(!transform.mapForward(QPointF(0, probeY), &result));
+    QCOMPARE(result, QPointF(123,456));
 }
 
 // 用明确的解析式提供预期结果，避免仅靠正反向往返掩盖成对的错误。
@@ -448,7 +446,7 @@ void PerspectiveTransformTest::copiesAndReassignsValidity()
     QVERIFY(!original.mapForward(QPointF(), &result));
 }
 
-void PerspectiveTransformTest::delegatesHorizonPointsToQt()
+void PerspectiveTransformTest::rejectsHorizonPoints()
 {
     const PerspectiveTransform transform(trapezoidSurface(), trapezoidCanvas());
     const QTransform &forward = transform.forward();
@@ -456,19 +454,23 @@ void PerspectiveTransformTest::delegatesHorizonPointsToQt()
     const qreal horizonY = -forward.m33() / forward.m23();
     QPointF result;
     // 不额外规定 Qt 在地平线的坐标截断方式，只验证委托行为。
-    for (const qreal y : {horizonY - 1, horizonY, horizonY + 1, horizonY + 100}) {
+    QVERIFY(!transform.mapForward(QPointF(0, horizonY), &result));
+    for (const qreal y : {horizonY - 1, horizonY + 1, horizonY + 100}) {
         const QPointF point(0, y);
-        QVERIFY(transform.mapForward(point, &result));
-        QCOMPARE(result, forward.map(point));
+        if (forward.m23()*y + forward.m33() <= 0) {
+            QVERIFY(!transform.mapForward(point, &result));
+        } else {
+            QVERIFY(transform.mapForward(point, &result));
+            comparePoints(result, forward.map(point));
+        }
     }
     const QTransform &inverse = transform.inverse();
     QVERIFY(qAbs(inverse.m23()) > 1e-9);
     const QPointF inverseHorizon(0, -inverse.m33() / inverse.m23());
-    QVERIFY(transform.mapInverse(inverseHorizon, &result));
-    QCOMPARE(result, inverse.map(inverseHorizon));
+    QVERIFY(!transform.mapInverse(inverseHorizon, &result));
 }
 
-void PerspectiveTransformTest::delegatesNonFinitePointsToQt_data()
+void PerspectiveTransformTest::rejectsNonFinitePoints_data()
 {
     QTest::addColumn<QPointF>("point");
     const qreal nan = std::numeric_limits<qreal>::quiet_NaN();
@@ -481,17 +483,17 @@ void PerspectiveTransformTest::delegatesNonFinitePointsToQt_data()
     QTest::newRow("negative-infinity-y") << QPointF(25, -infinity);
 }
 
-void PerspectiveTransformTest::delegatesNonFinitePointsToQt()
+void PerspectiveTransformTest::rejectsNonFinitePoints()
 {
     QFETCH(QPointF, point);
     const PerspectiveTransform transform(rectSurface(), rectSurface());
     QVERIFY(transform.isValid());
     QPointF result;
-    // 当前 bool 只表示变换和出参可用，不保证结果坐标有限。
-    QVERIFY(transform.mapForward(point, &result));
-    QVERIFY(!qIsFinite(result.x()) || !qIsFinite(result.y()));
-    QVERIFY(transform.mapInverse(point, &result));
-    QVERIFY(!qIsFinite(result.x()) || !qIsFinite(result.y()));
+    result = QPointF(123,456);
+    QVERIFY(!transform.mapForward(point, &result));
+    QCOMPARE(result, QPointF(123,456));
+    QVERIFY(!transform.mapInverse(point, &result));
+    QCOMPARE(result, QPointF(123,456));
 }
 
 QTEST_APPLESS_MAIN(PerspectiveTransformTest)

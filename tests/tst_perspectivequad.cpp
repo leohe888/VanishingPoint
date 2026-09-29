@@ -164,7 +164,7 @@ void PerspectiveQuadTest::validity_data()
         << Corners{QPointF(0, 0), QPointF(7.999, 0), QPointF(7.999, 100), QPointF(0, 100)} << false;
     QTest::newRow("edge-at-minimum")
         << Corners{QPointF(0, 0), QPointF(8, 0), QPointF(8, 100), QPointF(0, 100)} << true;
-    // 平行四边形的边均大于 8，叉乘大于 4，单独验证面积 100 的门槛。
+    // 平行四边形的边均大于 8，叉乘大于 4，单独验证实际面积 50 的门槛。
     QTest::newRow("area-below-minimum")
         << Corners{QPointF(0, 0), QPointF(10, 0), QPointF(20, 4.999), QPointF(10, 4.999)} << false;
     QTest::newRow("area-at-minimum")

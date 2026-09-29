@@ -159,7 +159,7 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveQuad &qu
         planeClip.closeSubpath();
         painter.setClipPath(planeClip, Qt::IntersectClip);
         painter.setPen(QPen(QColor(65, 182, 235, 145), 0.8 / m_viewScale));
-        const qreal safeGridSize = qMax(gridSize, 1.0);
+        const qreal safeGridSize = qMax(gridSize, 4.0 / m_viewScale);
         // Derive cell counts from current projected edge lengths so resizing
         // a plane changes the number of cells instead of stretching them.
         const qreal horizontalLength =
@@ -168,8 +168,8 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveQuad &qu
         const qreal verticalLength =
             (QLineF(quad.canvasCorners()[0], quad.canvasCorners()[3]).length()
              + QLineF(quad.canvasCorners()[1], quad.canvasCorners()[2]).length()) * 0.5;
-        const int horizontalDivisions = qMax(1, qRound(horizontalLength / safeGridSize));
-        const int verticalDivisions = qMax(1, qRound(verticalLength / safeGridSize));
+        const int horizontalDivisions = int(qBound(1.0, horizontalLength / safeGridSize, 256.0));
+        const int verticalDivisions = int(qBound(1.0, verticalLength / safeGridSize, 256.0));
         const PerspectiveTransform projection = quad.uvToCanvasTransform();
         for (int i = 1; i < horizontalDivisions; ++i) {
             const qreal t = qreal(i) / horizontalDivisions;

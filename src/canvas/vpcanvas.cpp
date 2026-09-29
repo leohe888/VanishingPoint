@@ -620,8 +620,7 @@ bool VpCanvas::extrudePlane(int sourcePlane, int edge)
         return false;
     PerspectivePlane plane = m_extrudePreview;
     // 拖出的面积太小当成误操作，不落盘
-    const QRectF bounds = plane.quad().canvasPolygon().boundingRect();
-    if (qAbs(bounds.width() * bounds.height()) <= 100.0)
+    if (!plane.quad().isProjectable())
         return false;
     plane.setParent(sourcePlane, edge); // 父子关系：删除平面时靠它解锁共用边
     plane.setAngleToParentDegrees(90.0);

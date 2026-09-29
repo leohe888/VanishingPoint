@@ -576,10 +576,10 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
 
     // 步骤 4：目标夹角减去当前夹角得到增量，并归约到 (-180°, 180°]。
     // 在三维中使用完整 Rodrigues 公式，保留平行于轴的分量，使一般四边形也按刚体旋转。
-    qreal delta = targetAngle - source.angleToParentDegrees();
-    while (delta > 180.0)
+    qreal delta = std::fmod(targetAngle, 360.0) - std::fmod(source.angleToParentDegrees(), 360.0);
+    if (delta > 180.0)
         delta -= 360.0;
-    while (delta <= -180.0)
+    if (delta <= -180.0)
         delta += 360.0;
     const qreal radians = qDegreesToRadians(delta);
     const double cosine = qCos(radians);

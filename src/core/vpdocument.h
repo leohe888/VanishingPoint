@@ -34,7 +34,7 @@ public:
     void lockPlaneEdge(int index, int edge);
     bool isPlaneLinked(int index) const;           // 是否与相邻垂直平面共边
     int selectedPlane() const { return m_selectedPlane; }
-    void setSelectedPlane(int index) { m_selectedPlane = index; }
+    void setSelectedPlane(int index) { m_selectedPlane = index >= 0 && index < m_planes.size() ? index : -1; }
     int nextSurfaceGroupId() const;                // 分配一个新的展开曲面分组号
     void removePlane(int index);                   // 删除平面（不影响任何已存在内容）
 
@@ -96,6 +96,8 @@ private:
         QImage paintAfter;            // 脏区域新像素
     };
 
+    HistoryEntry captureStructure() const;
+    void clearPaintTransaction();
     void restoreStructure(const HistoryEntry &entry); // 仅恢复结构部分
     void applyPaint(const QRect &rect, const QImage &pixels); // 把像素写回绘画层
 

@@ -112,7 +112,10 @@ QRect CloneTool::move(QImage &layer, const QPointF &point)
     if (!std::isfinite(distance) || distance < 1e-6)
         return {};
     // 防止鼠标越过地平线时产生无限量补点。
-    const int count = int(qMin(10000.0, std::ceil(distance / qMax(.5, m_diameter * .12))));
+    const qreal requested = std::ceil(distance / qMax(.5, m_diameter * .12));
+    if (requested > 2048 || !PerspectiveTransform::mapsDomain(m_targetMapping.forward(), QRectF(m_lastPosition, position).normalized()))
+        return {};
+    const int count = int(requested);
     QRect dirty;
     for (int i = 1; i <= count; ++i)
         dirty = dirty.united(applyDab(layer, m_lastPosition + (position - m_lastPosition) * (qreal(i) / count)));
@@ -190,6 +193,8 @@ QRect CloneTool::dabRect(const StampContext &context, const QPointF &position) c
         return {};
     const qreal radius = m_diameter / 2.0;
     const QRectF bounds(position.x() - radius, position.y() - radius, m_diameter, m_diameter);
+    if (!PerspectiveTransform::mapsDomain(context.targetToCanvas, bounds))
+        return {};
     return context.targetToCanvas.mapRect(bounds)
         .intersected(QRectF(context.source.rect())).toAlignedRect();
 }
@@ -206,11 +211,15 @@ bool CloneTool::renderDab(QImage &dab, const QRect &area, const QPointF &positio
     for (int y = 0; y < area.height(); ++y) {
         auto *row = reinterpret_cast<QRgb *>(dab.scanLine(y));
         for (int x = 0; x < area.width(); ++x) {
-            const QPointF target = context.canvasToTarget.map(QPointF(area.x() + x + .5, area.y() + y + .5));
+            QPointF target;
+            if (!PerspectiveTransform::mapPoint(context.canvasToTarget, QPointF(area.x() + x + .5, area.y() + y + .5), &target))
+                continue;
             const qreal distance = QLineF(target, position).length() / radius;
             if (!(distance < 1))
                 continue;
-            const QPointF source = context.sourceToCanvas.map(target + context.offset);
+            QPointF source;
+            if (!PerspectiveTransform::mapPoint(context.sourceToCanvas, target + context.offset, &source))
+                continue;
             if (!(source.x() >= 0 && source.y() >= 0 &&
                   source.x() < context.source.width() && source.y() < context.source.height()))
                 continue;

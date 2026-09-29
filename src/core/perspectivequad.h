@@ -11,6 +11,7 @@
 class PerspectiveQuad
 {
 public:
+    static constexpr qreal MinimumCanvasArea = 50.0;
     static constexpr int CornerCount = 4;   // 角点数量
     using Corners = std::array<QPointF, CornerCount>;
 
@@ -33,6 +34,7 @@ public:
     friend bool operator==(const PerspectiveQuad &a, const PerspectiveQuad &b)
     { return a.m_canvasCorners == b.m_canvasCorners && a.m_surfaceCorners == b.m_surfaceCorners; }
     bool isValid() const;
+    bool isProjectable() const;
     bool containsCanvasPoint(const QPointF &point) const;
     int controlPointIndexAt(const QPointF &point, qreal tolerance) const;
     int edgeIndexAt(const QPointF &point, qreal tolerance) const;

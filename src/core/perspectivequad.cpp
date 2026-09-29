@@ -96,8 +96,8 @@ bool PerspectiveQuad::isValid() const
         // 鞋带公式累加有向面积的两倍，兼容两种角点绕序。
         twiceArea += a.x() * b.y() - b.x() * a.y();
     }
-    // 面积至少为 100 个画布坐标单位的平方，避免面片过小。
-    if (qAbs(twiceArea) < 100.0)
+    // 实际面积是鞋带和的一半。
+    if (qAbs(twiceArea) / 2.0 < MinimumCanvasArea)
         return false;
 
     const QPolygonF unit{QPointF(0, 0), QPointF(1, 0),
@@ -163,4 +163,14 @@ PerspectiveTransform PerspectiveQuad::uvToCanvasTransform() const
 {
     return {{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)},
             canvasPolygon()};
+}
+
+bool PerspectiveQuad::isProjectable() const
+{
+    if (!isValid())
+        return false;
+    for (const QPointF &p : m_surfaceCorners)
+        if (!qIsFinite(p.x()) || !qIsFinite(p.y()))
+            return false;
+    return surfaceToCanvasTransform().isValid();
 }

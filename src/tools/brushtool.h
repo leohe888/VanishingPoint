@@ -36,6 +36,7 @@ private:
     QRect applyDab(QPainter &painter, const PerspectiveQuad &quad, const QPointF &uv) const;
     QRect drawStrokeTo(QImage &layer, const QPointF &uv);
 
+    PerspectiveTransform m_mapping;
     PerspectiveQuad m_quad;          // 本笔锚定的面片
     QPointF m_lastUv;
     QColor m_brushColor = QColor("#e85d4a");
