@@ -9,6 +9,7 @@
 #include <QIODevice>
 #include <QPainter>
 #include <QLineF>
+#include <cmath>
 
 VpController::VpController(QObject *parent) : QObject(parent)
 {
@@ -175,6 +176,13 @@ void VpController::setPlaneAngle(qreal angle)
 {
     if (!canSetSelectedPlaneAngle() || !qIsFinite(angle))
         return;
+    qreal normalized = std::fmod(angle, 360.0);
+    if (normalized == 0 && angle > 0)
+        normalized = 360;
+    else if (normalized < 0)
+        normalized += 360;
+    if (normalized == planeAngle())
+        return;
     cancelInteraction();
     const int index = m_document.selectedPlane();
     const PerspectivePlane candidate = rotatePlaneAroundEdge(
@@ -316,7 +324,7 @@ void VpController::pointerPress(const QPointF &point, qreal viewScale, Qt::Keybo
         // 先检测控制点。后创建的平面在上层，先被检查
         for (int i = m_document.planes().size() - 1; i >= 0; --i) {
             const int candidateHandle = m_document.planes()[i].quad().controlPointIndexAt(point, tolerance);
-            if (candidateHandle >= 0 && m_document.planes()[i].controlPointEditable(candidateHandle)) {
+            if (candidateHandle >= 0 && m_document.planes()[i].controlPointEditable(candidateHandle, modifiers & Qt::ControlModifier)) {
                 planeIndex = i;
                 handle = candidateHandle;
                 break;

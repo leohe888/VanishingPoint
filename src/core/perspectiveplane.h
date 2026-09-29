@@ -42,7 +42,7 @@ public:
             && a.m_parentPlaneIndex == b.m_parentPlaneIndex && a.m_parentEdgeIndex == b.m_parentEdgeIndex
             && a.m_angleToParentDegrees == b.m_angleToParentDegrees && a.m_hasCustomAngle == b.m_hasCustomAngle;
     }
-    bool controlPointEditable(int handle) const;
+    bool controlPointEditable(int handle, bool extrude = false) const;
     bool preservesLockedEdges(const PerspectivePlane &candidate) const;
 
     bool hasCustomAngle() const { return m_hasCustomAngle; }

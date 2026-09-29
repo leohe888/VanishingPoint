@@ -36,10 +36,10 @@ void SceneRenderer::renderGuides(QPainter &painter, qreal viewScale, const Guide
     const QPointF cursorPoint = guides.cursorPoint;
     for (int i = 0; i < m_doc.planes().size(); ++i) {
         drawPlaneGuides(painter, m_doc.planes()[i].quad(), i == m_doc.selectedPlane(),
-                        editHandlesVisible, gridSize, viewScale, i);
+                        editHandlesVisible, gridSize, viewScale, guides.extrudeHandles, i);
     }
     if (extrudePreview)
-        drawPlaneGuides(painter, extrudePreview->quad(), true, false, gridSize, viewScale);
+        drawPlaneGuides(painter, extrudePreview->quad(), true, false, gridSize, viewScale, false);
 
     // 先画连线：已确定角点之间的边，以及连到光标的预览边。
     painter.save();
@@ -120,7 +120,7 @@ void SceneRenderer::renderFloatingImage(QPainter &painter, const FloatingImage &
 // 绘制面片的编辑辅助元素：外框、内部网格，以及选中且处于编辑
 // 工具时的控制点方块。
 void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveQuad &quad, bool selected,
-                                    bool showHandles, qreal gridSize, qreal viewScale,
+                                    bool showHandles, qreal gridSize, qreal viewScale, bool extrudeHandles,
                                     int planeIndex) const
 {
     painter.save();
@@ -172,7 +172,7 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveQuad &qu
     if (selected && showHandles) {
         const QVector<QPointF> points = quad.controlPoints();
         for (int i = 0; i < points.size(); ++i) {
-            if (planeIndex >= 0 && !m_doc.planes()[planeIndex].controlPointEditable(i))
+            if (planeIndex >= 0 && !m_doc.planes()[planeIndex].controlPointEditable(i, extrudeHandles))
                 continue;
             const qreal radius = HandleHalfSize / viewScale;
             painter.setPen(QPen(QColor("#0e526e"), 1.0 / viewScale));

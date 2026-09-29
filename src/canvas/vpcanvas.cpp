@@ -81,6 +81,7 @@ void VpCanvas::paint(QPainter *painter)
     guides.creationPoints = m_controller.creationPoints();
     guides.extrudePreview = m_controller.extrudePreview();
     guides.editHandlesVisible = m_controller.tool() == Tool::EditPlane;
+    guides.extrudeHandles = QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
     guides.antsPhase = m_antsPhase;
     guides.gridSize = m_controller.gridSize();
     if (m_controller.tool() == Tool::CreatePlane)
@@ -154,6 +155,8 @@ void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
 
 void VpCanvas::keyPressEvent(QKeyEvent *event)
 {
+    if (event->key() == Qt::Key_Control)
+        update();
     if (event->key() == Qt::Key_Alt) {
         updateNavigationCursor(true);
         event->accept();
@@ -294,6 +297,8 @@ void VpCanvas::updateNavigationCursor(bool alt)
 
 void VpCanvas::keyReleaseEvent(QKeyEvent *event)
 {
+    if (event->key() == Qt::Key_Control)
+        update();
     if (event->key() == Qt::Key_Alt) {
         updateNavigationCursor(false);
         event->accept();

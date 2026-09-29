@@ -30,12 +30,18 @@ bool PlaneEditTool::update(const QPointF &point, PerspectivePlane *result)
 {
     if (!result)
         return false;
+    if (point == m_pressPoint && m_mode != Mode::Extrude && m_mode != Mode::Rotate) {
+        *result = m_initialPlane;
+        return true;
+    }
     PerspectivePlane candidate = m_initialPlane;
     if ((m_mode == Mode::Extrude)) {
         candidate = extrudePerpendicularPlane(
             m_initialPlane, m_edgeIndex, point, m_pressPoint, m_canvasSize);
     } else if ((m_mode == Mode::Rotate)) {
         const int edge = m_rotationEdgeIndex;
+        if (edge < 0 || edge >= 4)
+            return false;
         const QPointF seamMidpoint =
             (m_initialPlane.quad().canvasCorners()[edge] +
              m_initialPlane.quad().canvasCorners()[(edge + 1) % PerspectiveQuad::CornerCount]) / 2.0;
@@ -50,6 +56,10 @@ bool PlaneEditTool::update(const QPointF &point, PerspectivePlane *result)
             delta += 2.0 * M_PI;
         m_accumulatedRotation += qRadiansToDegrees(delta);
         m_lastPointerAngle = currentAngle;
+        if (qAbs(m_accumulatedRotation) < 1e-10) {
+            *result = m_initialPlane;
+            return true;
+        }
         candidate = rotatePlaneAroundEdge(
             m_initialPlane, edge,
             m_initialPlane.angleToParentDegrees() + m_accumulatedRotation, m_canvasSize);

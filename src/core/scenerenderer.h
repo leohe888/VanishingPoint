@@ -18,6 +18,7 @@ public:
         QVector<QPointF> creationPoints;
         const PerspectivePlane *extrudePreview = nullptr;
         bool editHandlesVisible = false;
+        bool extrudeHandles = false;
         qreal antsPhase = 0;
         qreal gridSize = 50;
         QPointF cursorPoint;
@@ -36,7 +37,7 @@ private:
     // 绘制面片的编辑辅助元素：外框、内部网格，以及选中且处于编辑
     // 工具时的控制点方块。
     void drawPlaneGuides(QPainter &painter, const PerspectiveQuad &quad, bool selected,
-                         bool showHandles, qreal gridSize, qreal viewScale,
+                         bool showHandles, qreal gridSize, qreal viewScale, bool extrudeHandles,
                          int planeIndex = -1) const;
 
     const VpDocument &m_doc;   // 被渲染的文档（只读）

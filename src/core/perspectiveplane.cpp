@@ -615,13 +615,15 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
     return result;
 }
 
-bool PerspectivePlane::controlPointEditable(int handle) const
+bool PerspectivePlane::controlPointEditable(int handle, bool extrude) const
 {
     if (handle < 0 || handle >= 8)
         return false;
     if (handle < 4)
         return !isEdgeLocked(handle) && !isEdgeLocked((handle + 3) % 4);
     const int edge = handle - 4;
+    if (extrude)
+        return !isEdgeLocked(edge);
     return !isEdgeLocked(edge) && !isEdgeLocked((edge + 1) % 4)
         && !isEdgeLocked((edge + 3) % 4);
 }

@@ -59,6 +59,15 @@ private slots:
         QCOMPARE(layer,before); QVERIFY(timer.elapsed()<2000);
         QVERIFY(tool.move(layer,{20,20}).isEmpty()); QCOMPARE(layer,before);
     }
+    void historyBudgetCountsDeletedBitmapSnapshots() {
+        VpDocument doc;
+        for(int i=0;i<18;++i) {
+            QImage image(2000,1000,QImage::Format_ARGB32); image.fill(QColor(i,0,0));
+            doc.addFloatingImage(image); doc.removeFloatingImage(0);
+        }
+        int count=0; while(doc.undo()) ++count;
+        QVERIFY(count>0); QVERIFY(count<36);
+    }
 };
 QTEST_GUILESS_MAIN(AuditBoundariesTest)
 #include "tst_auditboundaries.moc"

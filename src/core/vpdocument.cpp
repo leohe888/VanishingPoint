@@ -2,6 +2,7 @@
 
 #include <QPainter>
 #include <QImageReader>
+#include <QSet>
 
 namespace {
 // 历史条目可能包含多张大纹理的脏矩形，因此限制历史数量以防内存失控。
@@ -409,8 +410,18 @@ void VpDocument::commitHistory()
     ++m_historyIndex;
     auto historyBytes = [this] {
         qint64 bytes = 0;
-        for (const HistoryEntry &state : m_history)
+        QSet<qint64> counted;
+        for (const FloatingImage &image : m_floatingImages)
+            counted.insert(image.bitmap.cacheKey());
+        for (const HistoryEntry &state : m_history) {
             bytes += state.paintBefore.sizeInBytes() + state.paintAfter.sizeInBytes();
+            for (const FloatingImage &image : state.floatingImages) {
+                if (!counted.contains(image.bitmap.cacheKey())) {
+                    counted.insert(image.bitmap.cacheKey());
+                    bytes += image.bitmap.sizeInBytes();
+                }
+            }
+        }
         return bytes;
     };
     while (m_history.size() > MaxHistoryStates

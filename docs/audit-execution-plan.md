@@ -25,3 +25,7 @@
 - 回退使用对应阶段的 git revert；基线仅供定位，不执行会丢失后续工作的 reset。
 
 进展与最终覆盖结论见 audit-execution-log.md。
+
+## 执行状态
+
+阶段 0–5 已完成。最终 Debug 构建及 15/15 测试通过。完整逐项处理结果、评估后保留的候选、资源预算限制和未做的压力验证见 audit-coverage.md；提交与失败修正记录见 audit-execution-log.md。

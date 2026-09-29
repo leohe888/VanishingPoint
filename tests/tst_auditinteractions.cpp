@@ -167,6 +167,26 @@ private slots:
         QVERIFY(!controller->openImage(QUrl::fromLocalFile(directory.filePath("missing.png"))));
         QCOMPARE(rendered(doc),before); QVERIFY(doc.canUndo());
     }
+    void perspectiveClickAndUnchangedAngleDoNotCreateHistory() {
+        AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document();
+        auto p=plane(); p.quad().setCanvasCorners({QPointF(100,100),QPointF(240,100),QPointF(280,240),QPointF(80,240)});
+        doc.appendPlane(p); auto child=p; child.setParent(0,0); doc.appendPlane(child); doc.setSelectedPlane(1); doc.resetHistory();
+        controller->setPlaneAngle(90); QVERIFY(!doc.canUndo()); QVERIFY(!doc.planes()[1].hasCustomAngle());
+        controller->pointerPress({180,240},1,Qt::AltModifier); controller->pointerRelease({180,240},Qt::AltModifier);
+        QVERIFY(!doc.canUndo()); QVERIFY(doc.planes()[1]==child);
+        doc.removePlane(1); doc.resetHistory();
+        controller->pointerPress({170,170},1,Qt::NoModifier); controller->pointerRelease({170,170},Qt::NoModifier);
+        QVERIFY(!doc.canUndo()); QVERIFY(doc.planes()[0]==p);
+    }
+    void extrusionCanUseAdjacentUnlockedEdgeAndCannotRepeatSharedEdge() {
+        AuditCanvas canvas; setup(canvas); auto *controller=canvas.controller(); auto &doc=controller->document(); auto p=plane();
+        p.quad().setCanvasCorners({QPointF(100,100),QPointF(220,100),QPointF(220,200),QPointF(100,200)});
+        p.setEdgeLocked(0,true); doc.appendPlane(p); doc.resetHistory();
+        controller->pointerPress({220,150},1,Qt::ControlModifier); controller->pointerRelease({240,100},Qt::ControlModifier);
+        QCOMPARE(doc.planes().size(),2); QVERIFY(doc.planes()[0].isEdgeLocked(1));
+        controller->pointerPress({220,150},1,Qt::ControlModifier); controller->pointerRelease({260,100},Qt::ControlModifier);
+        QCOMPARE(doc.planes().size(),2); QCOMPARE(doc.planes()[0].quad().canvasCorners(),p.quad().canvasCorners());
+    }
 };
 QTEST_MAIN(AuditInteractionsTest)
 #include "tst_auditinteractions.moc"
