@@ -7,6 +7,7 @@
 #include "tools/brushtool.h"
 #include "tools/clonetool.h"
 #include "core/vpdocument.h"
+#include "core/tooltypes.h"
 
 #include <QByteArray>
 #include <QObject>
@@ -19,7 +20,7 @@ class VpController final : public QObject
     Q_OBJECT
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY historyChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY historyChanged)
-    Q_PROPERTY(Tool tool READ tool WRITE setTool NOTIFY toolChanged)
+    Q_PROPERTY(Tools::Tool tool READ tool WRITE setTool NOTIFY toolChanged)
     Q_PROPERTY(int availableTools READ availableTools NOTIFY toolAvailabilityChanged)
     Q_PROPERTY(int brushDiameter READ brushDiameter WRITE setBrushDiameter NOTIFY brushChanged)
     Q_PROPERTY(int brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushChanged)
@@ -34,18 +35,15 @@ class VpController final : public QObject
     Q_PROPERTY(bool planeAngleEditable READ planeAngleEditable NOTIFY planeAngleChanged)
 
 public:
-    enum Tool { CreatePlane, EditPlane, Marquee, CloneStamp, Brush, Transform, Hand, Zoom };
-    Q_ENUM(Tool)
-
     explicit VpController(QObject *parent = nullptr);
 
     VpDocument &document() { return m_document; }
     const VpDocument &document() const { return m_document; }
 
-    Tool tool() const { return m_tool; }
-    void setTool(Tool tool);
+    Tools::Tool tool() const { return m_tool; }
+    void setTool(Tools::Tool tool);
     int availableTools() const;
-    bool isToolEnabled(Tool tool) const;
+    bool isToolEnabled(Tools::Tool tool) const;
 
     int brushDiameter() const { return m_brushTool.diameter(); }
     void setBrushDiameter(int value);
@@ -157,7 +155,7 @@ private:
     CloneTool m_cloneTool;
     QImage m_cloneSource;
     QByteArray m_cloneSourceKey;
-    Tool m_tool = CreatePlane;
-    int m_availableTools = (1 << CreatePlane) | (1 << Hand) | (1 << Zoom);
+    Tools::Tool m_tool = Tools::CreatePlane;
+    int m_availableTools = (1 << Tools::CreatePlane) | (1 << Tools::Hand) | (1 << Tools::Zoom);
     int m_gridSize = 50;
 };

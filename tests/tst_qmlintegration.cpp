@@ -11,6 +11,7 @@ class QmlIntegrationTest : public QObject {
     Q_OBJECT
 private slots:
     void redoShortcutCallsRedo() {
+        qmlRegisterUncreatableMetaObject(Tools::staticMetaObject,"VanishingPoint",1,0,"Tools","Enums only");
         qmlRegisterType<VpCanvas>("VanishingPoint",1,0,"VpCanvas");
         qmlRegisterUncreatableType<VpController>("VanishingPoint",1,0,"VpController","Application owns controller");
         VpController controller;
@@ -23,7 +24,7 @@ private slots:
         auto *canvas=root->findChild<VpCanvas*>(); QVERIFY(canvas);
         QCOMPARE(canvas->controller(), &controller);
         auto *window = qobject_cast<QQuickWindow *>(root); QVERIFY(window);
-        const auto toolButton = [window](VpController::Tool tool) -> QObject * {
+        const auto toolButton = [window](Tools::Tool tool) -> QObject * {
             const auto find = [tool](auto &&self, QQuickItem *item) -> QQuickItem * {
                 if (item->property("toolId").isValid() && item->property("toolId").toInt() == tool)
                     return item;
@@ -34,8 +35,11 @@ private slots:
             };
             return find(find, window->contentItem());
         };
-        auto *brush = toolButton(VpController::Brush);
-        auto *transform = toolButton(VpController::Transform);
+        for (auto tool : {Tools::CreatePlane, Tools::EditPlane, Tools::Marquee, Tools::CloneStamp,
+                          Tools::Brush, Tools::Transform, Tools::Hand, Tools::Zoom})
+            QVERIFY(toolButton(tool));
+        auto *brush = toolButton(Tools::Brush);
+        auto *transform = toolButton(Tools::Transform);
         QVERIFY(brush); QVERIFY(transform);
         QObject *brushShortcut = nullptr;
         for (auto *object : brush->findChildren<QObject*>())
@@ -68,9 +72,11 @@ private slots:
         QVERIFY(!brushShortcut->property("enabled").toBool());
         canvas->controller()->redo();
         QVERIFY(brush->property("enabled").toBool());
-        canvas->controller()->setTool(VpController::Brush);
+        QVERIFY(QMetaObject::invokeMethod(brushShortcut, "activated", Qt::DirectConnection));
+        QCOMPARE(controller.tool(), Tools::Brush);
+        QVERIFY(brush->property("selected").toBool());
         QVERIFY(canvas->controller()->openImage(QUrl::fromLocalFile(path)));
-        QCOMPARE(canvas->controller()->tool(), VpController::CreatePlane);
+        QCOMPARE(canvas->controller()->tool(), Tools::CreatePlane);
         QVERIFY(!brush->property("enabled").toBool());
         // 重建视图与引擎，不清空应用层控制器的文档和历史。
         controller.document().beginEdit(); controller.document().appendPlane(makeTestPlane());

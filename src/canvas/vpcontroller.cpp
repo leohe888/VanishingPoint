@@ -31,17 +31,17 @@ VpController::VpController(QObject *parent) : QObject(parent)
 
 int VpController::availableTools() const
 {
-    int tools = (1 << CreatePlane) | (1 << Hand) | (1 << Zoom);
+    int tools = (1 << Tools::CreatePlane) | (1 << Tools::Hand) | (1 << Tools::Zoom);
     if (!m_document.planes().isEmpty())
-        tools |= (1 << EditPlane) | (1 << Marquee) | (1 << CloneStamp) | (1 << Brush);
+        tools |= (1 << Tools::EditPlane) | (1 << Tools::Marquee) | (1 << Tools::CloneStamp) | (1 << Tools::Brush);
     if (!m_document.floatingImages().isEmpty())
-        tools |= 1 << Transform;
+        tools |= 1 << Tools::Transform;
     return tools;
 }
 
-bool VpController::isToolEnabled(Tool tool) const
+bool VpController::isToolEnabled(Tools::Tool tool) const
 {
-    return tool >= CreatePlane && tool <= Zoom && (availableTools() & (1 << tool));
+    return tool >= Tools::CreatePlane && tool <= Tools::Zoom && (availableTools() & (1 << tool));
 }
 
 void VpController::refreshToolAvailability()
@@ -53,13 +53,13 @@ void VpController::refreshToolAvailability()
     }
     // 等结构事务结束再切换，避免取消正在烘焙或删除的内容。
     if (!m_document.editActive() && !isToolEnabled(m_tool))
-        setTool(isToolEnabled(EditPlane) ? EditPlane : CreatePlane);
+        setTool(isToolEnabled(Tools::EditPlane) ? Tools::EditPlane : Tools::CreatePlane);
 }
 
-void VpController::setTool(Tool tool)
+void VpController::setTool(Tools::Tool tool)
 {
     if (!isToolEnabled(tool)) {
-        emit statusMessage(tool == Transform
+        emit statusMessage(tool == Tools::Transform
             ? tr("请先粘贴或框选生成浮动图像，再使用变换工具。")
             : tr("请先创建平面，再使用此工具。"));
         emit toolChanged();
@@ -68,14 +68,14 @@ void VpController::setTool(Tool tool)
 
     const auto statusForTool = [tool]() {
         switch (tool) {
-        case CreatePlane: return tr("依次单击四个角点以创建平面");
-        case EditPlane: return tr("拖动内部平移平面，拖动控制点调整形状；Ctrl 从边缘拖出垂直平面；Alt 拖动共享边对边的中点调整夹角");
-        case Marquee: return tr("拖动创建透视选区；Shift 正方形；Alt 拖动复制内容；Ctrl 拖动克隆为浮动图像");
-        case CloneStamp: return tr("按住 Alt 单击设置仿制源，再在目标位置绘制");
-        case Brush: return tr("拖动以绘制笔触");
-        case Hand: return tr("拖动以滚动图像");
-        case Zoom: return tr("单击放大，按住 Alt 单击缩小");
-        case Transform: return tr("拖动控制点缩放，角点外侧拖动旋转；Shift 等比缩放 / 15° 旋转；Alt 中心缩放");
+        case Tools::CreatePlane: return tr("依次单击四个角点以创建平面");
+        case Tools::EditPlane: return tr("拖动内部平移平面，拖动控制点调整形状；Ctrl 从边缘拖出垂直平面；Alt 拖动共享边对边的中点调整夹角");
+        case Tools::Marquee: return tr("拖动创建透视选区；Shift 正方形；Alt 拖动复制内容；Ctrl 拖动克隆为浮动图像");
+        case Tools::CloneStamp: return tr("按住 Alt 单击设置仿制源，再在目标位置绘制");
+        case Tools::Brush: return tr("拖动以绘制笔触");
+        case Tools::Hand: return tr("拖动以滚动图像");
+        case Tools::Zoom: return tr("单击放大，按住 Alt 单击缩小");
+        case Tools::Transform: return tr("拖动控制点缩放，角点外侧拖动旋转；Shift 等比缩放 / 15° 旋转；Alt 中心缩放");
         }
         return QString();
     };
@@ -87,7 +87,7 @@ void VpController::setTool(Tool tool)
     cancelInteraction();
     if (!isToolEnabled(tool))
         return;
-    if (tool == Transform && m_document.selectedFloatingImage() < 0)
+    if (tool == Tools::Transform && m_document.selectedFloatingImage() < 0)
         m_document.setSelectedFloatingImage(m_document.floatingImages().size() - 1);
     m_tool = tool;
     emit statusMessage(statusForTool());
@@ -234,7 +234,7 @@ void VpController::pasteImage()
 
 bool VpController::beginBrush(const QPointF &point)
 {
-    if (!isToolEnabled(Brush))
+    if (!isToolEnabled(Tools::Brush))
         return false;
     m_document.beginPaintTransaction();
     const QRect dirty = m_brushTool.begin(m_document.paintLayer(), m_document.planes(),
@@ -286,13 +286,13 @@ const QImage &VpController::cloneSource()
 
 bool VpController::pickCloneSource(const QPointF &point)
 {
-    return isToolEnabled(CloneStamp)
+    return isToolEnabled(Tools::CloneStamp)
         && m_cloneTool.pickSource(m_document.planes(), m_document.background().size(), point);
 }
 
 bool VpController::beginClone(const QPointF &point)
 {
-    if (!isToolEnabled(CloneStamp) || !m_cloneTool.hasSource())
+    if (!isToolEnabled(Tools::CloneStamp) || !m_cloneTool.hasSource())
         return false;
     m_document.beginPaintTransaction();
     const QRect dirty = m_cloneTool.begin(m_document.paintLayer(), cloneSource(),
@@ -341,7 +341,7 @@ void VpController::pointerPress(const QPointF &point, qreal viewScale, Qt::Keybo
     if (beginFloatingImageInteraction(point, viewScale)) // 浮动图像浮在最上层，先于任何工具处理
         return;
     switch (tool()) {
-    case Tool::EditPlane: {
+    case Tools::EditPlane: {
         const qreal tolerance = qMax(8.0 / qMax(viewScale, 1e-6), 4.0);
         int planeIndex = -1;
         int handle = -1;
@@ -398,7 +398,7 @@ void VpController::pointerPress(const QPointF &point, qreal viewScale, Qt::Keybo
         emit repaintRequested();
         return;
     }
-    case Tool::CreatePlane:
+    case Tools::CreatePlane:
         m_createTool.addPoint(point);
         if (m_createTool.finished())
             finishPlaneCreation();
@@ -406,12 +406,12 @@ void VpController::pointerPress(const QPointF &point, qreal viewScale, Qt::Keybo
             reportCreateProgress();
         emit repaintRequested();
         return;
-    case Tool::Brush: {
+    case Tools::Brush: {
         if (beginBrush(point))
             emit repaintRequested();
         return;
     }
-    case Tool::CloneStamp: {
+    case Tools::CloneStamp: {
         // Alt+单击只取源点，不落笔
         if (modifiers & Qt::AltModifier) {
             const bool picked = pickCloneSource(point);
@@ -428,7 +428,7 @@ void VpController::pointerPress(const QPointF &point, qreal viewScale, Qt::Keybo
             emit repaintRequested();
         return;
     }
-    case Tool::Marquee: {
+    case Tools::Marquee: {
         QPointF surface;
         const bool insideSelection = m_marqueeTool.contains(point)
                                      && m_marqueeTool.mapToSurface(point, &surface);
@@ -478,7 +478,7 @@ void VpController::pointerMove(const QPointF &point, Qt::KeyboardModifiers modif
         return;
     }
     switch (tool()) {
-    case Tool::EditPlane: {
+    case Tools::EditPlane: {
         if (m_editPlaneIndex < 0)
             return;
         PerspectivePlane candidate;
@@ -496,13 +496,13 @@ void VpController::pointerMove(const QPointF &point, Qt::KeyboardModifiers modif
         emit repaintRequested();
         return;
     }
-    case Tool::Brush:
+    case Tools::Brush:
         if (brushDrawing()) {
             moveBrush(point);
             emit repaintRequested();
         }
         return;
-    case Tool::CloneStamp:
+    case Tools::CloneStamp:
         if (cloneDrawing()) {
             moveClone(point);
             emit repaintRequested();
@@ -522,7 +522,7 @@ void VpController::pointerRelease(const QPointF &point, Qt::KeyboardModifiers mo
         return;
     pointerMove(point, modifiers);
     switch (tool()) {
-    case Tool::EditPlane: {
+    case Tools::EditPlane: {
         if (m_editPlaneIndex < 0)
             return;
         const bool extruding = m_editTool.extruding();
@@ -538,19 +538,19 @@ void VpController::pointerRelease(const QPointF &point, Qt::KeyboardModifiers mo
         emit repaintRequested();
         return;
     }
-    case Tool::Brush:
+    case Tools::Brush:
         if (brushDrawing()) {
             endBrush();
             emit repaintRequested();
         }
         return;
-    case Tool::CloneStamp:
+    case Tools::CloneStamp:
         if (cloneDrawing()) {
             endClone();
             emit repaintRequested();
         }
         return;
-    case Tool::Marquee: {
+    case Tools::Marquee: {
         if (!m_marqueeTool.active())
             return;
         updateSelection(point, modifiers);
@@ -588,7 +588,7 @@ void VpController::finishPlaneCreation()
     m_document.setSelectedPlane(index);
     m_document.commitEdit(true);
 
-    setTool(Tool::EditPlane);
+    setTool(Tools::EditPlane);
     notifyPlaneAngleChanged(); // 新平面是独立平面，夹角滑杆转为不可调
     postStatus(tr("平面已创建，已自动进入编辑平面工具。"));
 }
@@ -656,16 +656,16 @@ void VpController::reportCreateProgress()
 
 bool VpController::cursorPreviewVisible() const
 {
-    if (tool() == Tool::Brush)
+    if (tool() == Tools::Brush)
         return true;
-    if (tool() == Tool::CloneStamp)
+    if (tool() == Tools::CloneStamp)
         return hasCloneSource();
-    return tool() == Tool::CreatePlane && m_createTool.creating();
+    return tool() == Tools::CreatePlane && m_createTool.creating();
 }
 
 bool VpController::beginFloatingImageInteraction(const QPointF &point, qreal viewScale)
 {
-    if (tool() == Tool::Transform && m_document.selectedFloatingImage() >= 0) {
+    if (tool() == Tools::Transform && m_document.selectedFloatingImage() >= 0) {
         const FloatingImage &image = m_document.floatingImage(m_document.selectedFloatingImage());
         const int handle = FloatingImageTransformTool::handleAt(image, point, viewScale);
         const int corner = handle < 0
@@ -695,7 +695,7 @@ bool VpController::beginFloatingImageInteraction(const QPointF &point, qreal vie
     if (hitImage) {
         // 选框工具下只有已选中的图像才拦截点击；点到未选中的图像留给选区建立，
         // 否则贴过图的平面上就再也拖不出新选区。
-        if (tool() == Tool::Marquee && grabbed != m_document.selectedFloatingImage())
+        if (tool() == Tools::Marquee && grabbed != m_document.selectedFloatingImage())
             return false;
         m_draggedFloatingImageIndex = grabbed;
         m_document.setSelectedFloatingImage(grabbed);
@@ -724,7 +724,7 @@ void VpController::updateFloatingImageInteraction(const QPointF &point,
         return;
     }
     const FloatingImage &start = m_floatingImageTransform.startImage();
-    if (tool() == Tool::Transform && start.surfaceAttached) {
+    if (tool() == Tools::Transform && start.surfaceAttached) {
         QPointF surface;
         if (start.mapCanvasToPlacement(point, &surface)) {
             m_document.setFloatingImageOrigin(

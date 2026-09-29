@@ -39,13 +39,13 @@ private slots:
     {
         VpController first, second;
         CanvasProbe canvas; canvas.setController(&first);
-        first.setTool(VpController::Hand);
+        first.setTool(Tools::Hand);
         QCOMPARE(canvas.cursor().shape(), Qt::OpenHandCursor);
         canvas.setController(&second);
         QCOMPARE(canvas.cursor().shape(), Qt::ArrowCursor);
-        first.setTool(VpController::Zoom);
+        first.setTool(Tools::Zoom);
         QCOMPARE(canvas.cursor().shape(), Qt::ArrowCursor);
-        second.setTool(VpController::Hand);
+        second.setTool(Tools::Hand);
         QCOMPARE(canvas.cursor().shape(), Qt::OpenHandCursor);
     }
 
@@ -108,7 +108,7 @@ private slots:
         document.beginEdit();
         document.appendPlane(makeTestPlane());
         document.commitEdit(true);
-        canvas.controller()->setTool(VpController::Brush);
+        canvas.controller()->setTool(Tools::Brush);
         QVERIFY(canvas.controller()->beginBrush(QPointF(50, 40)));
         QVERIFY(document.hasPaintContent());
         canvas.undo();
@@ -160,7 +160,7 @@ private slots:
         canvas.setSize(QSizeF(500, 400));
         canvas.setZoom(1);
         canvas.scrollTo(0.25, 0.25);
-        canvas.controller()->setTool(VpController::Hand);
+        canvas.controller()->setTool(Tools::Hand);
         QMouseEvent press(QEvent::MouseButtonPress, QPointF(100, 100), QPointF(100, 100),
                           Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
         canvas.mousePressEvent(&press);
@@ -169,7 +169,7 @@ private slots:
         canvas.mouseReleaseEvent(&release);
         QCOMPARE(canvas.horizontalPosition(), 0.2);
         QCOMPARE(canvas.verticalPosition(), 0.2);
-        canvas.controller()->setTool(VpController::Zoom);
+        canvas.controller()->setTool(Tools::Zoom);
         canvas.mousePressEvent(&press);
         QCOMPARE(canvas.zoom(), 2.0);
         QMouseEvent altPress(QEvent::MouseButtonPress, QPointF(100, 100), QPointF(100, 100),

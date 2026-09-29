@@ -24,8 +24,8 @@ void VpControllerTest::qmlPropertiesNotifyAndClamp()
     QSignalSpy brushChanged(&controller, &VpController::brushChanged);
     QSignalSpy gridChanged(&controller, &VpController::gridSizeChanged);
 
-    QVERIFY(controller.setProperty("tool", VpController::Brush));
-    QCOMPARE(controller.tool(), VpController::Brush);
+    QVERIFY(controller.setProperty("tool", Tools::Brush));
+    QCOMPARE(controller.tool(), Tools::Brush);
     QCOMPARE(toolChanged.size(), 1);
     QVERIFY(controller.setProperty("brushDiameter", 37));
     QCOMPARE(controller.brushDiameter(), 37);
@@ -41,16 +41,16 @@ void VpControllerTest::toolAvailabilityFollowsDocument()
     auto &doc = controller.document();
     QSignalSpy availability(&controller, &VpController::toolAvailabilityChanged);
     QSignalSpy status(&controller, &VpController::statusMessage);
-    for (auto tool : {VpController::EditPlane, VpController::Marquee,
-                      VpController::CloneStamp, VpController::Brush, VpController::Transform}) {
+    for (auto tool : {Tools::EditPlane, Tools::Marquee,
+                      Tools::CloneStamp, Tools::Brush, Tools::Transform}) {
         QVERIFY(!controller.isToolEnabled(tool));
         controller.setTool(tool);
-        QCOMPARE(controller.tool(), VpController::CreatePlane);
+        QCOMPARE(controller.tool(), Tools::CreatePlane);
     }
     QCOMPARE(status.size(), 5);
-    QVERIFY(controller.isToolEnabled(VpController::CreatePlane));
-    QVERIFY(controller.isToolEnabled(VpController::Hand));
-    QVERIFY(controller.isToolEnabled(VpController::Zoom));
+    QVERIFY(controller.isToolEnabled(Tools::CreatePlane));
+    QVERIFY(controller.isToolEnabled(Tools::Hand));
+    QVERIFY(controller.isToolEnabled(Tools::Zoom));
     QVERIFY(!controller.beginBrush({30, 30}));
     QVERIFY(!controller.pickCloneSource({30, 30}));
     QVERIFY(!controller.beginClone({30, 30}));
@@ -58,38 +58,38 @@ void VpControllerTest::toolAvailabilityFollowsDocument()
     QVERIFY(doc.appendPlane(makeTestPlane()) >= 0);
     doc.commitEdit(true);
     QCOMPARE(availability.size(), 1);
-    for (auto tool : {VpController::EditPlane, VpController::Marquee,
-                      VpController::CloneStamp, VpController::Brush}) {
+    for (auto tool : {Tools::EditPlane, Tools::Marquee,
+                      Tools::CloneStamp, Tools::Brush}) {
         QVERIFY(controller.isToolEnabled(tool));
         controller.setTool(tool);
         QCOMPARE(controller.tool(), tool);
     }
     controller.undo();
-    QVERIFY(!controller.isToolEnabled(VpController::Brush));
-    QCOMPARE(controller.tool(), VpController::CreatePlane);
+    QVERIFY(!controller.isToolEnabled(Tools::Brush));
+    QCOMPARE(controller.tool(), Tools::CreatePlane);
     controller.redo();
-    QVERIFY(controller.isToolEnabled(VpController::Brush));
-    controller.setTool(VpController::Brush);
+    QVERIFY(controller.isToolEnabled(Tools::Brush));
+    controller.setTool(Tools::Brush);
     doc.removePlane(0);
-    QCOMPARE(controller.tool(), VpController::CreatePlane);
+    QCOMPARE(controller.tool(), Tools::CreatePlane);
 
     QImage image(8, 8, QImage::Format_ARGB32);
     image.fill(Qt::red);
     doc.addFloatingImage(image);
-    QVERIFY(controller.isToolEnabled(VpController::Transform));
+    QVERIFY(controller.isToolEnabled(Tools::Transform));
     doc.setSelectedFloatingImage(-1);
-    controller.setTool(VpController::Transform);
-    QCOMPARE(controller.tool(), VpController::Transform);
+    controller.setTool(Tools::Transform);
+    QCOMPARE(controller.tool(), Tools::Transform);
     QCOMPARE(doc.selectedFloatingImage(), 0);
     controller.undo();
-    QVERIFY(!controller.isToolEnabled(VpController::Transform));
-    QCOMPARE(controller.tool(), VpController::CreatePlane);
+    QVERIFY(!controller.isToolEnabled(Tools::Transform));
+    QCOMPARE(controller.tool(), Tools::CreatePlane);
     controller.redo();
-    QVERIFY(controller.isToolEnabled(VpController::Transform));
+    QVERIFY(controller.isToolEnabled(Tools::Transform));
     doc.appendPlane(makeTestPlane());
-    controller.setTool(VpController::Transform);
+    controller.setTool(Tools::Transform);
     doc.removeFloatingImage(0);
-    QCOMPARE(controller.tool(), VpController::EditPlane);
+    QCOMPARE(controller.tool(), Tools::EditPlane);
 }
 
 void VpControllerTest::brushStrokeCommitsAsOneEdit()

@@ -22,6 +22,7 @@ set(PROJECT_SOURCES
         src/canvas/vpcontroller.cpp
         src/canvas/vpcontroller.h
         src/core/vpdocument.cpp
+        src/core/tooltypes.h
         src/core/vpdocument.h
         src/tools/brushtool.cpp
         src/tools/brushtool.h

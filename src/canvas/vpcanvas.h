@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vpcontroller.h"
+#include "core/tooltypes.h"
 
 #include <QColor>
 #include <QImage>
@@ -23,7 +24,7 @@ class VpCanvas : public QQuickPaintedItem
     Q_PROPERTY(qreal verticalPosition READ verticalPosition NOTIFY viewChanged)
 
 public:
-    using Tool = VpController::Tool;
+    using Tool = Tools::Tool;
 
     explicit VpCanvas(QQuickItem *parent = nullptr);
     VpController *controller() const { return m_controller.data(); }
