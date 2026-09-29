@@ -8,7 +8,6 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QQmlEngine>
 #include <QTimer>
 #include <QGuiApplication>
 #include <cmath>
@@ -28,32 +27,12 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     setAntialiasing(true);                      // 开启抗锯齿
     setCursor(Qt::ArrowCursor);                 // 光标统一用箭头
 
-    // 切换工具后，更新画布的鼠标光标
-    connect(&m_controller, &VpController::toolChanged, this, [this] {
-        m_panning = false;
-        updateNavigationCursor(QGuiApplication::keyboardModifiers() & Qt::AltModifier);
-    });
-
-    // 告诉 QML 引擎：m_controller 由 C++ 管理，QML 垃圾回收不能删除它
-    QQmlEngine::setObjectOwnership(&m_controller, QQmlEngine::CppOwnership);
-
-    connect(&m_controller, &VpController::repaintRequested, this, [this] { update(); });
-    // 控制器请求键盘焦点，画布主动获取焦点
-    connect(&m_controller, &VpController::focusRequested, this, [this] { forceActiveFocus(); });
-
-    connect(&m_controller, &VpController::documentReplaced, this, [this] {
-        m_panning = false;
-        m_cursorOnCanvas = false;
-        m_cursorPoint = QPointF();
-        fitView();
-    });
-
     // 选中浮动图像或存在选区时让虚线跑起来；都没有就什么都不做，避免空转重绘。
     auto *antsTimer = new QTimer(this);
     antsTimer->setInterval(80);
     connect(antsTimer, &QTimer::timeout, this, [this] {
-        if (!isVisible()
-            || (document().selectedFloatingImage() < 0 && m_controller.selectionRect().isEmpty()))
+        if (!m_controller || !isVisible()
+            || (document().selectedFloatingImage() < 0 && m_controller->selectionRect().isEmpty()))
             return;
         m_antsPhase = (m_antsPhase + 1) % 8;
         update();
@@ -63,10 +42,50 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     updateViewTransform();
 }
 
+void VpCanvas::setController(VpController *controller)
+{
+    if (m_controller == controller)
+        return;
+    if (m_controller)
+        disconnect(m_controller.data(), nullptr, this, nullptr);
+    m_controller = controller;
+    if (m_controller) {
+        connect(controller, &VpController::toolChanged, this, [this] {
+            m_panning = false;
+            updateNavigationCursor(QGuiApplication::keyboardModifiers() & Qt::AltModifier);
+        });
+        connect(controller, &VpController::repaintRequested, this, [this] { update(); });
+        connect(controller, &VpController::focusRequested, this, [this] { forceActiveFocus(); });
+        connect(controller, &VpController::documentReplaced, this, &VpCanvas::resetView);
+        connect(controller, &QObject::destroyed, this, [this] {
+            m_controller.clear();
+            resetView();
+            emit controllerChanged();
+        });
+    }
+    resetView();
+    emit controllerChanged();
+}
+
+void VpCanvas::resetView()
+{
+    m_panning = false;
+    m_cursorOnCanvas = false;
+    m_cursorPoint = QPointF();
+    m_scale = 1;
+    m_offset = QPointF();
+    m_fitView = true;
+    m_fillView = false;
+    updateNavigationCursor();
+    updateViewTransform();
+    emit viewChanged();
+    update();
+}
+
 void VpCanvas::paint(QPainter *painter)
 {
     painter->fillRect(boundingRect(), QColor("#4D4D4D"));
-    if (!document().hasLoadedImage()) {
+    if (!m_controller || !document().hasLoadedImage()) {
         painter->setPen(QColor("#dddddd"));
         painter->drawText(boundingRect(), Qt::AlignCenter, tr("请打开一张图片开始操作（Ctrl+O）"));
         return;
@@ -78,22 +97,22 @@ void VpCanvas::paint(QPainter *painter)
     SceneRenderer renderer(document());
     renderer.renderContent(*painter, m_scale);
     SceneRenderer::Guides guides;
-    guides.creationPoints = m_controller.creationPoints();
-    guides.extrudePreview = m_controller.extrudePreview();
-    guides.editHandlesVisible = m_controller.tool() == Tool::EditPlane;
+    guides.creationPoints = m_controller->creationPoints();
+    guides.extrudePreview = m_controller->extrudePreview();
+    guides.editHandlesVisible = m_controller->tool() == Tool::EditPlane;
     guides.extrudeHandles = QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
     guides.antsPhase = m_antsPhase;
-    guides.gridSize = m_controller.gridSize();
-    if (m_controller.tool() == Tool::CreatePlane)
+    guides.gridSize = m_controller->gridSize();
+    if (m_controller->tool() == Tool::CreatePlane)
         guides.cursorPoint = m_cursorPoint;
     renderer.renderGuides(*painter, m_scale, guides);
     // 光标离开画布时不画预览：空点 (0,0) 同时也是合法的图像坐标
     const bool cursorOnCanvas = m_cursorOnCanvas;
-    if (cursorOnCanvas && m_controller.tool() == Tool::Brush)
-        m_controller.renderBrushPreview(*painter, m_cursorPoint);
-    if (m_controller.tool() == Tool::CloneStamp) {
+    if (cursorOnCanvas && m_controller->tool() == Tool::Brush)
+        m_controller->renderBrushPreview(*painter, m_cursorPoint);
+    if (m_controller->tool() == Tool::CloneStamp) {
         if (cursorOnCanvas)
-            m_controller.renderClonePreview(*painter, m_cursorPoint);
+            m_controller->renderClonePreview(*painter, m_cursorPoint);
         drawCloneMarker(painter);
     }
     drawFloatingImageHandles(painter);
@@ -104,9 +123,9 @@ void VpCanvas::paint(QPainter *painter)
 // 仿制源用绿色十字标出，线宽与臂长都按视图缩放换算，屏幕上尺寸恒定
 void VpCanvas::drawCloneMarker(QPainter *painter)
 {
-    if (!m_controller.hasCloneSource())
+    if (!m_controller->hasCloneSource())
         return;
-    const QPointF marker = m_controller.cloneMarker();
+    const QPointF marker = m_controller->cloneMarker();
     const qreal arm = 7.0 / m_scale;
     painter->save();
     painter->setPen(QPen(QColor("#00e676"), 1.0 / m_scale));
@@ -125,11 +144,13 @@ void VpCanvas::geometryChange(const QRectF &newGeometry, const QRectF &oldGeomet
 // 记录光标位置；仿制源的取样指示与光标预览都依赖它，拖动期间同样要更新。
 void VpCanvas::updateCursorPoint(const QPointF &widgetPoint)
 {
+    if (!m_controller)
+        return;
     m_cursorOnCanvas = true;
     m_cursorPoint = widgetToImage(widgetPoint);
-    if (m_controller.tool() == Tool::CloneStamp)
-        m_controller.hoverClone(m_cursorPoint);
-    if (m_controller.cursorPreviewVisible())
+    if (m_controller->tool() == Tool::CloneStamp)
+        m_controller->hoverClone(m_cursorPoint);
+    if (m_controller->cursorPreviewVisible())
         update();
 }
 
@@ -145,7 +166,7 @@ void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
 {
     m_cursorOnCanvas = false;
     m_cursorPoint = QPointF();
-    if (m_controller.cursorPreviewVisible())
+    if (m_controller && m_controller->cursorPreviewVisible())
         update();
     QQuickPaintedItem::hoverLeaveEvent(event);
 }
@@ -155,6 +176,10 @@ void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
 
 void VpCanvas::keyPressEvent(QKeyEvent *event)
 {
+    if (!m_controller) {
+        QQuickPaintedItem::keyPressEvent(event);
+        return;
+    }
     if (event->key() == Qt::Key_Control)
         update();
     if (event->key() == Qt::Key_Alt) {
@@ -167,7 +192,7 @@ void VpCanvas::keyPressEvent(QKeyEvent *event)
         QQuickPaintedItem::keyPressEvent(event);    // 其他键交给基类
         return;
     }
-    m_controller.deleteSelection();
+    m_controller->deleteSelection();
     update();
     event->accept();
 }
@@ -180,6 +205,8 @@ QPointF VpCanvas::widgetToImage(const QPointF &widgetPoint) const
 
 void VpCanvas::updateViewTransform()
 {
+    if (!m_controller)
+        return;
     const QImage &background = document().background();
     if (background.isNull() || width() <= 0 || height() <= 0)
         return;
@@ -201,11 +228,15 @@ void VpCanvas::updateViewTransform()
 
 qreal VpCanvas::horizontalSize() const
 {
+    if (!m_controller)
+        return 1;
     return qMin(1.0, width() / qMax(1.0, document().background().width() * m_scale));
 }
 
 qreal VpCanvas::verticalSize() const
 {
+    if (!m_controller)
+        return 1;
     return qMin(1.0, height() / qMax(1.0, document().background().height() * m_scale));
 }
 
@@ -221,6 +252,8 @@ qreal VpCanvas::verticalPosition() const
 
 void VpCanvas::scrollTo(qreal horizontal, qreal vertical)
 {
+    if (!m_controller)
+        return;
     m_fitView = false;
     m_offset = QPointF(-horizontal * document().background().width() * m_scale,
                       -vertical * document().background().height() * m_scale);
@@ -229,7 +262,7 @@ void VpCanvas::scrollTo(qreal horizontal, qreal vertical)
 
 void VpCanvas::zoomAt(qreal scale, const QPointF &anchor)
 {
-    if (!std::isfinite(scale) || document().background().isNull())
+    if (!m_controller || !std::isfinite(scale) || document().background().isNull())
         return;
     const QPointF point = widgetToImage(anchor);
     m_fitView = false;
@@ -267,9 +300,13 @@ void VpCanvas::fitView(bool fill)
 
 void VpCanvas::updateNavigationCursor(bool alt)
 {
-    if (m_controller.tool() == Tool::Hand) {
+    if (!m_controller) {
+        setCursor(Qt::ArrowCursor);
+        return;
+    }
+    if (m_controller->tool() == Tool::Hand) {
         setCursor(m_panning ? Qt::ClosedHandCursor : Qt::OpenHandCursor);
-    } else if (m_controller.tool() == Tool::Zoom) {
+    } else if (m_controller->tool() == Tool::Zoom) {
         static const auto makeCursor = [](bool out) {
         QPixmap icon(32, 32);
         icon.fill(Qt::transparent);
@@ -339,7 +376,7 @@ void VpCanvas::keyReleaseEvent(QKeyEvent *event)
 // 变换工具下画出浮动图像的 8 个控制点；尺寸与线宽按视图缩放换算，屏幕上恒定。
 void VpCanvas::drawFloatingImageHandles(QPainter *painter)
 {
-    if (m_controller.tool() != Tool::Transform || document().selectedFloatingImage() < 0)
+    if (m_controller->tool() != Tool::Transform || document().selectedFloatingImage() < 0)
         return;
     const auto projection = FloatingImageProjection::forImage(
         document().floatingImage(document().selectedFloatingImage()));
@@ -358,13 +395,13 @@ void VpCanvas::drawFloatingImageHandles(QPainter *painter)
 // 白 1px 打底 + 黑虚线，线宽与虚线间距在屏幕上恒定。
 void VpCanvas::drawSelectionOutline(QPainter *painter)
 {
-    if (m_controller.tool() != Tool::Marquee || m_controller.selectionRect().isEmpty())
+    if (m_controller->tool() != Tool::Marquee || m_controller->selectionRect().isEmpty())
         return;
     painter->save();
     painter->resetTransform();
     const QPainterPath outline =
         QTransform::fromTranslate(m_offset.x(), m_offset.y())
-            .map(QTransform::fromScale(m_scale, m_scale).map(m_controller.selectionOutline()));
+            .map(QTransform::fromScale(m_scale, m_scale).map(m_controller->selectionOutline()));
     painter->setBrush(Qt::NoBrush);
     painter->setPen(QPen(Qt::white, 1));
     painter->drawPath(outline);
@@ -378,22 +415,30 @@ void VpCanvas::drawSelectionOutline(QPainter *painter)
 
 void VpCanvas::mousePressEvent(QMouseEvent *event)
 {
+    if (!m_controller) {
+        event->ignore();
+        return;
+    }
     forceActiveFocus();
     event->accept();
-    if (m_controller.tool() == Tool::Hand) {
+    if (m_controller->tool() == Tool::Hand) {
         m_fitView = false;
         m_panning = true;
         m_panPoint = event->position();
         updateNavigationCursor();
-    } else if (m_controller.tool() == Tool::Zoom) {
+    } else if (m_controller->tool() == Tool::Zoom) {
         stepAt(event->modifiers() & Qt::AltModifier, event->position());
     } else {
-        m_controller.pointerPress(widgetToImage(event->position()), m_scale, event->modifiers());
+        m_controller->pointerPress(widgetToImage(event->position()), m_scale, event->modifiers());
     }
 }
 
 void VpCanvas::mouseMoveEvent(QMouseEvent *event)
 {
+    if (!m_controller) {
+        event->ignore();
+        return;
+    }
     event->accept();
     if (m_panning) {
         m_offset += event->position() - m_panPoint;
@@ -402,12 +447,16 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
     } else {
         updateCursorPoint(event->position());
         if (event->buttons() & Qt::LeftButton)
-            m_controller.pointerMove(m_cursorPoint, event->modifiers());
+            m_controller->pointerMove(m_cursorPoint, event->modifiers());
     }
 }
 
 void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (!m_controller) {
+        event->ignore();
+        return;
+    }
     event->accept();
     if (m_panning) {
         m_offset += event->position() - m_panPoint;
@@ -415,12 +464,12 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
         updateViewTransform();
         updateNavigationCursor();
     } else {
-        m_controller.pointerRelease(widgetToImage(event->position()), event->modifiers());
+        m_controller->pointerRelease(widgetToImage(event->position()), event->modifiers());
     }
 }
 
-void VpCanvas::undo() { m_panning = false; m_controller.undo(); }
-void VpCanvas::redo() { m_panning = false; m_controller.redo(); }
+void VpCanvas::undo() { m_panning = false; if (m_controller) m_controller->undo(); }
+void VpCanvas::redo() { m_panning = false; if (m_controller) m_controller->redo(); }
 
 QVariantList VpCanvas::zoomLevels() const
 {

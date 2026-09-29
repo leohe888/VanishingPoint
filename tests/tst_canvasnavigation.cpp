@@ -1,7 +1,10 @@
 #include "canvas/vpcanvas.h"
 #include "testhelpers.h"
 #include <QMouseEvent>
+#include <QCursor>
+#include <QPainter>
 #include <QTemporaryDir>
+#include <memory>
 #include <QtTest>
 
 class CanvasProbe : public VpCanvas
@@ -16,9 +19,59 @@ class CanvasNavigationTest : public QObject
 {
     Q_OBJECT
 private slots:
-    void historyRestoresPlanesAndDiscardsRedoBranch()
+    void externalControllerSurvivesCanvas()
+    {
+        VpController controller;
+        {
+            CanvasProbe canvas; canvas.setController(&controller);
+            controller.document().beginEdit();
+            controller.document().appendPlane(makeTestPlane());
+            controller.document().commitEdit(true);
+        }
+        QCOMPARE(controller.document().planes().size(), 1);
+        QVERIFY(controller.canUndo());
+        CanvasProbe recreated; recreated.setController(&controller);
+        QCOMPARE(recreated.controller(), &controller);
+        recreated.undo(); QVERIFY(controller.document().planes().isEmpty());
+    }
+
+    void controllerReplacementDisconnectsOldSignals()
+    {
+        VpController first, second;
+        CanvasProbe canvas; canvas.setController(&first);
+        first.setTool(VpController::Hand);
+        QCOMPARE(canvas.cursor().shape(), Qt::OpenHandCursor);
+        canvas.setController(&second);
+        QCOMPARE(canvas.cursor().shape(), Qt::ArrowCursor);
+        first.setTool(VpController::Zoom);
+        QCOMPARE(canvas.cursor().shape(), Qt::ArrowCursor);
+        second.setTool(VpController::Hand);
+        QCOMPARE(canvas.cursor().shape(), Qt::OpenHandCursor);
+    }
+
+    void destroyedControllerLeavesCanvasSafe()
     {
         CanvasProbe canvas;
+        auto controller = std::make_unique<VpController>();
+        canvas.setController(controller.get());
+        QSignalSpy changed(&canvas, &VpCanvas::controllerChanged);
+        controller.reset();
+        QCOMPARE(canvas.controller(), nullptr); QCOMPARE(changed.size(), 1);
+        canvas.setSize({100, 100}); canvas.setZoom(2); canvas.scrollTo(0.5, 0.5);
+        canvas.undo(); canvas.redo();
+        QCOMPARE(canvas.horizontalSize(), 1.0); QCOMPARE(canvas.verticalSize(), 1.0);
+        QCOMPARE(canvas.horizontalPosition(), 0.0); QCOMPARE(canvas.verticalPosition(), 0.0);
+        QImage image(100,100,QImage::Format_ARGB32); QPainter painter(&image);
+        canvas.paint(&painter);
+        QMouseEvent press(QEvent::MouseButtonPress, QPointF(50,50), QPointF(50,50),
+                          Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+        canvas.mousePressEvent(&press); QVERIFY(!press.isAccepted());
+    }
+
+    void historyRestoresPlanesAndDiscardsRedoBranch()
+    {
+        VpController controller;
+        CanvasProbe canvas; canvas.setController(&controller);
         auto &document = canvas.controller()->document();
         document.beginEdit();
         document.appendPlane(makeTestPlane());
@@ -48,7 +101,8 @@ private slots:
         image.fill(Qt::white);
         const QString path = directory.filePath("background.png");
         QVERIFY(image.save(path));
-        CanvasProbe canvas;
+        VpController controller;
+        CanvasProbe canvas; canvas.setController(&controller);
         auto &document = canvas.controller()->document();
         QVERIFY(document.loadImage(path));
         document.beginEdit();
@@ -72,7 +126,8 @@ private slots:
         image.fill(Qt::white);
         const QString path = directory.filePath("background.png");
         QVERIFY(image.save(path));
-        CanvasProbe canvas;
+        VpController controller;
+        CanvasProbe canvas; canvas.setController(&controller);
         canvas.controller()->document().loadImage(path);
         canvas.setSize(QSizeF(500, 400));
         canvas.setZoom(1);
@@ -99,7 +154,8 @@ private slots:
         image.fill(Qt::white);
         const QString path = directory.filePath("background.png");
         QVERIFY(image.save(path));
-        CanvasProbe canvas;
+        VpController controller;
+        CanvasProbe canvas; canvas.setController(&controller);
         canvas.controller()->document().loadImage(path);
         canvas.setSize(QSizeF(500, 400));
         canvas.setZoom(1);

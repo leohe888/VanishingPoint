@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QPainterPath>
 #include <QPointF>
+#include <QPointer>
 #include <QRectF>
 #include <QVariantList>
 #include <QQuickPaintedItem>
@@ -13,7 +14,7 @@
 class VpCanvas : public QQuickPaintedItem
 {
     Q_OBJECT
-    Q_PROPERTY(VpController *controller READ controller CONSTANT)
+    Q_PROPERTY(VpController *controller READ controller WRITE setController NOTIFY controllerChanged REQUIRED)
     Q_PROPERTY(qreal zoom READ zoom NOTIFY viewChanged)
     Q_PROPERTY(QVariantList zoomLevels READ zoomLevels CONSTANT)
     Q_PROPERTY(qreal horizontalSize READ horizontalSize NOTIFY viewChanged)
@@ -25,7 +26,8 @@ public:
     using Tool = VpController::Tool;
 
     explicit VpCanvas(QQuickItem *parent = nullptr);
-    VpController *controller() { return &m_controller; }
+    VpController *controller() const { return m_controller.data(); }
+    void setController(VpController *controller);
 
     void paint(QPainter *painter) override;
     QVariantList zoomLevels() const;
@@ -42,6 +44,7 @@ public:
     Q_INVOKABLE void redo();
 
 signals:
+    void controllerChanged();
     void viewChanged();
 
 protected:
@@ -55,20 +58,21 @@ protected:
     void keyReleaseEvent(QKeyEvent *event) override;
 
 private:
+    void resetView();
     QPointF widgetToImage(const QPointF &widgetPoint) const;
     void updateViewTransform();
     void zoomAt(qreal scale, const QPointF &anchor);
     void stepAt(bool out, const QPointF &anchor);
     void updateNavigationCursor(bool alt = false);
     void updateCursorPoint(const QPointF &widgetPoint); // 记录光标并通知仿制源、预览跟随
-    const VpDocument &document() const { return m_controller.document(); }
+    const VpDocument &document() const { return m_controller->document(); }
     void drawCloneMarker(QPainter *painter); // 仿制源的绿色十字指示
 
     void drawFloatingImageHandles(QPainter *painter); // 变换工具下的 8 个控制点
 
     void drawSelectionOutline(QPainter *painter);
 
-    VpController m_controller;
+    QPointer<VpController> m_controller;
     QPointF m_cursorPoint;
     bool m_cursorOnCanvas = false;
 

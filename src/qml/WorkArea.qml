@@ -8,10 +8,11 @@ Rectangle {
     border.width: 1
 
     property alias canvas: canvas
-    property alias controller: canvas.controller
+    required property VpController controller
 
     VpCanvas {
         id: canvas
+        controller: root.controller
         anchors { left: parent.left; right: parent.right; top: parent.top; bottom: bar.top; margins: 1; rightMargin: 15 }
         clip: true
     }

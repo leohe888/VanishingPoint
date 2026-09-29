@@ -114,3 +114,11 @@
 - 打包结束打印成功或失败以及日志位置，pause 保留窗口，并返回真实打包退出码。
 - 首次实测系统 PowerShell 不识别 Get-FileHash，BAT 正确报告失败；将 SHA256 计算替换为兼容的 .NET 流式实现后，从项目外目录执行 BAT 完整打包成功，退出码 0，校验码与另一 PowerShell 的 Get-FileHash 结果一致。
 - 验证日志：build/package-bat-validation.log；验证产物：dist/VanishingPoint-Windows-x64-20260929-142203.zip。差异检查通过，仅提交 BAT、PowerShell 兼容修复和本执行日志。
+
+## 控制器归属：应用层创建与上下文注入
+
+- main 中在 QML 引擎之前创建 VpController，以 vpController 根上下文属性暴露给 QML；明确 CppOwnership，依靠 C++ 栈对象销毁顺序让控制器晚于引擎和画布销毁。setContextProperty 不接管 QObject 所有权，纠正先前说明。
+- VpCanvas 删除内嵌控制器，以必需的 controller 属性接收外部实例并用 QPointer 保存。更换实例时断开旧信号、重置导航和光标；控制器销毁后清空引用，绘制、导航、输入和定时器均安全处理未绑定状态。
+- 窗口按钮、快捷键和提示直接使用根上下文实例；WorkArea 显式将同一实例注入画布，ToolBar 和 ToolOptionsBar 接收同一实例。没有另建隐藏控制器或文档。
+- 更新 C++ 交互测试为显式外部注入，验证画布销毁后文档和历史保留、替换控制器后旧信号无效、对象销毁后的空状态，以及真实 QML 窗口/引擎重建后继续撤销。
+- Debug 完整构建成功，CTest 15/15 通过，git diff --check 通过。更新架构说明；画布源文件只暂存本次外部注入修改，保留用户原有缩放光标、资源和其他界面修改。

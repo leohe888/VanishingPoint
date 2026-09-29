@@ -1,6 +1,7 @@
 # 画布职责边界
 
-- VpCanvas 是 Qt Quick 视图，处理控件坐标转换、缩放、滚动、鼠标光标和重绘。暴露 controller 与导航接口；undo/redo 是兼容转发。只读访问文档用于绘制，不拥有业务工具或可写模型引用。
+- 应用层在 main 创建 VpController，并通过根上下文 vpController 提供给 QML。控制器先于引擎构造、晚于引擎销毁，由 C++ 管理生命周期；setContextProperty 不转移所有权。
+- VpCanvas 是 Qt Quick 视图，处理控件坐标转换、缩放、滚动、鼠标光标和重绘。controller 是外部注入的必需属性，以 QPointer 保存而不拥有；切换控制器断开旧信号并重置视图，控制器销毁后安全清空。画布重建不销毁文档和历史。undo/redo 是兼容转发；只读访问文档用于绘制，不拥有业务工具或可写模型引用。
 - VpController 拥有文档与全部工具。pointerPress/Move/Release 接收图像坐标、修饰键和命中所需缩放；不读取控件尺寸，不依赖 QQuickItem。统一协调平面创建/编辑、图像移动/吸附/烘焙、选区取样、画笔/图章、粘贴、删除和历史。独立命令先 cancelInteraction：提交已绘制笔触，丢弃几何与选区预览。
 - VpDocument 保存数据与历史，在写入边界验证几何和图像。预览写入由 beginEdit/commitEdit/cancelEdit 包围；完整增删命令在无事务时自动提交，在事务内延迟到 commitEdit。历史比较实际内容，无操作和仅选择变化不删除 redo；绘画用脏区增量，结构用 COW 快照。
 - PerspectivePlane 保存拓扑与编辑信息；PerspectiveQuad 是独立几何快照。显示、命中和执行共享锁边规则；内容不依赖后来编辑的平面。

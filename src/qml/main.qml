@@ -19,9 +19,9 @@ Window {
             z: 1    // 提升工具栏的层级，因为右侧内容区域后绘制，覆盖了工具栏向右扩展的 Tooltip
             Layout.preferredWidth: 38
             Layout.fillHeight: true
-            currentTool: workArea.controller.tool
-            controller: workArea.controller
-            onToolSelected: (toolId) => workArea.controller.tool = toolId
+            currentTool: vpController.tool
+            controller: vpController
+            onToolSelected: (toolId) => vpController.tool = toolId
         }
 
         ColumnLayout {
@@ -43,18 +43,18 @@ Window {
                     iconSource: "undo.png"
                     tooltip: qsTr("撤销")
                     tooltipBelow: true
-                    enabled: workArea.controller.canUndo
-                    onActivated: workArea.controller.undo()
+                    enabled: vpController.canUndo
+                    onActivated: vpController.undo()
                 }
                 ToolButton {
                     iconSource: "redo.png"
                     tooltip: qsTr("重做")
                     tooltipBelow: true
-                    enabled: workArea.controller.canRedo
-                    onActivated: workArea.controller.redo()
+                    enabled: vpController.canRedo
+                    onActivated: vpController.redo()
                 }
                 ToolOptionsBar {
-                    controller: workArea.controller
+                    controller: vpController
                     Layout.fillWidth: true
                     Layout.preferredHeight: 38
                 }
@@ -68,6 +68,7 @@ Window {
 
             WorkArea {
                 id: workArea
+                controller: vpController
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
@@ -78,30 +79,30 @@ Window {
         id: imageDialog
         title: qsTr("打开图片")
         nameFilters: [qsTr("图片 (*.png *.jpg *.jpeg *.bmp *.webp *.tif *.tiff)"), qsTr("所有文件 (*)")]
-        onAccepted: workArea.controller.openImage(selectedFile)
+        onAccepted: vpController.openImage(selectedFile)
     }
     Shortcut { sequence: "Ctrl+O"; onActivated: imageDialog.open() }
 
     // 粘贴是窗口级快捷键：不必先点画布拿到焦点，也能直接粘贴。
     Shortcut {
         sequence: "Ctrl+V"
-        onActivated: workArea.controller.pasteImage()
+        onActivated: vpController.pasteImage()
     }
 
     // 窗口级历史快捷键，不要求画布先获得焦点。
     Shortcut {
         sequence: "Ctrl+Z"
-        onActivated: workArea.controller.undo()
+        onActivated: vpController.undo()
     }
 
     Shortcut {
         sequences: ["Ctrl+Y", "Ctrl+Shift+Z"]
-        onActivated: workArea.controller.redo()
+        onActivated: vpController.redo()
     }
 
     // 创建完平面等操作可能切换工具，工具栏随控制器状态同步。
     Connections {
-        target: workArea.controller
+        target: vpController
         function onStatusMessage(text) { hintBar.message = text }
     }
 }

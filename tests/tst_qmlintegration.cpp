@@ -1,6 +1,7 @@
 #include "canvas/vpcanvas.h"
 #include "testhelpers.h"
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QQuickWindow>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -11,12 +12,16 @@ class QmlIntegrationTest : public QObject {
 private slots:
     void redoShortcutCallsRedo() {
         qmlRegisterType<VpCanvas>("VanishingPoint",1,0,"VpCanvas");
-        qmlRegisterUncreatableType<VpController>("VanishingPoint",1,0,"VpController","Canvas owns controller");
+        qmlRegisterUncreatableType<VpController>("VanishingPoint",1,0,"VpController","Application owns controller");
+        VpController controller;
         QQmlApplicationEngine engine;
+        QQmlEngine::setObjectOwnership(&controller, QQmlEngine::CppOwnership);
+        engine.rootContext()->setContextProperty("vpController", &controller);
         engine.load(QUrl("qrc:/src/qml/main.qml"));
         QVERIFY(!engine.rootObjects().isEmpty());
         auto *root=engine.rootObjects().first(); root->setProperty("visible",false);
         auto *canvas=root->findChild<VpCanvas*>(); QVERIFY(canvas);
+        QCOMPARE(canvas->controller(), &controller);
         auto *window = qobject_cast<QQuickWindow *>(root); QVERIFY(window);
         const auto toolButton = [window](VpController::Tool tool) -> QObject * {
             const auto find = [tool](auto &&self, QQuickItem *item) -> QQuickItem * {
@@ -67,6 +72,21 @@ private slots:
         QVERIFY(canvas->controller()->openImage(QUrl::fromLocalFile(path)));
         QCOMPARE(canvas->controller()->tool(), VpController::CreatePlane);
         QVERIFY(!brush->property("enabled").toBool());
+        // 重建视图与引擎，不清空应用层控制器的文档和历史。
+        controller.document().beginEdit(); controller.document().appendPlane(makeTestPlane());
+        controller.document().commitEdit(true);
+        delete root;
+        QCOMPARE(controller.document().planes().size(), 1);
+        QVERIFY(controller.canUndo());
+        QQmlApplicationEngine recreated;
+        recreated.rootContext()->setContextProperty("vpController", &controller);
+        recreated.load(QUrl("qrc:/src/qml/main.qml"));
+        QVERIFY(!recreated.rootObjects().isEmpty());
+        auto *newRoot = recreated.rootObjects().first(); newRoot->setProperty("visible", false);
+        auto *newCanvas = newRoot->findChild<VpCanvas*>(); QVERIFY(newCanvas);
+        QCOMPARE(newCanvas->controller(), &controller);
+        QCOMPARE(controller.document().planes().size(), 1);
+        newCanvas->undo(); QVERIFY(controller.document().planes().isEmpty());
     }
 };
 QTEST_MAIN(QmlIntegrationTest)
