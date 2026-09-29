@@ -30,6 +30,8 @@ public:
     // 返回画布上的 8 个控制点：0～3 为角点，4～7 为对应边的中点。
     QVector<QPointF> controlPoints() const;
 
+    friend bool operator==(const PerspectiveQuad &a, const PerspectiveQuad &b)
+    { return a.m_canvasCorners == b.m_canvasCorners && a.m_surfaceCorners == b.m_surfaceCorners; }
     bool isValid() const;
     bool containsCanvasPoint(const QPointF &point) const;
     int controlPointIndexAt(const QPointF &point, qreal tolerance) const;

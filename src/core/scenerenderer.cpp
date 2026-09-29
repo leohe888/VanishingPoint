@@ -192,34 +192,8 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveQuad &qu
 
     if (selected && showHandles) {
         const QVector<QPointF> points = quad.controlPoints();
-        quint8 unavailableEdgeMask = 0;
-        if (planeIndex >= 0) {
-            const PerspectivePlane &plane = m_doc.planes()[planeIndex];
-            for (int edge = 0; edge < 4; ++edge)
-                if (plane.lockedEdgeMask() & quint8(1u << edge))
-                    unavailableEdgeMask |= quint8(1u << edge);
-            for (int edge = 0; edge < 4; ++edge) {
-                const QPointF a = quad.canvasCorners()[edge];
-                const QPointF b = quad.canvasCorners()[(edge + 1) % 4];
-                for (int other = 0; other < m_doc.planes().size(); ++other) {
-                    if (other == planeIndex)
-                        continue;
-                    for (int oe = 0; oe < 4; ++oe) {
-                        const QPointF oa = m_doc.planes()[other].quad().canvasCorners()[oe];
-                        const QPointF ob = m_doc.planes()[other].quad().canvasCorners()[(oe + 1) % 4];
-                        if ((QLineF(a, oa).length() < 0.01 && QLineF(b, ob).length() < 0.01) ||
-                            (QLineF(a, ob).length() < 0.01 && QLineF(b, oa).length() < 0.01)) {
-                            unavailableEdgeMask |= quint8(1u << edge);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
         for (int i = 0; i < points.size(); ++i) {
-            if ((i < 4 && ((unavailableEdgeMask & quint8(1u << i)) ||
-                           (unavailableEdgeMask & quint8(1u << ((i + 3) % 4))))) ||
-                (i >= 4 && (unavailableEdgeMask & quint8(1u << (i - 4)))))
+            if (planeIndex >= 0 && !m_doc.planes()[planeIndex].controlPointEditable(i))
                 continue;
             const qreal radius = HandleHalfSize / m_viewScale;
             painter.setPen(QPen(QColor("#0e526e"), 1.0 / m_viewScale));

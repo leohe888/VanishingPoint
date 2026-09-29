@@ -35,6 +35,16 @@ public:
     qreal angleToParentDegrees() const { return m_angleToParentDegrees; }
     void setAngleToParentDegrees(qreal degrees) { m_angleToParentDegrees = degrees; }
 
+    friend bool operator==(const PerspectivePlane &a, const PerspectivePlane &b)
+    {
+        return a.m_quad == b.m_quad && a.m_surfaceGroupId == b.m_surfaceGroupId
+            && a.m_lockedEdgeMask == b.m_lockedEdgeMask
+            && a.m_parentPlaneIndex == b.m_parentPlaneIndex && a.m_parentEdgeIndex == b.m_parentEdgeIndex
+            && a.m_angleToParentDegrees == b.m_angleToParentDegrees && a.m_hasCustomAngle == b.m_hasCustomAngle;
+    }
+    bool controlPointEditable(int handle) const;
+    bool preservesLockedEdges(const PerspectivePlane &candidate) const;
+
     bool hasCustomAngle() const { return m_hasCustomAngle; }
     void setHasCustomAngle(bool adjusted) { m_hasCustomAngle = adjusted; }
 

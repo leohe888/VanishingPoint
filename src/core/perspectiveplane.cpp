@@ -614,3 +614,26 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
         return source;
     return result;
 }
+
+bool PerspectivePlane::controlPointEditable(int handle) const
+{
+    if (handle < 0 || handle >= 8)
+        return false;
+    if (handle < 4)
+        return !isEdgeLocked(handle) && !isEdgeLocked((handle + 3) % 4);
+    const int edge = handle - 4;
+    return !isEdgeLocked(edge) && !isEdgeLocked((edge + 1) % 4)
+        && !isEdgeLocked((edge + 3) % 4);
+}
+
+bool PerspectivePlane::preservesLockedEdges(const PerspectivePlane &candidate) const
+{
+    for (int edge = 0; edge < 4; ++edge) {
+        if (!isEdgeLocked(edge))
+            continue;
+        for (int corner : {edge, (edge + 1) % 4})
+            if (QLineF(quad().canvasCorners()[corner], candidate.quad().canvasCorners()[corner]).length() > 1e-7)
+                return false;
+    }
+    return true;
+}

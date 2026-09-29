@@ -64,7 +64,8 @@ void VpDocument::clearPainting()
     beginPaintTransaction();
     addPaintDirty(m_paintLayer.rect());
     m_paintLayer.fill(Qt::transparent);
-    commitHistory();
+    if (!m_editActive)
+        commitHistory();
 }
 
 // 开始一次绘画事务：浅拷贝当前绘画层作为撤销基线（隐式共享，O(1)）
@@ -94,7 +95,7 @@ int VpDocument::appendPlane(const PerspectivePlane &plane)
 
 bool VpDocument::setPlane(int index, const PerspectivePlane &plane)
 {
-    if (index < 0 || index >= m_planes.size() || !plane.quad().isValid())
+    if (index < 0 || index >= m_planes.size() || !plane.quad().isValid() || !m_planes[index].preservesLockedEdges(plane))
         return false;
     m_planes[index] = plane;
     return true;
@@ -129,7 +130,13 @@ void VpDocument::removePlane(int index)
             m_planes[planeIndex].setEdgeLocked(edge, false);
     };
     // 被删的是子平面：解锁父平面上被它共用的那条边。
-    unlockEdge(removed.parentPlaneIndex(), removed.parentEdgeIndex());
+    bool stillShared = false;
+    for (int other = 0; other < m_planes.size(); ++other)
+        if (other != index && m_planes[other].parentPlaneIndex() == removed.parentPlaneIndex()
+            && m_planes[other].parentEdgeIndex() == removed.parentEdgeIndex())
+            stillShared = true;
+    if (!stillShared)
+        unlockEdge(removed.parentPlaneIndex(), removed.parentEdgeIndex());
     for (int other = 0; other < m_planes.size(); ++other) {
         if (other == index)
             continue;
@@ -147,7 +154,8 @@ void VpDocument::removePlane(int index)
         --m_selectedPlane;
     else if (m_selectedPlane == index)
         m_selectedPlane = m_planes.isEmpty() ? -1 : qMin(index, m_planes.size() - 1);
-    commitHistory();
+    if (!m_editActive)
+        commitHistory();
 }
 
 // 追加一张浮动图像到画布左上角，返回其索引
@@ -218,7 +226,8 @@ void VpDocument::removeFloatingImage(int index)
     else if (m_selectedFloatingImage > index)
         --nextSelection;
     setSelectedFloatingImage(nextSelection);
-    commitHistory();
+    if (!m_editActive)
+        commitHistory();
 }
 
 // 仅移动图像位置（不改变吸附状态）
@@ -362,9 +371,6 @@ void VpDocument::cancelEdit()
 
 void VpDocument::commitHistory()
 {
-    while (m_history.size() > m_historyIndex + 1)
-        m_history.removeLast();
-
     HistoryEntry entry;
     entry.planes = m_planes;
     entry.selectedPlane = m_selectedPlane;
@@ -384,6 +390,12 @@ void VpDocument::commitHistory()
     m_paintBefore = QImage();
     m_paintDirtyRect = QRect();
 
+    const HistoryEntry &current = m_history[m_historyIndex];
+    if (entry.planes == current.planes && entry.floatingImages == current.floatingImages
+        && (entry.paintRect.isEmpty() || entry.paintBefore == entry.paintAfter))
+        return;
+    while (m_history.size() > m_historyIndex + 1)
+        m_history.removeLast();
     m_history.append(entry);
     ++m_historyIndex;
     if (m_history.size() > MaxHistoryStates) {

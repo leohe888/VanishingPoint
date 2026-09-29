@@ -129,15 +129,7 @@ qreal VpController::planeAngle() const
 
 bool VpController::canSetSelectedPlaneAngle() const
 {
-    const int index = m_document.selectedPlane();
-    if (index < 0 || index >= m_document.planes().size()
-        || m_document.planes()[index].parentPlaneIndex() < 0)
-        return false;
-    for (const PerspectivePlane &child : m_document.planes()) {
-        if (child.parentPlaneIndex() == index && child.hasCustomAngle())
-            return false;
-    }
-    return true;
+    return planeAngleLockReason().isEmpty();
 }
 
 bool VpController::planeAngleEditable() const
@@ -163,6 +155,8 @@ void VpController::setPlaneAngle(qreal angle)
 {
     if (!canSetSelectedPlaneAngle() || !qIsFinite(angle))
         return;
+    emit aboutToExecuteCommand();
+    finishActiveStrokes();
     const int index = m_document.selectedPlane();
     const PerspectivePlane candidate = rotatePlaneAroundEdge(
         m_document.planes()[index], 0, angle, m_document.background().size());
@@ -183,6 +177,8 @@ void VpController::pasteImage()
         emit statusMessage(tr("剪贴板中没有可粘贴的图像。"));
         return;
     }
+    emit aboutToExecuteCommand();
+    finishActiveStrokes();
     m_document.addFloatingImage(image);
     emit focusRequested();
     emit statusMessage(tr("已粘贴图像，按 Delete 键删除。"));

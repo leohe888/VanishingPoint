@@ -37,6 +37,7 @@ VpCanvas::VpCanvas(QQuickItem *parent)
     // 切换工具前，取消当前交互
     connect(&m_controller, &VpController::aboutToChangeTool,
             this, &VpCanvas::cancelInteraction);
+    connect(&m_controller, &VpController::aboutToExecuteCommand, this, &VpCanvas::cancelInteraction);
     connect(&m_controller, &VpController::repaintRequested, this, [this] { update(); });
     // 控制器请求键盘焦点，画布主动获取焦点
     connect(&m_controller, &VpController::focusRequested, this, [this] { forceActiveFocus(); });
@@ -142,7 +143,7 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         // 先检测控制点。后创建的平面在上层，先被检查
         for (int i = m_doc.planes().size() - 1; i >= 0; --i) {
             const int candidateHandle = m_doc.planes()[i].quad().controlPointIndexAt(point, tolerance);
-            if (candidateHandle >= 0) {
+            if (candidateHandle >= 0 && m_doc.planes()[i].controlPointEditable(candidateHandle)) {
                 planeIndex = i;
                 handle = candidateHandle;
                 break;
@@ -176,6 +177,12 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
         // Alt + 拖动共用边对面的边中点：绕共用边旋转这个子平面，即改它与父平面的夹角
         const bool rotate = (event->modifiers() & Qt::AltModifier) && plane.parentPlaneIndex() >= 0
                             && handle == 4 + 2;
+        if (extrude && plane.isEdgeLocked(edge))
+            return;
+        if (rotate && !m_controller.planeAngleEditable()) {
+            m_controller.postStatus(m_controller.planeAngleLockReason());
+            return;
+        }
         m_editPlaneIndex = planeIndex;
         m_extrudePreviewReady = false;
         m_editTool.begin(plane, point, handle, edge, extrude, m_doc.background().size(),
@@ -324,10 +331,13 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
     }
     // 缩放/旋转的最终几何取松开时的位置，避免漏掉最后一次移动；图像拖动
     // 可以在任何工具下进行，所以先于工具分派收尾。
-    if (m_draggedFloatingImageIndex >= 0 && m_floatingImageTransform.isTransforming())
+    if (m_draggedFloatingImageIndex >= 0)
         updateFloatingImageInteraction(widgetToImage(event->position()), event->modifiers());
     if (endFloatingImageInteraction())
         return;
+    QMouseEvent finalMove(QEvent::MouseMove, event->position(), event->globalPosition(),
+                          Qt::NoButton, Qt::LeftButton, event->modifiers());
+    mouseMoveEvent(&finalMove);
     switch (m_controller.tool()) {
     case Tool::EditPlane: {
         if (m_editPlaneIndex < 0)
@@ -444,6 +454,7 @@ void VpCanvas::keyPressEvent(QKeyEvent *event)
         m_createTool.removeLastPoint();
         reportCreateProgress();
     } else if (m_doc.selectedFloatingImage() >= 0) {
+        cancelInteraction();
         m_doc.removeFloatingImage(m_doc.selectedFloatingImage());
         m_controller.postStatus(tr("已删除选中的图像。"));
     } else {
@@ -730,6 +741,10 @@ bool VpCanvas::beginFloatingImageInteraction(const QPointF &point)
 void VpCanvas::updateFloatingImageInteraction(const QPointF &point,
                                               Qt::KeyboardModifiers modifiers)
 {
+    if (m_draggedFloatingImageIndex < 0 || m_draggedFloatingImageIndex >= m_doc.floatingImages().size()) {
+        cancelInteraction();
+        return;
+    }
     if (m_floatingImageTransform.isTransforming()) {
         FloatingImage image;
         if (m_floatingImageTransform.update(
@@ -775,7 +790,7 @@ bool VpCanvas::endFloatingImageInteraction()
         return false;
     m_floatingImageTransform.reset();
     m_draggedFloatingImageIndex = -1;
-    m_doc.commitEdit(m_floatingImageChanged); // 只是点了一下、几何没变就不占一格历史
+    m_doc.commitEdit(true); // 只是点了一下、几何没变就不占一格历史
     m_floatingImageChanged = false;
     update();
     return true;
@@ -806,11 +821,7 @@ void VpCanvas::attachFloatingImageToPlane(int index, int planeIndex, const QPoin
         const PerspectivePlane &plane = m_doc.planes()[i];
         if (plane.surfaceGroupId() != host.surfaceGroupId())
             continue;
-        PerspectiveQuad quad;
-        for (int c = 0; c < 4; ++c) {
-            quad.setCanvasCorner(c, plane.quad().canvasCorners()[c]);
-            quad.setSurfaceCorner(c, plane.quad().surfaceCorners()[c]);
-        }
+        const PerspectiveQuad &quad = plane.quad();
         if (i == planeIndex)
             hostQuadIndex = surfaceQuads.size();
         surfaceQuads.append(quad);
@@ -852,18 +863,22 @@ void VpCanvas::bakeSelectedFloatingImage()
     if (m_doc.selectedFloatingImage() < 0)
         return;
     const int index = m_doc.selectedFloatingImage();
-    const FloatingImage image = m_doc.floatingImage(index); // 拷贝：移除后仍要用它的几何算脏矩形
+    m_doc.beginEdit();
     m_doc.beginPaintTransaction();
     QPainter painter(&m_doc.paintLayer());
     painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    SceneRenderer(m_doc).renderFloatingImage(painter, image);
+    QRect dirty;
+    for (int i = 0; i <= index; ++i) {
+        const FloatingImage &image = m_doc.floatingImage(i);
+        SceneRenderer(m_doc).renderFloatingImage(painter, image);
+        dirty = dirty.united(FloatingImageProjection::forImage(image)->canvasOutline()
+                            .boundingRect().toAlignedRect().adjusted(-2, -2, 2, 2));
+    }
     painter.end();
-    const QRect dirty = FloatingImageProjection::forImage(image)->canvasOutline()
-                            .boundingRect().toAlignedRect()
-                            .adjusted(-2, -2, 2, 2).intersected(m_doc.paintLayer().rect());
-    m_doc.addPaintDirty(dirty);
-    // 删除会顺带取消选中，并在同一步历史里记录结构变化与绘画层增量，撤销时一起回退。
-    m_doc.removeFloatingImage(index);
+    m_doc.addPaintDirty(dirty.intersected(m_doc.paintLayer().rect()));
+    for (int i = index; i >= 0; --i)
+        m_doc.removeFloatingImage(i);
+    m_doc.commitEdit(true);
     m_floatingImageTransform.reset();
     m_draggedFloatingImageIndex = -1;
     m_floatingImageChanged = false;

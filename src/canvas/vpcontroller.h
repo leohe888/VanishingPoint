@@ -88,6 +88,7 @@ public:
 
 signals:
     void aboutToChangeTool();
+    void aboutToExecuteCommand();
     void toolChanged();
     void brushChanged();
     void cloneChanged();

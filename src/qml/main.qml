@@ -61,7 +61,7 @@ Window {
 
     Shortcut {
         sequences: ["Ctrl+Y", "Ctrl+Shift+Z"]
-        onActivated: workArea.canvas.undo()
+        onActivated: workArea.canvas.redo()
     }
 
     // 创建完平面等操作可能切换工具，工具栏随控制器状态同步。

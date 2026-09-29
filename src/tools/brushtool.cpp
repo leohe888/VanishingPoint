@@ -114,6 +114,8 @@ QRect BrushTool::drawStrokeTo(QImage &layer, const QPointF &uv)
     const qreal radiusUv = uvRadius(m_quad, m_diameter);
     const qreal step = qMax(0.001, radiusUv * 0.35);
     const qreal distance = QLineF(m_lastUv, uv).length();
+    if (distance < 1e-12)
+        return {};
     const int count = qMax(1, int(qCeil(distance / step)));
 
     QPainter painter(&layer);

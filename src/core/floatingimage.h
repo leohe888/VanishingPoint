@@ -21,6 +21,13 @@ struct FloatingImage
     QVector<PerspectiveQuad> surfaceQuads;
     int hostQuadIndex = -1;
 
+    friend bool operator==(const FloatingImage &a, const FloatingImage &b)
+    {
+        return a.bitmap == b.bitmap && a.placementOrigin == b.placementOrigin
+            && a.scaleFactors == b.scaleFactors && a.rotationDegrees == b.rotationDegrees
+            && a.surfaceAttached == b.surfaceAttached && a.surfaceQuads == b.surfaceQuads
+            && a.hostQuadIndex == b.hostQuadIndex;
+    }
     QSizeF displaySize() const;
     QTransform bitmapToPlacementTransform() const;
     QVector<QPointF> transformHandlePositions() const;

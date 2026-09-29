@@ -91,3 +91,7 @@ add_vp_test(tst_floatingimageprojection
     ${PROJECT_SOURCE_DIR}/src/core/floatingimageprojection.cpp
     ${PROJECT_SOURCE_DIR}/src/tools/floatingimagetransformtool.cpp
     ${VP_GEOMETRY_SOURCES})
+
+add_vp_test(tst_auditinteractions tst_auditinteractions.cpp ${VP_CANVAS_TEST_SOURCES})
+target_link_libraries(tst_auditinteractions PRIVATE Qt6::Quick)
+set_tests_properties(tst_auditinteractions PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
