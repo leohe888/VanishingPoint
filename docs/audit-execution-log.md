@@ -89,3 +89,12 @@
 - 变换工具进入时若没有选中图像，选中最上层浮动图像。删除、烘焙、撤销/重做和重新打开文档同步更新可用性；当前工具失效时切回编辑平面或创建平面。结构事务完成后再切换，避免取消烘焙操作。
 - 更新原有测试的平面前提，增加控制器、按钮/快捷键、最后一张图像烘焙和历史恢复的回归验证。
 - 完整构建成功，CTest 15/15 通过，git diff --check 通过。仅提交本次实现、测试和日志，保留用户图标、画布、其他界面和 AGENTS.md 改动。
+
+## 发布打包：Windows x64 Release
+
+- 新增 scripts/package-windows.ps1：使用 Qt 6.11.2 / MinGW 13.1 / Ninja 构建 Release，关闭测试目标，扫描 src/qml 并部署 Qt/QML 插件及编译器运行库，再输出带时间戳的免安装 ZIP 和 SHA256。
+- dist 加入 Git 忽略，构建与部署的原始日志保存在 build/package-release。打包反映当前工作区，包含用户尚未提交的界面和图标修改；这些源文件没有纳入本次提交。
+- 产物：dist/VanishingPoint-Windows-x64-20260929-135317.zip，41,192,171 字节。
+- SHA256：E6F19082B8C7F515E244C6AF000BB221D7861FDF2CE738E2BA49F0D6EFED1D7D。
+- Release 构建与部署成功；从 ZIP 解压到独立目录，清除 Qt/MinGW PATH 以及 QML/插件搜索环境变量后，以 Windows 平台和软件渲染启动。进程持续运行 5 秒，标准错误为空，随后只关闭验证进程。这是本机隔离环境的启动验证，尚未在另一台电脑验证完整功能。
+- 构建期间 Qt 安装提示可选 Vulkan headers / Qt6TaskTree 缺失，未阻止构建、部署或启动。git diff --check 通过。
