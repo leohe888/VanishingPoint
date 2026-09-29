@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import VanishingPoint 1.0
 import QtQuick.Templates 2.15 as Templates
 
 Rectangle {
@@ -12,7 +13,7 @@ Rectangle {
                                                 (horizontal ? width : height) / 2)
     signal moved(real position)
 
-    color: "#4A4A4A"
+    color: VpTheme.scrollBackground
     visible: size < 1
 
     function moveBy(direction) {
@@ -29,7 +30,7 @@ Rectangle {
             height: root.horizontal ? root.height : root.arrowExtent
             x: root.horizontal && index === 1 ? root.width - width : 0
             y: !root.horizontal && index === 1 ? root.height - height : 0
-            color: button.pressed ? "#696969" : "#4A4A4A"
+            color: button.pressed ? VpTheme.scrollHandle : VpTheme.scrollBackground
 
             Image {
                 anchors.centerIn: parent
@@ -63,7 +64,7 @@ Rectangle {
         position: root.position
         active: true
         onPositionChanged: if (pressed) root.moved(position)
-        background: Rectangle { color: "#4A4A4A" }
-        contentItem: Rectangle { color: "#696969"; radius: 0 }
+        background: Rectangle { color: VpTheme.scrollBackground }
+        contentItem: Rectangle { color: VpTheme.scrollHandle; radius: 0 }
     }
 }

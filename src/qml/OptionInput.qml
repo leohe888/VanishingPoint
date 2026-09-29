@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import VanishingPoint 1.0
 import QtQuick.Layouts 1.15
 
 // 工具选项行：标签 + 整数输入框；回车或失去焦点时提交。
@@ -36,7 +37,7 @@ RowLayout {
 
     Text {
         Layout.alignment: Qt.AlignVCenter
-        color: "#dddddd"
+        color: VpTheme.text
         font.pixelSize: 12
         text: root.label
     }
@@ -46,16 +47,16 @@ RowLayout {
         Layout.preferredHeight: 24
         Layout.alignment: Qt.AlignVCenter
         radius: 2
-        color: "#3e3e3e"
-        border.color: input.activeFocus ? "#4bc3ff" : "#777777"
+        color: VpTheme.inputBackground
+        border.color: input.activeFocus ? VpTheme.accent : VpTheme.controlBorder
 
         TextInput {
             id: input
             anchors.fill: parent
             anchors.margins: 4
-            color: "#f3f8fa"
-            selectionColor: "#4bc3ff"
-            selectedTextColor: "#0e3d52"
+            color: VpTheme.inputText
+            selectionColor: VpTheme.accent
+            selectedTextColor: VpTheme.selectedText
             font.pixelSize: 12
             horizontalAlignment: TextInput.AlignRight
             verticalAlignment: TextInput.AlignVCenter
@@ -79,7 +80,7 @@ RowLayout {
     Text {
         Layout.alignment: Qt.AlignVCenter
         visible: root.suffix.length > 0
-        color: "#dddddd"
+        color: VpTheme.text
         font.pixelSize: 12
         text: root.suffix
     }

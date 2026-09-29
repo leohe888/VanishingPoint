@@ -8,9 +8,9 @@ Rectangle {
 
     property int currentTool: VpTools.CreatePlane
 
-    property color backgroundColor: "#535353"
-    property color hoverColor: "#454545"
-    property color selectedColor: "#363636"
+    property color backgroundColor: VpTheme.panelBackground
+    property color hoverColor: VpTheme.toolHover
+    property color selectedColor: VpTheme.toolSelected
 
     color: backgroundColor
 
@@ -56,7 +56,7 @@ Rectangle {
                     width: parent.width
                     height: 1
                     visible: toolGroup.modelData.separatorBefore === true
-                    color: "#3E3E3E"
+                    color: VpTheme.border
                 }
 
                 ToolButton {

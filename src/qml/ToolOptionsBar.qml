@@ -6,8 +6,8 @@ import VanishingPoint 1.0
 Rectangle {
     id: root
 
-    color: "#535353"
-    border.color: "#3e3e3e"
+    color: VpTheme.panelBackground
+    border.color: VpTheme.border
     border.width: 1
 
     // 只显示当前工具有意义的选项
@@ -38,7 +38,7 @@ Rectangle {
 
             Text {
                 Layout.alignment: Qt.AlignVCenter
-                color: "#dddddd"
+                color: VpTheme.text
                 font.pixelSize: 12
                 text: qsTr("颜色")
             }
@@ -49,7 +49,7 @@ Rectangle {
                 Layout.alignment: Qt.AlignVCenter
                 radius: 2
                 color: vpController.brushColor
-                border.color: "#777777"
+                border.color: VpTheme.controlBorder
 
                 MouseArea {
                     anchors.fill: parent
@@ -92,7 +92,7 @@ Rectangle {
 
             Text {
                 Layout.alignment: Qt.AlignVCenter
-                color: "#dddddd"
+                color: VpTheme.text
                 font.pixelSize: 12
                 text: qsTr("对齐")
             }
@@ -102,14 +102,14 @@ Rectangle {
                 Layout.preferredHeight: 16
                 Layout.alignment: Qt.AlignVCenter
                 radius: 2
-                color: vpController.cloneAligned ? "#4bc3ff" : "#3e3e3e"
-                border.color: "#777777"
+                color: vpController.cloneAligned ? VpTheme.accent : VpTheme.checkboxBackground
+                border.color: VpTheme.controlBorder
 
                 Text {
                     anchors.centerIn: parent
                     visible: vpController.cloneAligned
                     text: "✓"
-                    color: "#0e3d52"
+                    color: VpTheme.selectedText
                     font.pixelSize: 11
                 }
 

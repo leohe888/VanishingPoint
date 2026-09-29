@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import VanishingPoint 1.0
 
 pragma ComponentBehavior: Bound
 
@@ -11,8 +12,8 @@ Rectangle {
     property string iconSource: ""
     property string shortcut: ""
     property bool selected: false
-    property color hoverColor: "#454545"
-    property color selectedColor: "#363636"
+    property color hoverColor: VpTheme.toolHover
+    property color selectedColor: VpTheme.toolSelected
 
     width: 28
     height: 28
@@ -22,7 +23,7 @@ Rectangle {
            ? root.selectedColor
            : (root.enabled && mouseArea.containsMouse ? root.hoverColor : "transparent")
     border.width: (root.selected || (root.enabled && mouseArea.containsMouse)) ? 1 : 0
-    border.color: "#777777"
+    border.color: VpTheme.controlBorder
 
     signal activated(int toolId)
 
@@ -61,14 +62,14 @@ Rectangle {
         width: caption.implicitWidth + 16
         height: 26
         radius: 3
-        color: "#F9F9F9"
-        border.color: "#666666"
+        color: VpTheme.tooltipBackground
+        border.color: VpTheme.tooltipBorder
         z: 10
 
         Text {
             id: caption
             anchors.centerIn: parent
-            color: "#575757"
+            color: VpTheme.tooltipText
             font.pixelSize: 12
         }
     }

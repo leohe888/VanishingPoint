@@ -14,6 +14,8 @@ int main(int argc, char *argv[])
 
     qmlRegisterUncreatableMetaObject(VpTools::staticMetaObject, "VanishingPoint", 1, 0, "VpTools",
                                      "仅提供工具枚举");
+    qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/src/qml/VpTheme.qml")),
+                             "VanishingPoint", 1, 0, "VpTheme");
     qmlRegisterType<VpCanvas>("VanishingPoint", 1, 0, "VpCanvas");
 
     // 控制器先构造、后销毁，确保 QML 引擎和画布始终引用有效对象。

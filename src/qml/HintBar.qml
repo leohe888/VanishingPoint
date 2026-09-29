@@ -1,8 +1,9 @@
 import QtQuick 2.15
+import VanishingPoint 1.0
 
 Rectangle {
-    color: "#535353"
-    border.color: "#3e3e3e"
+    color: VpTheme.panelBackground
+    border.color: VpTheme.border
     border.width: 1
 
     property alias message: caption.text
@@ -27,7 +28,7 @@ Rectangle {
             width: parent.width - 24
             height: parent.height
             verticalAlignment: Text.AlignVCenter
-            color: "#dddddd"
+            color: VpTheme.text
             font.pixelSize: 12
             elide: Text.ElideRight
         }

@@ -3,6 +3,7 @@
 - 工具标识由 core/tooltypes.h 中的 VpTools::Tool 公共枚举定义，通过 Q_NAMESPACE / Q_ENUM_NS 注册为 QML 的 VpTools。枚举只定义稳定的工具编号，不持有状态；控制器负责工具切换和可用性，画布与 QML 共用这些编号。画布仍依赖控制器提供文档和交互接口。
 - 应用层在 main 创建 VpController，并通过根上下文 vpController 提供给 QML。控制器先于引擎构造、晚于引擎销毁，由 C++ 管理生命周期；setContextProperty 不转移所有权。
 - ToolBar、ToolOptionsBar 和 WorkArea 是应用专用界面，直接访问根上下文 vpController，不再逐层声明或传递 controller 属性；WorkArea 内的 VpCanvas 仍使用 controller: vpController 注入。VpController 不再注册为具名 QML 类型，C++ 创建并通过上下文提供的实例使用默认 CppOwnership，无需显式设置所有权。
+- QML 界面配色统一定义在 VpTheme.qml 的只读颜色属性中，按面板、输入、工具状态、滚动条、弹出菜单和提示等用途命名；通过 QRC 和 qmlRegisterSingletonType 注册，每个 QML 引擎拥有自己的主题实例。组件引用 VpTheme，保留原有颜色值及局部颜色覆盖能力；用户选择的画笔颜色仍属于 VpController 的业务状态。
 - VpCanvas 是 Qt Quick 视图，处理控件坐标转换、缩放、滚动、鼠标光标和重绘。controller 是外部注入的必需属性，以 QPointer 保存而不拥有；切换控制器断开旧信号并重置视图，控制器销毁后安全清空。画布重建不销毁文档和历史。undo/redo 是兼容转发；只读访问文档用于绘制，不拥有业务工具或可写模型引用。
 - VpController 拥有文档与全部工具。pointerPress/Move/Release 接收图像坐标、修饰键和命中所需缩放；不读取控件尺寸，不依赖 QQuickItem。统一协调平面创建/编辑、图像移动/吸附/烘焙、选区取样、画笔/图章、粘贴、删除和历史。独立命令先 cancelInteraction：提交已绘制笔触，丢弃几何与选区预览。
 - VpDocument 保存数据与历史，在写入边界验证几何和图像。预览写入由 beginEdit/commitEdit/cancelEdit 包围；完整增删命令在无事务时自动提交，在事务内延迟到 commitEdit。历史比较实际内容，无操作和仅选择变化不删除 redo；绘画用脏区增量，结构用 COW 快照。

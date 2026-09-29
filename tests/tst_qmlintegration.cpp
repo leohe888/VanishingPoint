@@ -12,9 +12,12 @@ class QmlIntegrationTest : public QObject {
 private slots:
     void redoShortcutCallsRedo() {
         qmlRegisterUncreatableMetaObject(VpTools::staticMetaObject,"VanishingPoint",1,0,"VpTools","Enums only");
+        qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/src/qml/VpTheme.qml")),
+                                 "VanishingPoint", 1, 0, "VpTheme");
         qmlRegisterType<VpCanvas>("VanishingPoint",1,0,"VpCanvas");
         VpController controller;
         QQmlApplicationEngine engine;
+        QSignalSpy warnings(&engine, &QQmlEngine::warnings);
         engine.rootContext()->setContextProperty("vpController", &controller);
         engine.load(QUrl("qrc:/src/qml/main.qml"));
         QVERIFY(!engine.rootObjects().isEmpty());
@@ -108,6 +111,7 @@ private slots:
         QCOMPARE(controller.document().planes().size(), 1);
         QVERIFY(controller.canUndo());
         QQmlApplicationEngine recreated;
+        QSignalSpy recreatedWarnings(&recreated, &QQmlEngine::warnings);
         recreated.rootContext()->setContextProperty("vpController", &controller);
         recreated.load(QUrl("qrc:/src/qml/main.qml"));
         QVERIFY(!recreated.rootObjects().isEmpty());
@@ -117,6 +121,8 @@ private slots:
         QCOMPARE(QQmlEngine::objectOwnership(&controller), QQmlEngine::CppOwnership);
         QCOMPARE(controller.document().planes().size(), 1);
         newCanvas->undo(); QVERIFY(controller.document().planes().isEmpty());
+        QVERIFY(warnings.isEmpty());
+        QVERIFY(recreatedWarnings.isEmpty());
     }
 };
 QTEST_MAIN(QmlIntegrationTest)

@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import VanishingPoint 1.0
 import QtQuick.Window 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Dialogs
@@ -7,7 +8,7 @@ Window {
     width: 1280
     height: 820
     visible: true
-    color: "#535353"
+    color: VpTheme.panelBackground
     title: qsTr("消失点")
 
     RowLayout {

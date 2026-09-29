@@ -3,8 +3,8 @@ import VanishingPoint 1.0
 
 Rectangle {
     id: root
-    color: "#4D4D4D"
-    border.color: "#3E3E3E"
+    color: VpTheme.canvasBackground
+    border.color: VpTheme.border
     border.width: 1
 
     property alias canvas: canvas
@@ -30,7 +30,7 @@ Rectangle {
         id: bar
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 1 }
         height: 13
-        color: "#535353"
+        color: VpTheme.panelBackground
 
         ZoomControls {
             id: zoomControls

@@ -36,18 +36,18 @@ RowLayout {
     Rectangle {
         id: zoomSelector
         Layout.preferredWidth: 92; Layout.preferredHeight: 15
-        color: "#414141"
-        border.color: "#727272"
+        color: VpTheme.zoomBackground
+        border.color: VpTheme.zoomBorder
         radius: 2
         Text {
             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-            color: "#eeeeee"
+            color: VpTheme.zoomText
             text: Number((root.canvas.zoom * 100).toFixed(1)) + "%"
             font.pixelSize: 12
         }
         Text {
             anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
-            text: "▴"; color: "#dddddd"
+            text: "▴"; color: VpTheme.text
         }
         MouseArea { anchors.fill: parent; onClicked: zoomPopup.open() }
         Controls.Popup {
@@ -59,7 +59,7 @@ RowLayout {
             height: Math.min(menuColumn.implicitHeight + 8, root.canvas.height)
             padding: 4
             closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnPressOutside
-            background: Rectangle { color: "#414141"; border.color: "#777777"; radius: 2 }
+            background: Rectangle { color: VpTheme.zoomBackground; border.color: VpTheme.controlBorder; radius: 2 }
             contentItem: Flickable {
                 contentHeight: menuColumn.implicitHeight
                 clip: true
@@ -73,15 +73,15 @@ RowLayout {
                             required property var modelData
                             width: menuColumn.width
                             height: modelData.scale === 0 ? 9 : 23
-                            color: optionMouse.containsMouse ? "#626262" : "transparent"
+                            color: optionMouse.containsMouse ? VpTheme.popupHover : "transparent"
                             Rectangle {
                                 visible: modelData.scale === 0
                                 anchors.centerIn: parent
-                                width: parent.width - 10; height: 1; color: "#737373"
+                                width: parent.width - 10; height: 1; color: VpTheme.popupSeparator
                             }
                             Text {
                                 anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                                text: modelData.label; color: "#eeeeee"; font.pixelSize: 12
+                                text: modelData.label; color: VpTheme.zoomText; font.pixelSize: 12
                             }
                             MouseArea {
                                 id: optionMouse
