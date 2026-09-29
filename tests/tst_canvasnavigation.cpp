@@ -1,4 +1,5 @@
 #include "canvas/vpcanvas.h"
+#include "testhelpers.h"
 #include <QMouseEvent>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -15,6 +16,55 @@ class CanvasNavigationTest : public QObject
 {
     Q_OBJECT
 private slots:
+    void historyRestoresPlanesAndDiscardsRedoBranch()
+    {
+        CanvasProbe canvas;
+        auto &document = canvas.controller()->document();
+        document.beginEdit();
+        document.appendPlane(makeTestPlane());
+        document.setSelectedPlane(0);
+        document.commitEdit(true);
+
+        canvas.undo();
+        QVERIFY(document.planes().isEmpty());
+        canvas.redo();
+        QCOMPARE(document.planes().size(), 1);
+        QCOMPARE(document.selectedPlane(), 0);
+
+        canvas.undo();
+        QImage image(8, 8, QImage::Format_ARGB32);
+        image.fill(Qt::red);
+        document.addFloatingImage(image);
+        canvas.redo();
+        QVERIFY(document.planes().isEmpty());
+        QCOMPARE(document.floatingImages().size(), 1);
+        QVERIFY(!document.canRedo());
+    }
+
+    void undoFinishesActiveBrushStroke()
+    {
+        QTemporaryDir directory;
+        QImage image(200, 120, QImage::Format_RGB32);
+        image.fill(Qt::white);
+        const QString path = directory.filePath("background.png");
+        QVERIFY(image.save(path));
+        CanvasProbe canvas;
+        auto &document = canvas.controller()->document();
+        QVERIFY(document.loadImage(path));
+        document.beginEdit();
+        document.appendPlane(makeTestPlane());
+        document.commitEdit(true);
+        canvas.controller()->setTool(VpController::Brush);
+        QVERIFY(canvas.controller()->beginBrush(QPointF(50, 40)));
+        QVERIFY(document.hasPaintContent());
+        canvas.undo();
+        QVERIFY(!canvas.controller()->brushDrawing());
+        QVERIFY(!document.hasPaintContent());
+        QCOMPARE(document.planes().size(), 1);
+        canvas.redo();
+        QVERIFY(document.hasPaintContent());
+    }
+
     void zoomAndScroll()
     {
         QTemporaryDir directory;

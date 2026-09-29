@@ -310,11 +310,11 @@ PerspectivePlane resizePlaneFromEdge(const PerspectivePlane &source, int edge,
     return result;
 }
 
-// 恢复源平面法线在图像上的投影方向（第三个消失方向），所有垂直平面共享它。
 bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atPoint,
                             const QSize &backgroundSize, QPointF *direction)
 {
-    // 齐次形式恢复两个消失点，同时覆盖消失点在无穷远的平行线族。
+    // 将角点转为齐次坐标，通过叉乘求直线，再求两组对边的消失点。
+    // 保留齐次形式，使平行对边产生的无穷远消失点也能参与后续计算。
     const Vec3 p0 = imagePoint(source.quad().canvasCorners()[0]);
     const Vec3 p1 = imagePoint(source.quad().canvasCorners()[1]);
     const Vec3 p2 = imagePoint(source.quad().canvasCorners()[2]);
@@ -325,15 +325,18 @@ bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atP
     const Vec3 line12 = joinLines(p1, p2);
     const Vec3 vanishingX = meetLines(line01, line32);
     const Vec3 vanishingY = meetLines(line03, line12);
+    // 接近零向量的齐次交点无法表示有效消失点（例如两条边线重合）。
     if (dot(vanishingX, vanishingX) < 1e-12 || dot(vanishingY, vanishingY) < 1e-12)
         return false;
 
+    // 以背景中心为主点，先设置经验焦距，再尝试由正交消失点估计焦距。
     const qreal cx = backgroundSize.width() / 2.0;
     const qreal cy = backgroundSize.height() / 2.0;
     const qreal imageExtent = qMax(backgroundSize.width(), backgroundSize.height());
     qreal focalLength = imageExtent * 1.2;
 
-    // 两个消失点均为有限值时，可由正交性解出焦距。
+    // 两个消失点均有限时，利用 f² = (vx - c)·(vy - c) 解出焦距。
+    // 辅助函数会在估计不合理时回退到经验值；无穷远消失点则直接使用经验值。
     if (qAbs(vanishingX.z) > 1e-6 && qAbs(vanishingY.z) > 1e-6) {
         QPointF vx;
         QPointF vy;
@@ -341,6 +344,8 @@ bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atP
             focalLength = focalFromOrthogonalVanishingPoints(vx, vy, backgroundSize);
     }
 
+    // 消失点经相机内参的逆映射恢复三维方向，归一化后叉乘求法线。
+    // 两方向退化或近乎平行时无法得到有效法线。
     const CameraFrame frame{focalLength, cx, cy};
     Vec3 directionX = vanishingDirection(vanishingX, frame);
     Vec3 directionY = vanishingDirection(vanishingY, frame);
@@ -350,20 +355,21 @@ bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atP
     if (!normalize(&normal))
         return false;
 
-    // 3D 法线经内参矩阵投影回图像，即所有垂直平面共享的第三个消失点。
+    // 将三维法线投影为第三个消失点，确定 atPoint 处的二维方向。
     const Vec3 projected = projectDirection(normal, frame);
     QPointF projectedDirection;
     if (qAbs(projected.z) > 1e-6) {
-        // 齐次分量 w 非零：第三个消失点是有限点。
+        // 齐次分量 w 足够大：转为有限消失点，方向从 atPoint 指向它。
         QPointF perpendicularVanishingPoint;
         if (!toImagePoint(projected, &perpendicularVanishingPoint))
             return false;
         projectedDirection = perpendicularVanishingPoint - atPoint;
     } else {
-        // 齐次分量 w 为零意味着第三个消失点位于无穷远处。
+        // w 接近零：按无穷远消失点处理，直接取二维方向，不依赖 atPoint。
         projectedDirection = QPointF(projected.x, projected.y);
     }
 
+    // 排除非有限或过短的方向，归一化后才写入输出，失败时保持输出不变。
     const qreal length = QLineF(QPointF(), projectedDirection).length();
     if (!qIsFinite(length) || length < Epsilon)
         return false;
@@ -371,12 +377,12 @@ bool projectedNormalDirection(const PerspectivePlane &source, const QPointF &atP
     return true;
 }
 
-// 从源平面的一条边拖出与之垂直的新平面（Ctrl+拖动边缘）
 PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int edge,
                                            const QPointF &dragPoint,
                                            const QPointF &pressPoint,
                                            const QSize &backgroundSize)
 {
+    // 步骤 1：检查输入，并初始化新面片的接缝属性；失败时返回当前构造结果。
     PerspectivePlane result;
     if (!isValidEdgeIndex(edge) || backgroundSize.isEmpty() ||
         !qIsFinite(dragPoint.x()) || !qIsFinite(dragPoint.y()) ||
@@ -386,8 +392,10 @@ PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int e
     result.setEdgeLocked(0, true); // 新平面的第 0 条边就是与源平面共用的边
     result.quad().setSurfaceCorner(0, source.quad().surfaceCorners()[edge]);
     result.quad().setSurfaceCorner(1, source.quad().surfaceCorners()[(edge + 1) % PerspectiveQuad::CornerCount]);
+    // 外侧展开角点先与接缝重合，后续再根据伸出深度展开。
     result.quad().setSurfaceCorner(2, result.quad().surfaceCorners()[1]);
     result.quad().setSurfaceCorner(3, result.quad().surfaceCorners()[0]);
+    // 步骤 2：求共享边中点处的法线投影，将鼠标位移分解为有符号伸出距离。
     const QPointF a = source.quad().canvasCorners()[edge];
     const QPointF b = source.quad().canvasCorners()[(edge + 1) % PerspectiveQuad::CornerCount];
     const QPointF midpoint = (a + b) / 2.0;
@@ -395,7 +403,7 @@ PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int e
     if (!projectedNormalDirection(source, midpoint, backgroundSize, &perpendicularAtMidpoint))
         return result;
 
-    // 指针只控制沿投影后 3D 法线的有符号距离，侧向移动不改变夹角。
+    // 点积仅保留法线投影方向上的位移，垂直于该方向的鼠标移动不贡献深度。
     const qreal amount = QPointF::dotProduct(dragPoint - pressPoint,
                                              perpendicularAtMidpoint);
     const QPointF targetMidpoint = midpoint + perpendicularAtMidpoint * amount;
@@ -403,12 +411,13 @@ PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int e
     result.quad().setCanvasCorner(1, b);
 
     if (qAbs(amount) < 2.0) {
+        // 拖动太小时保留重合的内外边，交给调用方作为无效候选过滤。
         result.quad().setCanvasCorner(2, b);
         result.quad().setCanvasCorner(3, a);
         return result;
     }
 
-    // 共享边与外侧边在 3D 中同向，故交于原边线族的消失点。
+    // 步骤 3：共享边与外侧边在三维中同向，优先用其消失点确定外侧边。
     const QPointF oppositeA = source.quad().canvasCorners()[(edge + 2) % PerspectiveQuad::CornerCount];
     const QPointF oppositeB = source.quad().canvasCorners()[(edge + 3) % PerspectiveQuad::CornerCount];
     QPointF edgeVanishingPoint;
@@ -423,6 +432,7 @@ PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int e
             QPointF outerAtB;
             QPointF outerAtA;
             const QLineF outerLine(edgeVanishingPoint, targetMidpoint);
+            // 两端的法线投影方向可能不同，分别与外侧边所在直线求交。
             QPointF perpendicularAtA;
             QPointF perpendicularAtB;
             if (!projectedNormalDirection(source, a, backgroundSize, &perpendicularAtA) ||
@@ -440,7 +450,7 @@ PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int e
         }
     }
 
-    // 对边平行时消失点在无穷远：外侧边保持平行，端点仍沿垂直方向移动。
+    // 步骤 4：消失点在无穷远、过远或上述构造失败时，尝试与共享边平行的外侧边。
     if (!constructedWithVanishingPoint) {
         const QLineF outerLine(targetMidpoint, targetMidpoint + (b - a));
         QPointF perpendicularAtA;
@@ -456,12 +466,13 @@ PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int e
             result.quad().setCanvasCorner(2, outerAtB);
             result.quad().setCanvasCorner(3, outerAtA);
         } else {
+            // 仍无法求交则让外侧边退回接缝，返回退化候选而不是修改源平面。
             result.quad().setCanvasCorner(2, b);
             result.quad().setCanvasCorner(3, a);
         }
     }
 
-    // 绕共享边把垂直面展开到曲面上：接缝处曲面坐标相同，外侧边落在源面另一侧。
+    // 步骤 5：建立展开坐标。接缝坐标与源面相同，伸出方向取展开边的二维法线。
     const QPointF surfaceA = result.quad().surfaceCorners()[0];
     const QPointF surfaceB = result.quad().surfaceCorners()[1];
     const QPointF surfaceEdge = surfaceB - surfaceA;
@@ -476,35 +487,36 @@ PerspectivePlane extrudePerpendicularPlane(const PerspectivePlane &source, int e
         sourceCenter += corner;
     sourceCenter /= 4.0;
     const QPointF seamCenter = (surfaceA + surfaceB) / 2.0;
+    // 用源面中心判断朝向，确保新面的展开坐标位于接缝另一侧。
     if (QPointF::dotProduct(outward, sourceCenter - seamCenter) > 0.0)
         outward = -outward;
     const qreal canvasDepth =
         (QLineF(result.quad().canvasCorners()[0], result.quad().canvasCorners()[3]).length() +
          QLineF(result.quad().canvasCorners()[1], result.quad().canvasCorners()[2]).length()) / 2.0;
+    // 以两侧画布长度的均值估计深度，再按接缝的展开/画布长度比换算，最小取 1。
     const qreal surfaceDepth = qMax(1.0, canvasDepth * surfaceEdgeLength / canvasEdgeLength);
     result.quad().setSurfaceCorner(2, surfaceB + outward * surfaceDepth);
     result.quad().setSurfaceCorner(3, surfaceA + outward * surfaceDepth);
     return result;
 }
 
-// 把子平面绕共享边做三维旋转，再重新投影回图像。
-// 不能用图像平面上的二维圆弧代替：绕三维直线旋转的投影不是圆周运动，
-// 那样夹角数值会与几何脱节，调成 0° 时两个平面看上去依然有角度。
 PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
                                        qreal targetAngle,
                                        const QSize &backgroundSize)
 {
+    // 先复制源平面，所有失败路径都返回原状态；旋转增量依赖源面记录的当前夹角。
     PerspectivePlane result = source;
     if (!isValidEdgeIndex(edge) || !qIsFinite(targetAngle) || backgroundSize.isEmpty())
         return result;
 
+    // 共享边 edge -> next 是旋转轴；farA、farB 是需要移动的两个对侧角点。
     const int next = (edge + 1) % PerspectiveQuad::CornerCount;
     const int farB = (edge + 2) % PerspectiveQuad::CornerCount;
     const int farA = (edge + 3) % PerspectiveQuad::CornerCount;
     const QPointF seamA = source.quad().canvasCorners()[edge];
     const QPointF seamB = source.quad().canvasCorners()[next];
 
-    // 1. 子平面的两个消失点：共享边方向 u 与深度方向 v。
+    // 步骤 1：用两组边线求共享边方向 u 和深度方向 v 的齐次消失点。
     const Vec3 seamLine = joinLines(imagePoint(seamA), imagePoint(seamB));
     const Vec3 outerLine = joinLines(imagePoint(source.quad().canvasCorners()[farA]),
                                      imagePoint(source.quad().canvasCorners()[farB]));
@@ -515,6 +527,7 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
     if (dot(vanishingU, vanishingU) < 1e-12 || dot(vanishingV, vanishingV) < 1e-12)
         return result;
 
+    // 步骤 2：估计相机内参，以背景中心为主点；焦距无法可靠估计时使用经验值。
     const qreal cx = backgroundSize.width() / 2.0;
     const qreal cy = backgroundSize.height() / 2.0;
     const qreal imageExtent = qMax(backgroundSize.width(), backgroundSize.height());
@@ -525,6 +538,7 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
         focalLength = focalFromOrthogonalVanishingPoints(vuImage, vvImage, backgroundSize);
     const CameraFrame frame{focalLength, cx, cy};
 
+    // 恢复旋转轴和深度的三维方向，叉乘得到源平面法线。
     Vec3 axis = vanishingDirection(vanishingU, frame);
     Vec3 depthDirection = vanishingDirection(vanishingV, frame);
     if (!normalize(&axis) || !normalize(&depthDirection))
@@ -533,7 +547,8 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
     if (!normalize(&normal))
         return result; // 两个消失方向重合，无法定义子平面
 
-    // 2. 把角点反投影到平面 normal·X = h 上；h 只决定整体尺度，由共享边端点射线确定。
+    // 步骤 3：反投影到 normal·X = h。取 h = normal·raySeamA，使 a 等于该射线向量。
+    // 此尺度选择不改变最终图像位置；射线与平面的交点为 ray * h / (normal·ray)。
     const Vec3 raySeamA = imageRay(seamA, frame);
     const double h = dot(normal, raySeamA);
     if (qAbs(h) < 1e-9)
@@ -541,6 +556,7 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
     auto onPlane = [&](const QPointF &p, Vec3 *out) {
         const Vec3 ray = imageRay(p, frame);
         const double denominator = dot(normal, ray);
+        // 射线近乎平行于平面时无法求出可靠的有限交点。
         if (qAbs(denominator) < 1e-12)
             return false;
         *out = ray * (h / denominator);
@@ -558,7 +574,8 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
     if (dot(b - a, axis) < 0.0)
         axis = axis * -1.0;
 
-    // 3. 绕共享边旋转 Δ；用完整 Rodrigues 公式，子平面被拖成一般四边形也能保持刚体旋转。
+    // 步骤 4：目标夹角减去当前夹角得到增量，并归约到 (-180°, 180°]。
+    // 在三维中使用完整 Rodrigues 公式，保留平行于轴的分量，使一般四边形也按刚体旋转。
     qreal delta = targetAngle - source.angleToParentDegrees();
     while (delta > 180.0)
         delta -= 360.0;
@@ -571,10 +588,11 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
         // 取 v × axis 为正方向，使 0° 恰好是完全展开、与父平面共面的状态。
         return v * cosine + cross(v, axis) * sine + axis * (dot(axis, v) * (1.0 - cosine));
     };
+    // 分别以共享边两端为基点旋转对侧角点，两基点在同一旋转轴上，轴端点保持不动。
     const Vec3 movedA = a + rotateAroundSeam(outerA - a);
     const Vec3 movedB = b + rotateAroundSeam(outerB - b);
 
-    // 4. 重新投影回图像。
+    // 步骤 5：投影回画布；相机后方、非有限或绝对坐标超过 1e7 的点都会导致失败。
     QPointF projectedA;
     QPointF projectedB;
     if (!projectPoint(movedA, frame, &projectedA) || !projectPoint(movedB, frame, &projectedB))
@@ -582,7 +600,8 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
     result.quad().setCanvasCorner(farA, projectedA);
     result.quad().setCanvasCorner(farB, projectedB);
 
-    // 曲面坐标保持不变：旋转不改变子平面的固有尺寸，纹理应当继续贴合角点。
+    // 步骤 6：归一化记录的目标角度并设置自定义标记。展开坐标保持不变，纹理仍跟随角点。
+    // 正的整周角保留为 360°，其余角度落在 [0°, 360°) 内。
     qreal normalizedAngle = std::fmod(targetAngle, 360.0);
     if (qFuzzyIsNull(normalizedAngle) && targetAngle > 0.0)
         normalizedAngle = 360.0;
@@ -590,6 +609,7 @@ PerspectivePlane rotatePlaneAroundEdge(const PerspectivePlane &source, int edge,
         normalizedAngle += 360.0;
     result.setAngleToParentDegrees(normalizedAngle);
     result.setHasCustomAngle(true);
+    // 最终候选必须通过几何有效性检查；否则连同角度和自定义标记一起回退。
     if (!result.quad().isValid())
         return source;
     return result;

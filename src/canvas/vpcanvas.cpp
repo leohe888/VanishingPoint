@@ -20,23 +20,29 @@ constexpr qreal ViewMargin = 16.0; // 图像与画布边缘的留白
 VpCanvas::VpCanvas(QQuickItem *parent)
     : QQuickPaintedItem(parent), m_doc(m_controller.document())
 {
-    setAcceptHoverEvents(true); // 接受鼠标悬停事件
-    setAcceptedMouseButtons(Qt::LeftButton); // 接受鼠标左键
-    setActiveFocusOnTab(true);  // 允许通过 Tab 键获得焦点
-    setAntialiasing(true);  // 开启抗锯齿
-    setCursor(Qt::ArrowCursor); // 光标统一用箭头
+    setAcceptHoverEvents(true);                 // 接受鼠标悬停事件
+    setAcceptedMouseButtons(Qt::LeftButton);    // 接受鼠标左键
+    setActiveFocusOnTab(true);                  // 允许通过 Tab 键获得焦点
+    setAntialiasing(true);                      // 开启抗锯齿
+    setCursor(Qt::ArrowCursor);                 // 光标统一用箭头
+
+    // 切换工具后，更新画布的鼠标光标
     connect(&m_controller, &VpController::toolChanged, this, [this] {
         updateNavigationCursor(QGuiApplication::keyboardModifiers() & Qt::AltModifier);
     });
 
+    // 告诉 QML 引擎：m_controller 由 C++ 管理，QML 垃圾回收不能删除它
     QQmlEngine::setObjectOwnership(&m_controller, QQmlEngine::CppOwnership);
+
+    // 切换工具前，取消当前交互
     connect(&m_controller, &VpController::aboutToChangeTool,
             this, &VpCanvas::cancelInteraction);
     connect(&m_controller, &VpController::repaintRequested, this, [this] { update(); });
+    // 控制器请求键盘焦点，画布主动获取焦点
     connect(&m_controller, &VpController::focusRequested, this, [this] { forceActiveFocus(); });
 
-    constexpr auto DefaultBackgroundPath = R"(C:\Users\yixin\Pictures\3.jpg)";
-    m_doc.loadImage(QString::fromUtf8(DefaultBackgroundPath));  // 启动时加载默认背景
+    constexpr auto defaultBackgroundPath = R"(C:\Users\yixin\Pictures\3.jpg)";
+    m_doc.loadImage(QString::fromUtf8(defaultBackgroundPath));  // 启动时加载默认背景
 
     // 选中浮动图像或存在选区时让虚线跑起来；都没有就什么都不做，避免空转重绘。
     auto *antsTimer = new QTimer(this);
@@ -105,7 +111,7 @@ void VpCanvas::drawCloneMarker(QPainter *painter)
 
 void VpCanvas::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
-    QQuickPaintedItem::geometryChange(newGeometry, oldGeometry);    // 必须调用基类实现
+    QQuickPaintedItem::geometryChange(newGeometry, oldGeometry);    // 必须先调用基类实现
     if (newGeometry.size() != oldGeometry.size())
         updateViewTransform();
 }
@@ -404,6 +410,24 @@ void VpCanvas::hoverLeaveEvent(QHoverEvent *event)
 
 // 删除键按状态分派：创建平面时回退最后一个角点，否则删除选中的浮动图像，
 // 没有图像再退到删除选中的平面。
+void VpCanvas::undo()
+{
+    cancelInteraction();
+    const bool changed = m_doc.undo();
+    m_controller.notifyPlaneAngleChanged();
+    m_controller.postStatus(changed ? tr("已撤销。") : tr("没有可撤销的操作。"));
+    update();
+}
+
+void VpCanvas::redo()
+{
+    cancelInteraction();
+    const bool changed = m_doc.redo();
+    m_controller.notifyPlaneAngleChanged();
+    m_controller.postStatus(changed ? tr("已重做。") : tr("没有可重做的操作。"));
+    update();
+}
+
 void VpCanvas::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Alt) {

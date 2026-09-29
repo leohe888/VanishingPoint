@@ -39,6 +39,8 @@ public:
     Q_INVOKABLE void zoomStep(bool out);
     Q_INVOKABLE void fitView(bool fill = false);
     Q_INVOKABLE void scrollTo(qreal horizontal, qreal vertical);
+    Q_INVOKABLE void undo();
+    Q_INVOKABLE void redo();
 
 signals:
     void viewChanged();

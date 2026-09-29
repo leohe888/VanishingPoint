@@ -53,6 +53,17 @@ Window {
         onActivated: workArea.controller.pasteImage()
     }
 
+    // 窗口级历史快捷键，不要求画布先获得焦点。
+    Shortcut {
+        sequence: "Ctrl+Z"
+        onActivated: workArea.canvas.undo()
+    }
+
+    Shortcut {
+        sequences: ["Ctrl+Y", "Ctrl+Shift+Z"]
+        onActivated: workArea.canvas.undo()
+    }
+
     // 创建完平面等操作可能切换工具，工具栏随控制器状态同步。
     Connections {
         target: workArea.controller
