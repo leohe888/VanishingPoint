@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     app.setWindowIcon(QIcon(QStringLiteral(":/assets/icons/app.ico")));
 
-    qmlRegisterUncreatableMetaObject(Tools::staticMetaObject, "VanishingPoint", 1, 0, "Tools",
+    qmlRegisterUncreatableMetaObject(VpTools::staticMetaObject, "VanishingPoint", 1, 0, "VpTools",
                                      "仅提供工具枚举");
     qmlRegisterType<VpCanvas>("VanishingPoint", 1, 0, "VpCanvas");
     qmlRegisterUncreatableType<VpController>("VanishingPoint", 1, 0, "VpController",

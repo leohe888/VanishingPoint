@@ -20,7 +20,7 @@ class VpController final : public QObject
     Q_OBJECT
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY historyChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY historyChanged)
-    Q_PROPERTY(Tools::Tool tool READ tool WRITE setTool NOTIFY toolChanged)
+    Q_PROPERTY(VpTools::Tool tool READ tool WRITE setTool NOTIFY toolChanged)
     Q_PROPERTY(int availableTools READ availableTools NOTIFY toolAvailabilityChanged)
     Q_PROPERTY(int brushDiameter READ brushDiameter WRITE setBrushDiameter NOTIFY brushChanged)
     Q_PROPERTY(int brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushChanged)
@@ -40,10 +40,10 @@ public:
     VpDocument &document() { return m_document; }
     const VpDocument &document() const { return m_document; }
 
-    Tools::Tool tool() const { return m_tool; }
-    void setTool(Tools::Tool tool);
+    VpTools::Tool tool() const { return m_tool; }
+    void setTool(VpTools::Tool tool);
     int availableTools() const;
-    bool isToolEnabled(Tools::Tool tool) const;
+    bool isToolEnabled(VpTools::Tool tool) const;
 
     int brushDiameter() const { return m_brushTool.diameter(); }
     void setBrushDiameter(int value);
@@ -155,7 +155,7 @@ private:
     CloneTool m_cloneTool;
     QImage m_cloneSource;
     QByteArray m_cloneSourceKey;
-    Tools::Tool m_tool = Tools::CreatePlane;
-    int m_availableTools = (1 << Tools::CreatePlane) | (1 << Tools::Hand) | (1 << Tools::Zoom);
+    VpTools::Tool m_tool = VpTools::CreatePlane;
+    int m_availableTools = (1 << VpTools::CreatePlane) | (1 << VpTools::Hand) | (1 << VpTools::Zoom);
     int m_gridSize = 50;
 };

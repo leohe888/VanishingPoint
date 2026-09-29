@@ -1,6 +1,6 @@
 # 画布职责边界
 
-- 工具标识由 core/tooltypes.h 中的 Tools::Tool 公共枚举定义，通过 Q_NAMESPACE / Q_ENUM_NS 注册为 QML 的 Tools。枚举只定义稳定的工具编号，不持有状态；控制器负责工具切换和可用性，画布与 QML 共用这些编号。画布仍依赖控制器提供文档和交互接口。
+- 工具标识由 core/tooltypes.h 中的 VpTools::Tool 公共枚举定义，通过 Q_NAMESPACE / Q_ENUM_NS 注册为 QML 的 VpTools。枚举只定义稳定的工具编号，不持有状态；控制器负责工具切换和可用性，画布与 QML 共用这些编号。画布仍依赖控制器提供文档和交互接口。
 - 应用层在 main 创建 VpController，并通过根上下文 vpController 提供给 QML。控制器先于引擎构造、晚于引擎销毁，由 C++ 管理生命周期；setContextProperty 不转移所有权。
 - VpCanvas 是 Qt Quick 视图，处理控件坐标转换、缩放、滚动、鼠标光标和重绘。controller 是外部注入的必需属性，以 QPointer 保存而不拥有；切换控制器断开旧信号并重置视图，控制器销毁后安全清空。画布重建不销毁文档和历史。undo/redo 是兼容转发；只读访问文档用于绘制，不拥有业务工具或可写模型引用。
 - VpController 拥有文档与全部工具。pointerPress/Move/Release 接收图像坐标、修饰键和命中所需缩放；不读取控件尺寸，不依赖 QQuickItem。统一协调平面创建/编辑、图像移动/吸附/烘焙、选区取样、画笔/图章、粘贴、删除和历史。独立命令先 cancelInteraction：提交已绘制笔触，丢弃几何与选区预览。

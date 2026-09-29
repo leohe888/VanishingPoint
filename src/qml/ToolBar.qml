@@ -6,7 +6,7 @@ pragma ComponentBehavior: Bound
 Rectangle {
     id: root
 
-    property int currentTool: Tools.CreatePlane
+    property int currentTool: VpTools.CreatePlane
     required property VpController controller
 
     property color backgroundColor: "#535353"
@@ -19,14 +19,14 @@ Rectangle {
 
 
     readonly property var tools: [
-        { toolId: Tools.EditPlane,   tooltip: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
-        { toolId: Tools.CreatePlane, tooltip: qsTr("创建平面工具 (C)"),  icon: "perspective.png", shortcut: "C" },
-        { toolId: Tools.Marquee,     tooltip: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M", separatorBefore: true },
-        { toolId: Tools.CloneStamp,  tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S", separatorBefore: true },
-        { toolId: Tools.Brush,       tooltip: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
-        { toolId: Tools.Transform,   tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T", separatorBefore: true },
-        { toolId: Tools.Hand, tooltip: qsTr("抓手工具 (H)"), icon: "hand.png", shortcut: "H", separatorBefore: true },
-        { toolId: Tools.Zoom, tooltip: qsTr("缩放工具 (Z)"), icon: "magnifier.png", shortcut: "Z" }
+        { toolId: VpTools.EditPlane,   tooltip: qsTr("编辑平面工具 (V)"),  icon: "pointer.png",    shortcut: "V" },
+        { toolId: VpTools.CreatePlane, tooltip: qsTr("创建平面工具 (C)"),  icon: "perspective.png", shortcut: "C" },
+        { toolId: VpTools.Marquee,     tooltip: qsTr("选框工具 (M)"),     icon: "marquee.png",     shortcut: "M", separatorBefore: true },
+        { toolId: VpTools.CloneStamp,  tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S", separatorBefore: true },
+        { toolId: VpTools.Brush,       tooltip: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
+        { toolId: VpTools.Transform,   tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T", separatorBefore: true },
+        { toolId: VpTools.Hand, tooltip: qsTr("抓手工具 (H)"), icon: "hand.png", shortcut: "H", separatorBefore: true },
+        { toolId: VpTools.Zoom, tooltip: qsTr("缩放工具 (Z)"), icon: "magnifier.png", shortcut: "Z" }
     ]
 
     function selectTool(tool) {

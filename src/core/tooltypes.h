@@ -2,7 +2,7 @@
 
 #include <QObject>
 
-namespace Tools
+namespace VpTools
 {
 Q_NAMESPACE
 

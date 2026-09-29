@@ -24,7 +24,7 @@ class VpCanvas : public QQuickPaintedItem
     Q_PROPERTY(qreal verticalPosition READ verticalPosition NOTIFY viewChanged)
 
 public:
-    using Tool = Tools::Tool;
+    using Tool = VpTools::Tool;
 
     explicit VpCanvas(QQuickItem *parent = nullptr);
     VpController *controller() const { return m_controller.data(); }

@@ -14,12 +14,12 @@ Rectangle {
 
     // 只显示当前工具有意义的选项
     readonly property bool brushOptionsVisible: root.controller !== null
-                                                && root.controller.tool === Tools.Brush
+                                                && root.controller.tool === VpTools.Brush
     readonly property bool cloneOptionsVisible: root.controller !== null
-                                                && root.controller.tool === Tools.CloneStamp
+                                                && root.controller.tool === VpTools.CloneStamp
     readonly property bool planeOptionsVisible: root.controller !== null
-                                                && (root.controller.tool === Tools.CreatePlane
-                                                    || root.controller.tool === Tools.EditPlane)
+                                                && (root.controller.tool === VpTools.CreatePlane
+                                                    || root.controller.tool === VpTools.EditPlane)
 
     RowLayout {
         anchors.fill: parent
