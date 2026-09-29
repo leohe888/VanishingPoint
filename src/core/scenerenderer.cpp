@@ -18,52 +18,32 @@ SceneRenderer::SceneRenderer(const VpDocument &doc)
 {
 }
 
-// 渲染完整场景。showGuides 为 true 时额外绘制编辑辅助元素。
-void SceneRenderer::render(QPainter &painter, qreal viewScale, bool showGuides,
-                           const QVector<QPointF> &creationPoints,
-                           const PerspectivePlane *extrudePreview, bool editHandlesVisible,
-                           int hoveredPlane, qreal antsPhase, bool drawContent, qreal gridSize,
-                           const QPointF &cursorPoint)
+void SceneRenderer::renderContent(QPainter &painter, qreal viewScale) const
 {
-    m_viewScale = qMax(viewScale, 1e-6);
+    painter.drawImage(QPointF(), m_doc.background());
+    painter.drawImage(QPointF(), m_doc.paintLayer());
+    for (const FloatingImage &image : m_doc.floatingImages())
+        renderFloatingImage(painter, image, viewScale);
+}
 
-    // 画布背景属于文档输出的一部分，总是被渲染。showGuides 标志
-    // 只控制下方这些编辑器叠加层的绘制。
-    if (drawContent)
-        painter.drawImage(QPointF(0, 0), m_doc.background());
-    if (showGuides && !m_doc.hasLoadedImage() && m_doc.planes().isEmpty() &&
-        creationPoints.isEmpty()) {
-        painter.save();
-        painter.setPen(QColor("#89919b"));
-        QFont placeholderFont = painter.font();
-        placeholderFont.setPointSize(20);
-        painter.setFont(placeholderFont);
-        painter.drawText(m_doc.background().rect(), Qt::AlignCenter,
-                         QObject::tr("请打开一张图片开始操作"));
-        painter.restore();
-    }
-
-    // 绘画层：画笔笔触烘焙在画布同尺寸的透明层上，与平面几何完全无关。
-    if (drawContent && !m_doc.paintLayer().isNull())
-        painter.drawImage(QPointF(0, 0), m_doc.paintLayer());
-
-    // 浮动图像：每张各自按吸附瞬间的几何快照渲染。
-    if (drawContent)
-        for (const FloatingImage &image : m_doc.floatingImages())
-            renderFloatingImage(painter, image);
-
-    if (!showGuides)
-        return;
+void SceneRenderer::renderGuides(QPainter &painter, qreal viewScale, const Guides &guides) const
+{
+    viewScale = qMax(viewScale, 1e-6);
+    const auto &creationPoints = guides.creationPoints;
+    const auto *extrudePreview = guides.extrudePreview;
+    const bool editHandlesVisible = guides.editHandlesVisible;
+    const qreal gridSize = guides.gridSize, antsPhase = guides.antsPhase;
+    const QPointF cursorPoint = guides.cursorPoint;
     for (int i = 0; i < m_doc.planes().size(); ++i) {
         drawPlaneGuides(painter, m_doc.planes()[i].quad(), i == m_doc.selectedPlane(),
-                        i == hoveredPlane, editHandlesVisible, gridSize, i);
+                        editHandlesVisible, gridSize, viewScale, i);
     }
     if (extrudePreview)
-        drawPlaneGuides(painter, extrudePreview->quad(), true, false, false, gridSize);
+        drawPlaneGuides(painter, extrudePreview->quad(), true, false, gridSize, viewScale);
 
     // 先画连线：已确定角点之间的边，以及连到光标的预览边。
     painter.save();
-    painter.setPen(QPen(QColor("#4bc3ff"), 2.0 / m_viewScale));
+    painter.setPen(QPen(QColor("#4bc3ff"), 2.0 / viewScale));
     painter.setBrush(Qt::NoBrush);
     for (int i = 1; i < creationPoints.size(); ++i)
         painter.drawLine(creationPoints[i - 1], creationPoints[i]);
@@ -79,9 +59,9 @@ void SceneRenderer::render(QPainter &painter, qreal viewScale, bool showGuides,
     }
     // 角点标记与平面控制点保持一致：白色方块 + 深色描边。
     // 光标处的待放置角点也用同一种方块，预览边两端看起来完全对称。
-    painter.setPen(QPen(QColor("#0e526e"), 1.0 / m_viewScale));
+    painter.setPen(QPen(QColor("#0e526e"), 1.0 / viewScale));
     painter.setBrush(QColor("#f3f8fa"));
-    const qreal handle = HandleHalfSize / m_viewScale;
+    const qreal handle = HandleHalfSize / viewScale;
     for (const QPointF &point : creationPoints)
         painter.drawRect(QRectF(point.x() - handle, point.y() - handle, handle * 2, handle * 2));
     if (showCursor)
@@ -118,7 +98,7 @@ QPainterPath SceneRenderer::floatingImageOutline(const FloatingImage &image)
 }
 
 // 渲染一张浮动图像：未吸附时直接绘制；已吸附时按几何快照分段投影。
-void SceneRenderer::renderFloatingImage(QPainter &painter, const FloatingImage &image) const
+void SceneRenderer::renderFloatingImage(QPainter &painter, const FloatingImage &image, qreal viewScale) const
 {
     const auto projection = FloatingImageProjection::forImage(image);
     for (const ProjectedImagePatch &patch : projection->patches()) {
@@ -128,7 +108,7 @@ void SceneRenderer::renderFloatingImage(QPainter &painter, const FloatingImage &
         // 时把共享边上的同一个像素同时排除。
         const QPainterPath projectedClip = patch.canvasClip;
         QPainterPathStroker seamTolerance;
-        seamTolerance.setWidth(.04 / qMax(m_viewScale, 1e-6));
+        seamTolerance.setWidth(.04 / qMax(viewScale, 1e-6));
         seamTolerance.setJoinStyle(Qt::MiterJoin);
         painter.setClipPath(projectedClip.united(seamTolerance.createStroke(projectedClip)), Qt::IntersectClip);
         painter.setWorldTransform(patch.bitmapToCanvas.forward(), true);
@@ -140,14 +120,13 @@ void SceneRenderer::renderFloatingImage(QPainter &painter, const FloatingImage &
 // 绘制面片的编辑辅助元素：外框、内部网格，以及选中且处于编辑
 // 工具时的控制点方块。
 void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveQuad &quad, bool selected,
-                                    bool hovered, bool showHandles, qreal gridSize,
+                                    bool showHandles, qreal gridSize, qreal viewScale,
                                     int planeIndex) const
 {
     painter.save();
-    const qreal lineWidth = (selected ? 1.7 : 1.0) / m_viewScale;
+    const qreal lineWidth = (selected ? 1.7 : 1.0) / viewScale;
     const QColor color = selected ? QColor(52, 195, 255, 230)
-                                  : (hovered ? QColor(120, 210, 255, 210)
-                                             : QColor(70, 155, 210, 160));
+                                  : QColor(70, 155, 210, 160);
     painter.setPen(QPen(color, lineWidth));
     painter.setBrush(Qt::NoBrush);
     painter.drawPolygon(quad.canvasPolygon());
@@ -158,8 +137,8 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveQuad &qu
         planeClip.addPolygon(quad.canvasPolygon());
         planeClip.closeSubpath();
         painter.setClipPath(planeClip, Qt::IntersectClip);
-        painter.setPen(QPen(QColor(65, 182, 235, 145), 0.8 / m_viewScale));
-        const qreal safeGridSize = qMax(gridSize, 4.0 / m_viewScale);
+        painter.setPen(QPen(QColor(65, 182, 235, 145), 0.8 / viewScale));
+        const qreal safeGridSize = qMax(gridSize, 4.0 / viewScale);
         // Derive cell counts from current projected edge lengths so resizing
         // a plane changes the number of cells instead of stretching them.
         const qreal horizontalLength =
@@ -195,8 +174,8 @@ void SceneRenderer::drawPlaneGuides(QPainter &painter, const PerspectiveQuad &qu
         for (int i = 0; i < points.size(); ++i) {
             if (planeIndex >= 0 && !m_doc.planes()[planeIndex].controlPointEditable(i))
                 continue;
-            const qreal radius = HandleHalfSize / m_viewScale;
-            painter.setPen(QPen(QColor("#0e526e"), 1.0 / m_viewScale));
+            const qreal radius = HandleHalfSize / viewScale;
+            painter.setPen(QPen(QColor("#0e526e"), 1.0 / viewScale));
             painter.setBrush(QColor("#f3f8fa"));
             painter.drawRect(QRectF(points[i].x() - radius, points[i].y() - radius,
                                     radius * 2, radius * 2));

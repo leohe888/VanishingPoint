@@ -44,7 +44,7 @@ class AuditInteractionsTest : public QObject {
     }
     static QImage rendered(const VpDocument &doc) {
         QImage image(400,400,QImage::Format_ARGB32); image.fill(Qt::transparent);
-        QPainter painter(&image); SceneRenderer(doc).render(painter,1,false); return image;
+        QPainter painter(&image); SceneRenderer(doc).renderContent(painter); return image;
     }
 private slots:
     void initTestCase() {

@@ -39,7 +39,8 @@ private slots:
                            {QPointF(0,0),QPointF(100,0),QPointF(100,100),QPointF(0,100)});
         VpDocument doc; doc.appendPlane(p); doc.setSelectedPlane(0);
         QImage image(64,64,QImage::Format_ARGB32); image.fill(Qt::transparent); QPainter painter(&image);
-        SceneRenderer(doc).render(painter,1,true,{},nullptr,true,-1,0,true,1);
+        SceneRenderer::Guides guides; guides.gridSize=1; guides.editHandlesVisible=true;
+        SceneRenderer(doc).renderGuides(painter,1,guides);
         QVERIFY(timer.elapsed()<2000);
     }
     void oversizedSelectionIsRejected() {

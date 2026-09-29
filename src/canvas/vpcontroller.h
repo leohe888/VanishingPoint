@@ -1,5 +1,9 @@
 #pragma once
 
+#include "tools/floatingimagetransformtool.h"
+#include "tools/marqueetool.h"
+#include "tools/planecreatetool.h"
+#include "tools/planeedittool.h"
 #include "tools/brushtool.h"
 #include "tools/clonetool.h"
 #include "core/vpdocument.h"
@@ -30,7 +34,7 @@ public:
     enum Tool { CreatePlane, EditPlane, Marquee, CloneStamp, Brush, Transform, Hand, Zoom };
     Q_ENUM(Tool)
 
-    explicit VpController(QObject *parent = nullptr) : QObject(parent) {}
+    explicit VpController(QObject *parent = nullptr);
 
     VpDocument &document() { return m_document; }
     const VpDocument &document() const { return m_document; }
@@ -64,6 +68,18 @@ public:
     QString planeAngleLockReason() const;
 
     Q_INVOKABLE void pasteImage();
+    Q_INVOKABLE void undo();
+    Q_INVOKABLE void redo();
+    void deleteSelection();
+    void cancelInteraction();
+    void pointerPress(const QPointF &point, qreal viewScale, Qt::KeyboardModifiers modifiers);
+    void pointerMove(const QPointF &point, Qt::KeyboardModifiers modifiers);
+    void pointerRelease(const QPointF &point, Qt::KeyboardModifiers modifiers);
+    const QVector<QPointF> &creationPoints() const { return m_createTool.points(); }
+    const PerspectivePlane *extrudePreview() const { return m_extrudePreviewReady ? &m_extrudePreview : nullptr; }
+    QRectF selectionRect() const { return m_marqueeTool.rect(); }
+    QPainterPath selectionOutline() const { return m_marqueeTool.outline(); }
+    bool cursorPreviewVisible() const;
     void notifyPlaneAngleChanged() { emit planeAngleChanged(); }
     void postStatus(const QString &text) { emit statusMessage(text); }
 
@@ -87,8 +103,6 @@ public:
     void finishActiveStrokes();
 
 signals:
-    void aboutToChangeTool();
-    void aboutToExecuteCommand();
     void toolChanged();
     void brushChanged();
     void cloneChanged();
@@ -99,10 +113,40 @@ signals:
     void focusRequested();
 
 private:
+    void finishPlaneCreation();
+    bool extrudePlane(int sourcePlane, int edge);
+    void deleteSelectedPlane();
+    void reportCreateProgress();
+    bool beginFloatingImageInteraction(const QPointF &point, qreal viewScale);
+    void updateFloatingImageInteraction(const QPointF &point, Qt::KeyboardModifiers modifiers);
+    bool endFloatingImageInteraction();
+    bool floatingImageAt(const QPointF &point, int *index, QPointF *grabOffset) const;
+    void attachFloatingImageToPlane(int index, int planeIndex, const QPointF &point);
+    bool moveSurfaceAttachedImage(int index, const QPointF &point);
+    void bakeSelectedFloatingImage();
+    QImage selectionSampleImage() const;
+    int appendSelectionImage(const FloatingImage &image);
+    void updateSelection(const QPointF &point, Qt::KeyboardModifiers modifiers);
     const QImage &cloneSource();
     bool canSetSelectedPlaneAngle() const;
 
     VpDocument m_document;
+    PlaneCreateTool m_createTool;
+    PlaneEditTool m_editTool;
+    MarqueeTool m_marqueeTool;
+
+
+    int m_editPlaneIndex = -1; // 正在编辑的平面下标。-1 同时表示“没有进行中的平面编辑”。
+
+    PerspectivePlane m_extrudePreview;             // 拖出垂直平面时的预览几何
+    bool m_extrudePreviewReady = false; // 预览几何是否可用
+
+
+    FloatingImageTransformTool m_floatingImageTransform; // 进行中的图像移动/缩放/旋转
+    int m_draggedFloatingImageIndex = -1;
+    bool m_floatingImageChanged = false;
+
+
     BrushTool m_brushTool;
     CloneTool m_cloneTool;
     QImage m_cloneSource;
