@@ -43,7 +43,16 @@ try {
     Write-Output "Package: $archivePath"
     Write-Output "Directory: $packageDir"
     Write-Output "Build/deployment log: $logPath"
-    Get-FileHash -LiteralPath $archivePath -Algorithm SHA256
+    $archiveStream = [System.IO.File]::OpenRead($archivePath)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hash = [System.BitConverter]::ToString($sha256.ComputeHash($archiveStream)).Replace('-', '')
+        Write-Output "SHA256: $hash"
+    }
+    finally {
+        $sha256.Dispose()
+        $archiveStream.Dispose()
+    }
 }
 finally {
     $env:PATH = $previousPath
