@@ -157,13 +157,6 @@ Rectangle {
             onEdited: (value) => root.controller.planeAngle = value
         }
 
-        Text {
-            Layout.fillWidth: true
-            color: "#cccccc"
-            font.pixelSize: 12
-            elide: Text.ElideRight
-            text: root.controller ? root.controller.planeAngleLockReason : ""
-        }
         Item {
             Layout.fillWidth: true
         }

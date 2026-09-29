@@ -31,7 +31,6 @@ class VpController final : public QObject
     Q_PROPERTY(int gridSize READ gridSize WRITE setGridSize NOTIFY gridSizeChanged)
     Q_PROPERTY(qreal planeAngle READ planeAngle WRITE setPlaneAngle NOTIFY planeAngleChanged)
     Q_PROPERTY(bool planeAngleEditable READ planeAngleEditable NOTIFY planeAngleChanged)
-    Q_PROPERTY(QString planeAngleLockReason READ planeAngleLockReason NOTIFY planeAngleChanged)
 
 public:
     enum Tool { CreatePlane, EditPlane, Marquee, CloneStamp, Brush, Transform, Hand, Zoom };
@@ -68,7 +67,6 @@ public:
     qreal planeAngle() const;
     void setPlaneAngle(qreal angle);
     bool planeAngleEditable() const;
-    QString planeAngleLockReason() const;
 
     Q_INVOKABLE bool openImage(const QUrl &url);
     bool canUndo() const { return m_document.canUndo(); }
@@ -136,7 +134,6 @@ private:
     int appendSelectionImage(const FloatingImage &image);
     void updateSelection(const QPointF &point, Qt::KeyboardModifiers modifiers);
     const QImage &cloneSource();
-    bool canSetSelectedPlaneAngle() const;
 
     VpDocument m_document;
     PlaneCreateTool m_createTool;

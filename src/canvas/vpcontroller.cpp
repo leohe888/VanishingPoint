@@ -148,33 +148,22 @@ qreal VpController::planeAngle() const
     return m_document.planes()[index].angleToParentDegrees();
 }
 
-bool VpController::canSetSelectedPlaneAngle() const
-{
-    return planeAngleLockReason().isEmpty();
-}
-
 bool VpController::planeAngleEditable() const
 {
-    return canSetSelectedPlaneAngle();
-}
-
-QString VpController::planeAngleLockReason() const
-{
     const int index = m_document.selectedPlane();
-    if (index < 0 || index >= m_document.planes().size())
-        return tr("请先选中一个平面。");
-    if (m_document.planes()[index].parentPlaneIndex() < 0)
-        return tr("只有从别的平面拖出的子平面才有夹角，当前平面是独立平面。");
+    if (index < 0 || index >= m_document.planes().size()
+        || m_document.planes()[index].parentPlaneIndex() < 0)
+        return false;
     for (const PerspectivePlane &child : m_document.planes()) {
         if (child.parentPlaneIndex() == index && child.hasCustomAngle())
-            return tr("它的子平面调整过夹角，父平面角度已锁定，避免整条共享曲面链被重新解释。");
+            return false;
     }
-    return {};
+    return true;
 }
 
 void VpController::setPlaneAngle(qreal angle)
 {
-    if (!canSetSelectedPlaneAngle() || !qIsFinite(angle))
+    if (!planeAngleEditable() || !qIsFinite(angle))
         return;
     qreal normalized = std::fmod(angle, 360.0);
     if (normalized == 0 && angle > 0)
@@ -360,10 +349,8 @@ void VpController::pointerPress(const QPointF &point, qreal viewScale, Qt::Keybo
                             && handle == 4 + 2;
         if (extrude && plane.isEdgeLocked(edge))
             return;
-        if (rotate && !planeAngleEditable()) {
-            postStatus(planeAngleLockReason());
+        if (rotate && !planeAngleEditable())
             return;
-        }
         m_editPlaneIndex = planeIndex;
         m_extrudePreviewReady = false;
         m_editTool.begin(plane, point, handle, edge, extrude, m_document.background().size(),
