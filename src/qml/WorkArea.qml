@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtQuick.Layouts 1.15
 import VanishingPoint 1.0
 
 Rectangle {
@@ -9,41 +10,63 @@ Rectangle {
 
     property alias canvas: canvas
 
-    VpCanvas {
-        id: canvas
-        controller: vpController
-        anchors { left: parent.left; right: parent.right; top: parent.top; bottom: bar.top; margins: 1; rightMargin: 15 }
-        clip: true
-    }
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 1
+        spacing: 0
 
-    NavigationScrollBar {
-        id: vertical
-        orientation: Qt.Vertical
-        anchors { right: parent.right; top: canvas.top; bottom: canvas.bottom; rightMargin: 1 }
-        width: 13
-        size: canvas.verticalSize
-        position: canvas.verticalPosition
-        onMoved: (value) => canvas.scrollTo(canvas.horizontalPosition, value)
-    }
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 1
 
-    Rectangle {
-        id: bar
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 1 }
-        height: 13
-        color: VpTheme.panelBackground
+            VpCanvas {
+                id: canvas
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                controller: vpController
+                clip: true
+            }
 
-        ZoomControls {
-            id: zoomControls
-            canvas: root.canvas
-            anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 3 }
+            Item {
+                Layout.preferredWidth: 13
+                Layout.fillHeight: true
+
+                NavigationScrollBar {
+                    orientation: Qt.Vertical
+                    anchors.fill: parent
+                    size: canvas.verticalSize
+                    position: canvas.verticalPosition
+                    onMoved: (value) => canvas.scrollTo(canvas.horizontalPosition, value)
+                }
+            }
         }
 
-        NavigationScrollBar {
-            orientation: Qt.Horizontal
-            anchors { left: zoomControls.right; leftMargin: 8; right: parent.right; rightMargin: 15; top: parent.top; bottom: parent.bottom }
-            size: canvas.horizontalSize
-            position: canvas.horizontalPosition
-            onMoved: (value) => canvas.scrollTo(value, canvas.verticalPosition)
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 13
+            color: VpTheme.panelBackground
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 3
+                anchors.rightMargin: 15
+                spacing: 8
+
+                ZoomControls {
+                    canvas: root.canvas
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                NavigationScrollBar {
+                    orientation: Qt.Horizontal
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    size: canvas.horizontalSize
+                    position: canvas.horizontalPosition
+                    onMoved: (value) => canvas.scrollTo(value, canvas.verticalPosition)
+                }
+            }
         }
     }
 }
