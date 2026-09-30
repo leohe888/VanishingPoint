@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtQuick.Layouts 1.15
 import VanishingPoint 1.0
 
 Rectangle {
@@ -8,16 +9,16 @@ Rectangle {
 
     property alias message: caption.text
 
-    Row {
+    RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 10
         anchors.rightMargin: 10
         spacing: 6
 
         Image {
-            width: 18
-            height: 18
-            anchors.verticalCenter: parent.verticalCenter
+            Layout.preferredWidth: 18
+            Layout.preferredHeight: 18
+            Layout.alignment: Qt.AlignVCenter
             source: "qrc:/assets/icons/hint.png"
             fillMode: Image.PreserveAspectFit
             smooth: true
@@ -25,8 +26,9 @@ Rectangle {
 
         Text {
             id: caption
-            width: parent.width - 24
-            height: parent.height
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumWidth: 0
             verticalAlignment: Text.AlignVCenter
             color: VpTheme.text
             font.pixelSize: 12
