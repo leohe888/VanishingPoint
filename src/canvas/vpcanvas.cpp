@@ -47,7 +47,7 @@ void VpCanvas::setController(VpController *controller)
     if (m_controller == controller)
         return;
     if (m_controller)
-        disconnect(m_controller.data(), nullptr, this, nullptr);
+        disconnect(m_controller.data(), nullptr, this, nullptr);    // 断开 m_controller 到自己的所有连接
     m_controller = controller;
     if (m_controller) {
         connect(controller, &VpController::toolChanged, this, [this] {
@@ -300,23 +300,12 @@ void VpCanvas::updateNavigationCursor(bool alt)
     if (m_controller->tool() == Tool::Hand) {
         setCursor(m_panning ? Qt::ClosedHandCursor : Qt::OpenHandCursor);
     } else if (m_controller->tool() == Tool::Zoom) {
+        // 改用图标资源：64px 源图缩到 32px，热点对准放大镜圆心
         static const auto makeCursor = [](bool out) {
-        QPixmap icon(32, 32);
-        icon.fill(Qt::transparent);
-        QPainter painter(&icon);
-        painter.setRenderHint(QPainter::Antialiasing);
-        painter.setPen(QPen(Qt::white, 3));
-        painter.drawEllipse(QRectF(3, 3, 18, 18));
-        painter.drawLine(19, 19, 28, 28);
-        painter.setPen(QPen(Qt::black, 1));
-        painter.drawEllipse(QRectF(3, 3, 18, 18));
-        painter.drawLine(19, 19, 28, 28);
-        painter.setPen(QPen(Qt::white, 2));
-        painter.drawLine(7, 12, 17, 12);
-        if (!out)
-            painter.drawLine(12, 7, 12, 17);
-        painter.end();
-        return QCursor(icon, 12, 12);
+            const QPixmap source(QStringLiteral(":/assets/icons/%1.png")
+                                     .arg(out ? QStringLiteral("zoom-out") : QStringLiteral("zoom-in")));
+            const QPixmap icon = source.scaled(32, 32, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            return QCursor(icon, 13, 13);
         };
         static const std::array<QCursor, 2> cursors{makeCursor(false), makeCursor(true)};
         setCursor(cursors[alt ? 1 : 0]);

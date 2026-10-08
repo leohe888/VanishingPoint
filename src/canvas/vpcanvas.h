@@ -27,6 +27,7 @@ public:
     using Tool = VpTools::Tool;
 
     explicit VpCanvas(QQuickItem *parent = nullptr);
+
     VpController *controller() const { return m_controller.data(); }
     void setController(VpController *controller);
 

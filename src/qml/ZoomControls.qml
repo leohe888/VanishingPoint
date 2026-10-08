@@ -45,9 +45,13 @@ RowLayout {
             text: Number((root.canvas.zoom * 100).toFixed(1)) + "%"
             font.pixelSize: 12
         }
-        Text {
-            anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
-            text: "▴"; color: VpTheme.text
+        Image {
+            anchors { right: parent.right; rightMargin: 5; verticalCenter: parent.verticalCenter }
+            width: 10
+            height: 10
+            source: "qrc:/assets/icons/chevron-down.png"
+            fillMode: Image.PreserveAspectFit
+            smooth: true
         }
         MouseArea { anchors.fill: parent; onClicked: zoomPopup.open() }
         Controls.Popup {

@@ -10,3 +10,9 @@
   - CMake：D:\Software\Qt\Tools\CMake_64
   - Ninja：D:\Software\Qt\Tools\Ninja
   - MinGW: D:\Software\Qt\Tools\mingw1310_64
+
+## 注意事项
+
+- 每次修改完成后，需执行以下操作：
+  - 提交 Git，并简要说明本次修改内容。
+  - 在 docs\change-log\yyyy-MM-dd.md 中记录本次变更日志，其中 yyyy-MM-dd 为当天日期。

@@ -105,12 +105,14 @@ Rectangle {
                 color: vpController.cloneAligned ? VpTheme.accent : VpTheme.checkboxBackground
                 border.color: VpTheme.controlBorder
 
-                Text {
+                Image {
                     anchors.centerIn: parent
                     visible: vpController.cloneAligned
-                    text: "✓"
-                    color: VpTheme.selectedText
-                    font.pixelSize: 11
+                    width: 11
+                    height: 11
+                    source: "qrc:/assets/icons/check-dark.png"
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
                 }
 
                 MouseArea {

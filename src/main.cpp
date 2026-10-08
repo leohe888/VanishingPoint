@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     app.setWindowIcon(QIcon(QStringLiteral(":/assets/icons/app.ico")));
 
     qmlRegisterUncreatableMetaObject(VpTools::staticMetaObject, "VanishingPoint", 1, 0, "VpTools",
-                                     "仅提供工具枚举");
+                                     "VpTools 仅用于提供消失点工具枚举");
     qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/src/qml/VpTheme.qml")),
                              "VanishingPoint", 1, 0, "VpTheme");
     qmlRegisterType<VpCanvas>("VanishingPoint", 1, 0, "VpCanvas");

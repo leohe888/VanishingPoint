@@ -17,7 +17,7 @@ Window {
 
         ToolBar {
             id: toolBar
-            z: 1    // 提升工具栏的层级，因为右侧内容区域后绘制，覆盖了工具栏向右扩展的 Tooltip
+            z: 1    // 提升工具栏的层级，因为子项默认按声明顺序堆叠，后面的显示在上面，覆盖了工具栏向右扩展的 Tooltip
             Layout.preferredWidth: 38
             Layout.fillHeight: true
             currentTool: vpController.tool
@@ -79,15 +79,17 @@ Window {
         nameFilters: [qsTr("图片 (*.png *.jpg *.jpeg *.bmp *.webp *.tif *.tiff)"), qsTr("所有文件 (*)")]
         onAccepted: vpController.openImage(selectedFile)
     }
-    Shortcut { sequence: "Ctrl+O"; onActivated: imageDialog.open() }
 
-    // 粘贴是窗口级快捷键：不必先点画布拿到焦点，也能直接粘贴。
+    Shortcut {
+        sequence: "Ctrl+O";
+        onActivated: imageDialog.open()
+    }
+
     Shortcut {
         sequence: "Ctrl+V"
         onActivated: vpController.pasteImage()
     }
 
-    // 窗口级历史快捷键，不要求画布先获得焦点。
     Shortcut {
         sequence: "Ctrl+Z"
         onActivated: vpController.undo()
@@ -98,7 +100,6 @@ Window {
         onActivated: vpController.redo()
     }
 
-    // 创建完平面等操作可能切换工具，工具栏随控制器状态同步。
     Connections {
         target: vpController
         function onStatusMessage(text) { hintBar.message = text }
