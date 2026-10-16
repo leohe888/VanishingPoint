@@ -78,6 +78,7 @@ public:
     bool editActive() const { return m_editActive; }
 
 signals:
+    void imageAboutToBeReplaced();
     void structureChanged();
     void floatingSelectionChanged(bool selected);
     void canUndoChanged(bool available);           // 撤销可用性变化

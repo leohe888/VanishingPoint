@@ -23,6 +23,8 @@ bool VpDocument::setImage(const QImage &source)
     if (painting.isNull())
         return false;
     painting.fill(Qt::transparent);
+    // Finish controller interactions against the old layers only after allocation succeeds.
+    emit imageAboutToBeReplaced();
     m_editActive = false;
     m_editBefore = HistoryEntry();
     m_editPaintBefore = QImage();

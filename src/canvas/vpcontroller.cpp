@@ -20,6 +20,7 @@
 
 VpController::VpController(QObject *parent) : QObject(parent)
 {
+    connect(&m_document, &VpDocument::imageAboutToBeReplaced, this, [this] { cancelInteraction(); });
     if (qobject_cast<QGuiApplication *>(QCoreApplication::instance())) {
         connect(QGuiApplication::clipboard(), &QClipboard::dataChanged, this, [this] {
             m_preferInternalCopy = false; // A newer external copy supersedes the internal snapshot.
@@ -1565,7 +1566,6 @@ bool VpController::openImage(const QUrl &url)
         postStatus(tr("图片打开失败。"), true);
         return false;
     }
-    cancelInteraction();
     if (!m_document.setImage(image)) {
         postStatus(tr("图片打开失败。"), true);
         return false;
