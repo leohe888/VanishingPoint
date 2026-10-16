@@ -102,15 +102,24 @@ bool FloatingSelectionTransformTool::beginTransform(const FloatingSelection &ima
                                                 const QPointF &canvasPoint,
                                                 int handleIndex, Mode mode)
 {
-    if (handleIndex < 0 || handleIndex >= 8
+    const QSizeF size = image.displaySize();
+    if (image.bitmap.isNull() || !std::isfinite(size.width()) || !std::isfinite(size.height())
+        || size.width() <= 0 || size.height() <= 0
+        || !std::isfinite(canvasPoint.x()) || !std::isfinite(canvasPoint.y())
+        || handleIndex < 0 || handleIndex >= 8
         || (mode != Mode::Scale && mode != Mode::Rotate)) {
         return false;
     }
-    m_startSelection = image;
     const QPointF handlePosition = image.transformHandlePositions()[handleIndex];
-    image.mapPlacementToCanvas(handlePosition, &m_activeQuadIndex);
-    if (!image.mapCanvasToPlacement(canvasPoint, &m_pressPosition, m_activeQuadIndex))
+    int activeQuadIndex = -1;
+    QPointF pressPosition;
+    image.mapPlacementToCanvas(handlePosition, &activeQuadIndex);
+    if (!image.mapCanvasToPlacement(canvasPoint, &pressPosition, activeQuadIndex)
+        || !std::isfinite(pressPosition.x()) || !std::isfinite(pressPosition.y()))
         return false;
+    m_startSelection = image;
+    m_activeQuadIndex = activeQuadIndex;
+    m_pressPosition = pressPosition;
     m_grabOffset = m_pressPosition - handlePosition;
     m_activeHandle = handleIndex;
     m_mode = mode;
@@ -129,10 +138,12 @@ void FloatingSelectionTransformTool::beginMove(const FloatingSelection &image,
 bool FloatingSelectionTransformTool::update(const QPointF &canvasPoint, bool constrain,
                                         bool fromCenter, FloatingSelection *result) const
 {
-    if (!result || m_mode == Mode::Idle)
+    if (!result || m_mode == Mode::Idle
+        || !std::isfinite(canvasPoint.x()) || !std::isfinite(canvasPoint.y()))
         return false;
     QPointF placementPoint;
-    if (!m_startSelection.mapCanvasToPlacement(canvasPoint, &placementPoint, m_activeQuadIndex))
+    if (!m_startSelection.mapCanvasToPlacement(canvasPoint, &placementPoint, m_activeQuadIndex)
+        || !std::isfinite(placementPoint.x()) || !std::isfinite(placementPoint.y()))
         return false;
 
     if (m_mode == Mode::Rotate) {
