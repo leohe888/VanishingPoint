@@ -19,11 +19,25 @@ class FloatingSelectionTransformToolTest : public QObject
 {
     Q_OBJECT
 private slots:
+    void clearSelectionPreservesFloatingContentAndDrag();
     void transformToolRotatesAroundCenter();
     void transformToolScalesFromCorner();
     void interactionCursorsFollowHandlesAndRotation();
     void flipsPreserveGeometryAndHistory();
 };
+
+void FloatingSelectionTransformToolTest::clearSelectionPreservesFloatingContentAndDrag()
+{
+    VpController controller; QImage background(400,400,QImage::Format_ARGB32); background.fill(Qt::white);
+    QVERIFY(controller.document().setImage(background));
+    FloatingSelection floating; floating.bitmap=QImage(20,20,QImage::Format_ARGB32_Premultiplied); floating.bitmap.fill(Qt::red);
+    controller.document().addFloatingSelection(floating); controller.setTool(VpTools::Transform);
+    controller.clearSelection(); QVERIFY(controller.document().floatingSelection(0)==floating);
+    QCOMPARE(controller.document().selectedFloatingSelection(),0);
+    controller.pointerPress({5,5},1,Qt::NoModifier); controller.clearSelection(); controller.pointerRelease({15,5},Qt::NoModifier);
+    QCOMPARE(controller.document().floatingSelections().size(),1);
+    QCOMPARE(controller.document().floatingSelection(0).placementOrigin,QPointF(10,0));
+}
 
 void FloatingSelectionTransformToolTest::flipsPreserveGeometryAndHistory()
 {

@@ -411,6 +411,9 @@ void VpDocument::cancelEdit()
 
 void VpDocument::commitHistory()
 {
+    // An edit owns its history entry until commitEdit() confirms the transaction.
+    if (m_editActive)
+        return;
     HistoryEntry entry;
     entry = captureStructure();
 

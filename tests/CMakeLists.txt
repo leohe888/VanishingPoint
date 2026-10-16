@@ -22,7 +22,7 @@ function(add_vp_test test_name)
     set_tests_properties(${test_name} PROPERTIES TIMEOUT 120)
 endfunction()
 
-foreach(name IN ITEMS canvasnavigation handtool perspectiveplane perspectivetransform perspectivequad
+foreach(name IN ITEMS canvasnavigation handtool zoomtool perspectiveplane perspectivetransform perspectivequad
         planecreatetool planeedittool marqueetool vpdocument brushtool clonetool
         vpcontroller imagesaving floatingselectionprojection floatingselectiontransformtool eyedroppertool healingblend auditinteractions auditboundaries)
     add_vp_test(tst_${name} tst_${name}.cpp)
@@ -35,7 +35,7 @@ set_tests_properties(tst_qmlintegration PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=
 add_vp_test(tst_qmlboundaries tst_qmlboundaries.cpp ${PROJECT_SOURCE_DIR}/res.qrc)
 target_compile_definitions(tst_qmlboundaries PRIVATE VP_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 set_tests_properties(tst_qmlboundaries PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software")
-foreach(target IN ITEMS tst_eyedroppertool tst_canvasnavigation tst_floatingselectiontransformtool)
+foreach(target IN ITEMS tst_eyedroppertool tst_canvasnavigation tst_zoomtool tst_floatingselectiontransformtool)
     target_compile_definitions(${target} PRIVATE
         VP_EYEDROPPER_CURSOR="${PROJECT_SOURCE_DIR}/assets/cursors/image_absorption.svg"
         VP_CURSOR_DIR="${PROJECT_SOURCE_DIR}/assets/cursors")

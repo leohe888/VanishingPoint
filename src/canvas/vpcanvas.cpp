@@ -655,6 +655,8 @@ void VpCanvas::mousePressEvent(QMouseEvent *event)
     forceActiveFocus();
     updateCursorPoint(event->position());
     event->accept();
+    // A new press starts a new gesture even if navigation lost its release event.
+    m_navigationPointerActive = false;
     if (temporaryHandActive() || m_controller->tool() == Tool::Hand) {
         m_navigationPointerActive = true;
         m_fitPending = false;

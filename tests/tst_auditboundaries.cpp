@@ -4,7 +4,6 @@
 #include <QElapsedTimer>
 #include <QPainter>
 #include <QtTest>
-#include <limits>
 
 class AuditBoundariesTest : public QObject {
     Q_OBJECT
@@ -22,16 +21,6 @@ private slots:
         QVERIFY(mapping.mapForward({0,2},&output));
         QCOMPARE(output,QPointF(0,2.0/3));
     }
-    void modelRejectsInvalidWrites() {
-        VpDocument doc; QVERIFY(doc.addFloatingSelection(makeTestSelection(QImage()))<0);
-        QImage image(10,10,QImage::Format_ARGB32); image.fill(Qt::red); doc.addFloatingSelection(makeTestSelection(image));
-        doc.setFloatingSelectionOrigin(0,{std::numeric_limits<qreal>::infinity(),0});
-        QCOMPARE(doc.floatingSelection(0).placementOrigin,QPointF());
-        doc.attachFloatingSelection(0,{},0,{0,0}); QVERIFY(!doc.floatingSelection(0).surfaceAttached);
-        auto p=makeTestPlane(); p.quad().setSurfaceCorners({});
-        QVERIFY(p.quad().isValid()); QVERIFY(!p.quad().isProjectable()); QCOMPARE(doc.appendPlane(p),-1);
-        doc.setSelectedPlane(90); QCOMPARE(doc.selectedPlane(),-1);
-    }
     void hugeAnglesAndGridFinishPromptly() {
         QElapsedTimer timer; timer.start(); auto p=makeTestPlane();
         rotatePlaneAroundEdge(p,0,1e300,{1000,800});
@@ -43,16 +32,6 @@ private slots:
         SceneRenderer::Guides guides; guides.gridSize=1; guides.editHandlesVisible=true;
         SceneRenderer(doc).renderGuides(painter,1,guides);
         QVERIFY(timer.elapsed()<2000);
-    }
-    void historyRetainsAtMostFortyStates() {
-        VpDocument doc;
-        // History retains at most 40 states, including the current state.
-        for(int i=0;i<24;++i) {
-            QImage image(200,100,QImage::Format_ARGB32); image.fill(QColor(i,0,0));
-            doc.addFloatingSelection(makeTestSelection(image)); doc.removeFloatingSelection(0);
-        }
-        int count=0; while(doc.undo()) ++count;
-        QCOMPARE(count,39);
     }
 };
 QTEST_GUILESS_MAIN(AuditBoundariesTest)

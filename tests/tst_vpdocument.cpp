@@ -1,10 +1,43 @@
 #include <QCoreApplication>
+#include <QPainter>
 #include <QTemporaryDir>
 #include <QtTest>
+#include <limits>
 
-#include "canvas/vpcontroller.h"
 #include "canvas/vpdocument.h"
 #include "testhelpers.h"
+
+namespace {
+QImage imageOf(const QColor &color=Qt::white,QSize size={520,515})
+{
+    QImage image(size,QImage::Format_ARGB32); image.fill(color); return image;
+}
+
+FloatingSelection selectionOf(const QColor &color=Qt::red)
+{
+    return makeTestSelection(imageOf(color,{12,10}));
+}
+
+void paint(VpDocument &doc,const QRect &rect,const QColor &color)
+{
+    doc.preparePaintDirty(rect);
+    { QPainter painter(&doc.paintLayer()); painter.setCompositionMode(QPainter::CompositionMode_Source); painter.fillRect(rect,color); }
+    doc.addPaintDirty(rect);
+}
+
+struct Snapshot {
+    QVector<PerspectivePlane> planes;
+    QVector<FloatingSelection> floating;
+    QImage background,paintLayer;
+    int selectedPlane,selectedFloating;
+    explicit Snapshot(const VpDocument &doc) : planes(doc.planes()),floating(doc.floatingSelections()),
+        background(doc.background()),paintLayer(doc.paintLayer()),selectedPlane(doc.selectedPlane()),selectedFloating(doc.selectedFloatingSelection()) {}
+    bool matches(const VpDocument &doc) const {
+        return planes==doc.planes() && floating==doc.floatingSelections() && background==doc.background()
+            && paintLayer==doc.paintLayer() && selectedPlane==doc.selectedPlane() && selectedFloating==doc.selectedFloatingSelection();
+    }
+};
+}
 
 class VpDocumentTest : public QObject
 {
@@ -22,6 +55,24 @@ private slots:
     void pastesImageAsSelectedFloatingSelection();
     void removesSelectedFloatingSelection();
     void sharedEdgeExtensionRequiresExplicitPermission();
+    void failedLoadPreservesActiveEdit();
+    void successfulLoadResetsAllState();
+    void cancelRestoresCompleteTransaction();
+    void transactionLifecycle();
+    void pixelHistory_data();
+    void pixelHistory();
+    void backupModesProduceSameHistory();
+    void noOpPreservesRedo_data();
+    void noOpPreservesRedo();
+    void mixedHistoryRestoresEveryState();
+    void historyRetainsFortyCompleteStates();
+    void invalidFloatingWrites_data();
+    void invalidFloatingWrites();
+    void invalidIndicesAndGeometryPreserveState();
+    void attachmentAndHistoryOwnSnapshots();
+    void floatingDeletionRemapsSelection_data();
+    void floatingDeletionRemapsSelection();
+    void notificationsExposeConsistentState();
 };
 
 void VpDocumentTest::sharedEdgeExtensionRequiresExplicitPermission()
@@ -255,35 +306,260 @@ void VpDocumentTest::deletesDescendantsAndRemapsSharedEdges()
     root.beginEdit(); root.removePlane(1); root.cancelEdit();
     check(root.planes()==planes, "cancelled transaction restores entire subtree");
 
-    VpController controller; populate(controller.document()); controller.setTool(VpTools::EditPlane);
-    controller.document().setSelectedPlane(0); controller.deleteSelection();
-    check(controller.document().planes().size()==3, "Delete tool command uses recursive removal");
-    controller.undo(); check(controller.document().planes()==planes, "controller undo restores deletion in one step");
-    controller.clearSelection();
-    check(controller.document().planes()==planes, "Ctrl D does not delete selected plane");
-    controller.setTool(VpTools::CreatePlane);
-    controller.pointerPress(QPointF(10,10),1,Qt::NoModifier);
-    controller.clearSelection();
-    check(controller.creationPoints().size()==1, "Ctrl D does not remove creation corners");
-    controller.setTool(VpTools::Marquee);
-    controller.pointerPress(QPointF(100,100),1,Qt::NoModifier);
-    controller.pointerRelease(QPointF(180,180),Qt::NoModifier);
-    check(!controller.selectionOutline().isEmpty(), "marquee fixture is selected");
-    controller.clearSelection();
-    check(controller.selectionOutline().isEmpty(), "Ctrl D clears normal marquee");
-    FloatingSelection floating; floating.bitmap=QImage(20,20,QImage::Format_ARGB32_Premultiplied);
-    floating.bitmap.fill(Qt::red);
-    controller.document().addFloatingSelection(floating);
-    controller.clearSelection();
-    check(controller.document().floatingSelections().size()==1
-          && controller.document().floatingSelection(0)==floating
-          && controller.document().selectedFloatingSelection()==0,
-          "Ctrl D preserves floating content and its selection");
-    controller.pointerPress(QPointF(5,5),1,Qt::NoModifier);
-    controller.clearSelection();
-    controller.pointerRelease(QPointF(15,5),Qt::NoModifier);
-    check(controller.document().floatingSelection(0).placementOrigin==QPointF(10,0),
-          "Ctrl D does not interrupt floating selection drag");
+}
+
+void VpDocumentTest::failedLoadPreservesActiveEdit()
+{
+    VpDocument doc; QVERIFY(doc.setImage(imageOf())); doc.appendPlane(makeTestPlane()); doc.resetHistory();
+    doc.addFloatingSelection(selectionOf()); doc.addFloatingSelection(selectionOf(Qt::blue)); QVERIFY(doc.undo());
+    const Snapshot original(doc); doc.beginEdit(); doc.beginPaintTransaction(true);
+    paint(doc,{250,250,20,20},Qt::green); doc.setFloatingSelectionOrigin(0,{30,40});
+    const Snapshot editing(doc);
+    QSignalSpy availability(&doc,&VpDocument::documentAvailabilityChanged),structure(&doc,&VpDocument::structureChanged);
+    QVERIFY(!doc.setImage({})); QVERIFY(editing.matches(doc)); QVERIFY(doc.editActive()); QVERIFY(doc.canRedo());
+    QCOMPARE(availability.size(),0); QCOMPARE(structure.size(),0);
+    doc.cancelEdit(); QVERIFY(original.matches(doc)); QVERIFY(!doc.editActive()); QVERIFY(doc.canRedo());
+    QVERIFY(doc.redo()); QCOMPARE(doc.floatingSelections().size(),2);
+}
+
+void VpDocumentTest::successfulLoadResetsAllState()
+{
+    VpDocument doc; doc.setImage(imageOf()); doc.appendPlane(makeTestPlane()); doc.setSelectedPlane(0);
+    doc.addFloatingSelection(selectionOf()); doc.addFloatingSelection(selectionOf(Qt::blue)); QVERIFY(doc.undo());
+    doc.beginEdit(); doc.beginPaintTransaction(true); paint(doc,{1,1,8,8},Qt::green);
+    const QImage source=imageOf(QColor(100,150,200,128),{37,29}); QVERIFY(doc.setImage(source));
+    QCOMPARE(doc.background(),source); QCOMPARE(doc.paintLayer(),imageOf(Qt::transparent,source.size()));
+    QVERIFY(doc.planes().isEmpty()); QVERIFY(doc.floatingSelections().isEmpty());
+    QCOMPARE(doc.selectedPlane(),-1); QCOMPARE(doc.selectedFloatingSelection(),-1);
+    QVERIFY(!doc.editActive()); QVERIFY(!doc.canUndo()); QVERIFY(!doc.canRedo());
+    doc.cancelEdit(); QVERIFY(!doc.undo()); QVERIFY(!doc.redo()); QCOMPARE(doc.background(),source);
+    doc.beginPaintTransaction(true); paint(doc,{2,2,4,4},Qt::red); doc.commitHistory();
+    QVERIFY(doc.undo()); QCOMPARE(doc.paintLayer(),imageOf(Qt::transparent,source.size()));
+}
+
+void VpDocumentTest::cancelRestoresCompleteTransaction()
+{
+    VpDocument doc; doc.setImage(imageOf()); doc.appendPlane(makeTestPlane()); doc.setSelectedPlane(0);
+    doc.addFloatingSelection(selectionOf()); doc.resetHistory(); const Snapshot before(doc);
+    doc.beginEdit(); doc.beginPaintTransaction(true);
+    auto plane=doc.planes()[0]; plane.quad().setCanvasCorner(2,{125,90}); QVERIFY(doc.setPlane(0,plane));
+    doc.setSelectedPlane(-1); doc.setFloatingSelectionOrigin(0,{90,80});
+    doc.addFloatingSelection(selectionOf(Qt::blue)); doc.removeFloatingSelection(0);
+    paint(doc,{250,250,30,30},QColor(20,60,100,120));
+    QVERIFY(doc.editActive()); doc.cancelEdit(); QVERIFY(before.matches(doc));
+    QVERIFY(!doc.editActive()); QVERIFY(!doc.canUndo()); QVERIFY(!doc.canRedo());
+    doc.beginEdit(); doc.beginPaintTransaction(true); paint(doc,{1,1,2,2},Qt::red); doc.commitEdit(true);
+    QVERIFY(doc.undo()); QVERIFY(before.matches(doc));
+}
+
+void VpDocumentTest::transactionLifecycle()
+{
+    VpDocument doc; doc.setImage(imageOf()); doc.appendPlane(makeTestPlane()); doc.resetHistory(); const Snapshot before(doc);
+    doc.cancelEdit(); doc.commitEdit(true); doc.commitEdit(false); QVERIFY(before.matches(doc)); QVERIFY(!doc.canUndo());
+    doc.beginEdit(); auto plane=doc.planes()[0]; plane.quad().setCanvasCorner(2,{120,85}); QVERIFY(doc.setPlane(0,plane));
+    doc.beginEdit(); doc.setSelectedPlane(0); doc.cancelEdit(); QVERIFY(before.matches(doc)); QVERIFY(!doc.editActive());
+    doc.beginEdit(); QVERIFY(doc.setPlane(0,plane)); doc.commitEdit(false);
+    QVERIFY(doc.planes()[0]==plane); QVERIFY(!doc.canUndo()); QVERIFY(!doc.editActive()); // false does not mean rollback.
+    doc.resetHistory(); const Snapshot baseline(doc); doc.beginEdit(); doc.appendPlane(makeTestPlane());
+    doc.addFloatingSelection(selectionOf()); doc.addFloatingSelection(selectionOf(Qt::blue)); doc.removeFloatingSelection(0);
+    doc.commitEdit(true);
+    doc.commitEdit(true); QVERIFY(doc.undo()); QVERIFY(baseline.matches(doc)); QVERIFY(!doc.canUndo());
+}
+
+void VpDocumentTest::pixelHistory_data()
+{
+    QTest::addColumn<bool>("incremental"); QTest::newRow("whole-layer") << false; QTest::newRow("incremental-tiles") << true;
+}
+
+void VpDocumentTest::pixelHistory()
+{
+    QFETCH(bool,incremental); VpDocument doc; doc.setImage(imageOf());
+    doc.paintLayer().fill(QColor(40,80,120,90)); doc.resetHistory(); const QImage before=doc.paintLayer();
+    doc.beginPaintTransaction(incremental);
+    paint(doc,{250,250,22,22},Qt::red); paint(doc,{255,255,5,5},QColor(0,255,0,128));
+    paint(doc,{4,4,8,8},Qt::blue); paint(doc,{511,511,20,20},Qt::transparent);
+    paint(doc,{-10,40,15,8},Qt::yellow); doc.preparePaintDirty({900,900,5,5}); doc.addPaintDirty({900,900,5,5});
+    doc.commitHistory(); const QImage after=doc.paintLayer(); QVERIFY(after!=before);
+    QCOMPARE(after.pixelColor(300,300),before.pixelColor(300,300)); QCOMPARE(qAlpha(after.pixel(519,514)),0);
+    QVERIFY(doc.undo()); QCOMPARE(doc.paintLayer(),before); QVERIFY(!doc.canUndo());
+    QVERIFY(doc.redo()); QCOMPARE(doc.paintLayer(),after); QVERIFY(!doc.canRedo());
+}
+
+void VpDocumentTest::backupModesProduceSameHistory()
+{
+    VpDocument whole,incremental;
+    for(auto *doc : {&whole,&incremental}) { doc->setImage(imageOf()); doc->paintLayer().fill(QColor(20,50,90,80)); doc->resetHistory(); }
+    for(int step=0;step<4;++step) {
+        for(auto *doc : {&whole,&incremental}) {
+            doc->beginPaintTransaction(doc==&incremental);
+            paint(*doc,{245+step*3,250,20,22},QColor(50*step,80,150,120));
+            paint(*doc,{510,510,20,20},step%2 ? QColor(Qt::transparent) : QColor(Qt::red)); doc->commitHistory();
+        }
+        QCOMPARE(whole.paintLayer(),incremental.paintLayer());
+    }
+    for(int i=0;i<4;++i) { QVERIFY(whole.undo()); QVERIFY(incremental.undo()); QCOMPARE(whole.paintLayer(),incremental.paintLayer()); }
+    for(int i=0;i<4;++i) { QVERIFY(whole.redo()); QVERIFY(incremental.redo()); QCOMPARE(whole.paintLayer(),incremental.paintLayer()); }
+}
+
+void VpDocumentTest::noOpPreservesRedo_data()
+{
+    QTest::addColumn<int>("operation");
+    const char *names[]={"empty-history","empty-edit","restored-structure","restored-pixels","rejected-write","empty-dirty"};
+    for(int i=0;i<6;++i) QTest::newRow(names[i]) << i;
+}
+
+void VpDocumentTest::noOpPreservesRedo()
+{
+    QFETCH(int,operation); VpDocument doc; doc.setImage(imageOf());
+    doc.addFloatingSelection(selectionOf()); doc.addFloatingSelection(selectionOf(Qt::blue)); QVERIFY(doc.undo()); const Snapshot before(doc);
+    if(operation==0) doc.commitHistory();
+    if(operation==1) { doc.beginEdit(); doc.commitEdit(true); }
+    if(operation==2) { doc.beginEdit(); doc.setFloatingSelectionOrigin(0,{20,20}); doc.setFloatingSelectionOrigin(0,{0,0}); doc.commitEdit(true); }
+    if(operation==3) { doc.beginPaintTransaction(true); paint(doc,{250,250,20,20},Qt::red); paint(doc,{250,250,20,20},Qt::transparent); doc.commitHistory(); }
+    if(operation==4) QVERIFY(!doc.setFloatingSelection(0,makeTestSelection({})));
+    if(operation==5) { doc.beginPaintTransaction(true); doc.preparePaintDirty({}); doc.addPaintDirty({}); doc.commitHistory(); }
+    QVERIFY(before.matches(doc)); QVERIFY(doc.canRedo()); QVERIFY(doc.redo()); QCOMPARE(doc.floatingSelections().size(),2);
+    QVERIFY(doc.undo()); QVERIFY(before.matches(doc));
+    doc.beginEdit(); doc.setFloatingSelectionOrigin(0,{10,10}); doc.commitEdit(true); QVERIFY(!doc.canRedo());
+}
+
+void VpDocumentTest::mixedHistoryRestoresEveryState()
+{
+    VpDocument doc; doc.setImage(imageOf()); QVector<Snapshot> states; states.append(Snapshot(doc));
+    doc.beginPaintTransaction(true); paint(doc,{250,250,20,20},Qt::red); doc.commitHistory(); states.append(Snapshot(doc));
+    doc.beginEdit(); doc.appendPlane(makeTestPlane()); doc.setSelectedPlane(0); doc.commitEdit(true); states.append(Snapshot(doc));
+    doc.addFloatingSelection(selectionOf()); states.append(Snapshot(doc));
+    doc.beginEdit(); auto selection=doc.floatingSelection(0); selection.rotationDegrees=30; selection.scaleFactors={2,3};
+    QVERIFY(doc.setFloatingSelection(0,selection)); doc.beginPaintTransaction(false); paint(doc,{255,255,10,10},Qt::transparent);
+    doc.commitEdit(true); states.append(Snapshot(doc));
+    doc.removePlane(0); states.append(Snapshot(doc));
+    for(int i=states.size()-2;i>=0;--i) { QVERIFY(doc.undo()); QVERIFY2(states[i].matches(doc),qPrintable(QString("undo state %1").arg(i))); }
+    QVERIFY(!doc.undo());
+    for(int i=1;i<states.size();++i) { QVERIFY(doc.redo()); QVERIFY2(states[i].matches(doc),qPrintable(QString("redo state %1").arg(i))); }
+    QVERIFY(!doc.redo());
+}
+
+void VpDocumentTest::historyRetainsFortyCompleteStates()
+{
+    VpDocument doc; doc.setImage(imageOf(Qt::white,{64,64})); QVector<QImage> states{doc.paintLayer()};
+    for(int i=1;i<=45;++i) { doc.beginPaintTransaction(true); paint(doc,{i,2,1,1},QColor(i,30,70)); doc.commitHistory(); states.append(doc.paintLayer()); }
+    int undos=0;
+    for(int i=44;doc.canUndo();--i) { QVERIFY(doc.undo()); QCOMPARE(doc.paintLayer(),states[i]); ++undos; }
+    QCOMPARE(undos,39); QCOMPARE(doc.paintLayer(),states[6]); QVERIFY(!doc.undo());
+    for(int i=7;i<=45;++i) { QVERIFY(doc.redo()); QCOMPARE(doc.paintLayer(),states[i]); }
+    QVERIFY(!doc.redo());
+    QVERIFY(doc.undo()); doc.beginPaintTransaction(true); paint(doc,{50,3,1,1},Qt::blue); doc.commitHistory();
+    QVERIFY(!doc.canRedo()); const QImage newBranch=doc.paintLayer(); QVERIFY(doc.undo()); QCOMPARE(doc.paintLayer(),states[44]);
+    QVERIFY(doc.redo()); QCOMPARE(doc.paintLayer(),newBranch);
+}
+
+void VpDocumentTest::invalidFloatingWrites_data()
+{
+    QTest::addColumn<int>("invalid");
+    const char *names[]={"empty-bitmap","nan-origin","infinite-origin","nan-rotation","zero-scale","negative-scale","infinite-scale",
+                         "negative-opacity","high-opacity","negative-heal","high-heal","empty-faces","negative-host","high-host","invalid-face"};
+    for(int i=0;i<15;++i) QTest::newRow(names[i]) << i;
+}
+
+void VpDocumentTest::invalidFloatingWrites()
+{
+    QFETCH(int,invalid); VpDocument doc; doc.setImage(imageOf()); doc.addFloatingSelection(selectionOf());
+    doc.addFloatingSelection(selectionOf(Qt::blue)); QVERIFY(doc.undo()); const Snapshot before(doc);
+    auto value=selectionOf(Qt::green); const qreal nan=std::numeric_limits<qreal>::quiet_NaN(),inf=std::numeric_limits<qreal>::infinity();
+    if(invalid==0) value.bitmap={}; if(invalid==1) value.placementOrigin.setX(nan); if(invalid==2) value.placementOrigin.setY(inf);
+    if(invalid==3) value.rotationDegrees=nan; if(invalid==4) value.scaleFactors.setX(0); if(invalid==5) value.scaleFactors.setY(-1);
+    if(invalid==6) value.scaleFactors.setX(inf); if(invalid==7) value.opacity=-1; if(invalid==8) value.opacity=101;
+    if(invalid==9) value.healMode=-1; if(invalid==10) value.healMode=3;
+    if(invalid>=11) { value.surfaceAttached=true; value.surfaceQuads={makeTestPlane().quad()}; value.hostQuadIndex=0; }
+    if(invalid==11) value.surfaceQuads.clear(); if(invalid==12) value.hostQuadIndex=-1; if(invalid==13) value.hostQuadIndex=1;
+    if(invalid==14) value.surfaceQuads[0].setSurfaceCorners({});
+    QSignalSpy structure(&doc,&VpDocument::structureChanged),selected(&doc,&VpDocument::floatingSelectionChanged);
+    QVERIFY(!doc.setFloatingSelection(0,value)); QCOMPARE(doc.addFloatingSelection(value),-1);
+    if(invalid<=2) QCOMPARE(doc.addFloatingSelectionOnSurface(value.bitmap,{makeTestPlane().quad()},0,value.placementOrigin),-1);
+    if(invalid>=11) {
+        QCOMPARE(doc.addFloatingSelectionOnSurface(value.bitmap,value.surfaceQuads,value.hostQuadIndex,value.placementOrigin),-1);
+        doc.attachFloatingSelection(0,value.surfaceQuads,value.hostQuadIndex,value.placementOrigin);
+    }
+    QVERIFY(before.matches(doc)); QVERIFY(doc.canRedo()); QCOMPARE(structure.size(),0); QCOMPARE(selected.size(),0);
+    QVERIFY(doc.redo()); QCOMPARE(doc.floatingSelections().size(),2);
+}
+
+void VpDocumentTest::invalidIndicesAndGeometryPreserveState()
+{
+    VpDocument doc; doc.setImage(imageOf()); doc.appendPlane(makeTestPlane()); doc.setSelectedPlane(0); doc.addFloatingSelection(selectionOf());
+    const Snapshot before(doc);
+    for(int index : {-1,20}) {
+        QVERIFY(!doc.setPlane(index,makeTestPlane())); QVERIFY(!doc.setFloatingSelection(index,selectionOf()));
+        doc.removePlane(index); doc.removeFloatingSelection(index); doc.setFloatingSelectionOrigin(index,{2,3});
+        doc.attachFloatingSelection(index,{makeTestPlane().quad()},0,{2,3}); doc.detachFloatingSelection(index,{2,3}); doc.lockPlaneEdge(index,0);
+    }
+    auto plane=makeTestPlane(); plane.quad().setSurfaceCorners({}); QCOMPARE(doc.appendPlane(plane),-1); QVERIFY(!doc.setPlane(0,plane));
+    plane=makeTestPlane(); plane.setAngleToParentDegrees(std::numeric_limits<qreal>::infinity());
+    QCOMPARE(doc.appendPlane(plane),-1); QVERIFY(!doc.setPlane(0,plane));
+    doc.setFloatingSelectionOrigin(0,{std::numeric_limits<qreal>::infinity(),0}); doc.attachFloatingSelection(0,{},0,{0,0});
+    doc.detachFloatingSelection(0,{std::numeric_limits<qreal>::quiet_NaN(),0});
+    QCOMPARE(doc.addFloatingSelectionOnSurface(imageOf(),{},0,{0,0}),-1);
+    QVERIFY(before.matches(doc)); doc.setSelectedPlane(90); QCOMPARE(doc.selectedPlane(),-1);
+    doc.setSelectedFloatingSelection(90); QCOMPARE(doc.selectedFloatingSelection(),-1);
+}
+
+void VpDocumentTest::attachmentAndHistoryOwnSnapshots()
+{
+    VpDocument doc; doc.setImage(imageOf()); auto selection=selectionOf(); auto plane=makeTestPlane();
+    QVector<PerspectiveQuad> faces{plane.quad()}; doc.appendPlane(plane); doc.addFloatingSelection(selection);
+    selection.bitmap.fill(Qt::blue); QCOMPARE(doc.floatingSelection(0).bitmap.pixelColor(1,1),QColor(Qt::red));
+    const Snapshot detached(doc); doc.beginEdit(); doc.attachFloatingSelection(0,faces,0,{20,15}); doc.commitEdit(true);
+    const Snapshot attached(doc); QVERIFY(doc.floatingSelection(0).surfaceAttached); QCOMPARE(doc.floatingSelection(0).hostQuadIndex,0);
+    faces[0].setCanvasCorner(2,{140,100}); plane.quad().setCanvasCorner(2,{150,100}); QVERIFY(doc.setPlane(0,plane));
+    QVERIFY(doc.floatingSelection(0).surfaceQuads[0]==makeTestPlane().quad());
+    // Restore the document plane before exercising the stored attachment history.
+    QVERIFY(doc.setPlane(0,makeTestPlane())); doc.beginEdit(); doc.detachFloatingSelection(0,{50,60}); doc.commitEdit(true);
+    const auto image=doc.floatingSelection(0); QVERIFY(!image.surfaceAttached); QVERIFY(image.surfaceQuads.isEmpty());
+    QCOMPARE(image.hostQuadIndex,-1); QCOMPARE(image.placementOrigin,QPointF(50,60));
+    QVERIFY(doc.undo()); QVERIFY(attached.matches(doc)); QVERIFY(doc.undo()); QVERIFY(detached.matches(doc));
+    QVERIFY(doc.redo()); QVERIFY(attached.matches(doc));
+    VpDocument onSurface;
+    QCOMPARE(onSurface.addFloatingSelectionOnSurface(selectionOf().bitmap,{makeTestPlane().quad()},0,{20,15}),0);
+    QVERIFY(onSurface.floatingSelection(0).surfaceAttached); QCOMPARE(onSurface.floatingSelection(0).placementOrigin,QPointF(20,15));
+    QVERIFY(onSurface.undo()); QVERIFY(onSurface.floatingSelections().isEmpty());
+    QVERIFY(onSurface.redo()); QVERIFY(onSurface.floatingSelection(0).surfaceAttached);
+}
+
+void VpDocumentTest::floatingDeletionRemapsSelection_data()
+{
+    QTest::addColumn<int>("selected"); QTest::addColumn<int>("removed"); QTest::addColumn<int>("expected");
+    QTest::newRow("before-selected") << 2 << 0 << 1; QTest::newRow("after-selected") << 0 << 2 << 0;
+    QTest::newRow("current-middle") << 1 << 1 << 1; QTest::newRow("current-last") << 2 << 2 << 1;
+    QTest::newRow("unselected") << -1 << 0 << -1;
+}
+
+void VpDocumentTest::floatingDeletionRemapsSelection()
+{
+    QFETCH(int,selected); QFETCH(int,removed); QFETCH(int,expected); VpDocument doc;
+    for(const QColor color : {QColor(Qt::red),QColor(Qt::green),QColor(Qt::blue)}) doc.addFloatingSelection(selectionOf(color));
+    doc.setSelectedFloatingSelection(selected); doc.resetHistory(); const Snapshot before(doc); const auto original=doc.floatingSelections();
+    doc.removeFloatingSelection(removed); QCOMPARE(doc.selectedFloatingSelection(),expected);
+    auto remaining=original; remaining.removeAt(removed); QVERIFY(doc.floatingSelections()==remaining);
+    QVERIFY(doc.undo()); QVERIFY(before.matches(doc)); QVERIFY(doc.redo()); QVERIFY(doc.floatingSelections()==remaining);
+    while(!doc.floatingSelections().isEmpty()) doc.removeFloatingSelection(0); QCOMPARE(doc.selectedFloatingSelection(),-1);
+}
+
+void VpDocumentTest::notificationsExposeConsistentState()
+{
+    VpDocument doc; bool consistent=true;
+    connect(&doc,&VpDocument::canUndoChanged,&doc,[&](bool value) { consistent &= value==doc.canUndo(); });
+    connect(&doc,&VpDocument::canRedoChanged,&doc,[&](bool value) { consistent &= value==doc.canRedo(); });
+    connect(&doc,&VpDocument::floatingSelectionChanged,&doc,[&](bool selected) { consistent &= selected==(doc.selectedFloatingSelection()>=0); });
+    connect(&doc,&VpDocument::documentAvailabilityChanged,&doc,[&](bool loaded) { consistent &= loaded==doc.hasLoadedImage(); });
+    QSignalSpy selection(&doc,&VpDocument::floatingSelectionChanged),available(&doc,&VpDocument::documentAvailabilityChanged);
+    QVERIFY(doc.setImage(imageOf())); QCOMPARE(available.size(),1); doc.addFloatingSelection(selectionOf()); QCOMPARE(selection.size(),1);
+    doc.setSelectedFloatingSelection(0); QCOMPARE(selection.size(),1);
+    doc.beginEdit(); doc.setSelectedFloatingSelection(-1); doc.cancelEdit(); QCOMPARE(selection.size(),3);
+    QVERIFY(doc.undo()); QVERIFY(doc.redo()); QVERIFY(consistent);
+    doc.beginEdit(); doc.setSelectedFloatingSelection(-1);
+    bool endedBeforeRestore=false;
+    connect(&doc,&VpDocument::floatingSelectionChanged,&doc,[&](bool selected) { if(selected) endedBeforeRestore=!doc.editActive(); });
+    doc.cancelEdit(); QVERIFY(endedBeforeRestore); QVERIFY(consistent);
 }
 
 QTEST_MAIN(VpDocumentTest)

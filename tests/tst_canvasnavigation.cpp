@@ -16,7 +16,6 @@
 #include "canvas/floatingcontentitem.h"
 #include "canvas/vpcanvas.h"
 #include "core/scenerenderer.h"
-#include "cursorhelpers.h"
 #include "testhelpers.h"
 
 class CanvasProbe : public VpCanvas
@@ -41,7 +40,6 @@ class CanvasNavigationTest : public QObject
 private slots:
     void marqueePointerAccuracy_data();
     void marqueePointerAccuracy();
-    void zoomCursorFollowsModifiers();
     void paintAndMarqueeHighlightRendering();
     void clipsContentAtCanvasBoundaryAndPreservesGuides();
     void externalControllerSurvivesCanvas()
@@ -144,7 +142,7 @@ private slots:
         QVERIFY(document.hasPaintContent());
     }
 
-    void zoomAndScroll()
+    void scrollBarRanges()
     {
         QTemporaryDir directory;
         QImage image(1000, 800, QImage::Format_RGB32);
@@ -161,40 +159,8 @@ private slots:
         canvas.scrollTo(10, -10);
         QCOMPARE(canvas.horizontalPosition(), 0.5);
         QCOMPARE(canvas.verticalPosition(), 0.0);
-        canvas.setZoom(16);
-        canvas.zoomStep(false);
-        QCOMPARE(canvas.zoom(), 16.0);
-        canvas.setZoom(0.063);
-        canvas.zoomStep(true);
-        QCOMPARE(canvas.zoom(), 0.063);
-        canvas.fitView();
-        QCOMPARE(canvas.horizontalSize(), 1.0);
-        QCOMPARE(canvas.verticalSize(), 1.0);
     }
 
-    void zoomMouseClicks()
-    {
-        QTemporaryDir directory;
-        QImage image(1000, 800, QImage::Format_RGB32);
-        image.fill(Qt::white);
-        const QString path = directory.filePath("background.png");
-        QVERIFY(image.save(path));
-        VpController controller;
-        CanvasProbe canvas; canvas.setController(&controller);
-        canvas.controller()->document().setImage(QImage(path));
-        canvas.setSize(QSizeF(500, 400));
-        canvas.setZoom(1);
-        canvas.scrollTo(0.25, 0.25);
-        QMouseEvent press(QEvent::MouseButtonPress, QPointF(100, 100), QPointF(100, 100),
-                          Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-        canvas.controller()->setTool(VpTools::Zoom);
-        canvas.mousePressEvent(&press);
-        QCOMPARE(canvas.zoom(), 2.0);
-        QMouseEvent altPress(QEvent::MouseButtonPress, QPointF(100, 100), QPointF(100, 100),
-                             Qt::LeftButton, Qt::LeftButton, Qt::AltModifier);
-        canvas.mousePressEvent(&altPress);
-        QCOMPARE(canvas.zoom(), 1.0);
-    }
 };
 
 
@@ -290,7 +256,6 @@ void CanvasNavigationTest::marqueePointerAccuracy()
     pointer(QEvent::MouseButtonRelease, finish);
     verifyCorners(region);
 }
-
 
 void CanvasNavigationTest::clipsContentAtCanvasBoundaryAndPreservesGuides()
 {
@@ -421,38 +386,6 @@ void CanvasNavigationTest::paintAndMarqueeHighlightRendering()
     canvas.keyPressEvent(&down);check(actual()==inactive,"marquee temporary hand hides border");
     canvas.keyReleaseEvent(&up);check(actual()==first,"marquee return from hand restores border");
     controller.setTool(VpTools::EditPlane);check(actual()==inactive,"other tools clear target highlight");
-}
-
-void CanvasNavigationTest::zoomCursorFollowsModifiers()
-{
-    const auto check = [](bool passed, const char *message) {
-        QVERIFY2(passed, message);
-    };
-    VpController controller;
-    QImage background(64,64,QImage::Format_ARGB32_Premultiplied);
-    background.fill(Qt::white);
-    QVERIFY(controller.document().setImage(background));
-    controller.setTool(VpTools::Eyedropper);
-    controller.setTool(VpTools::Zoom);
-    CursorCanvas canvas; canvas.setController(&controller);
-    canvas.setZoomCursorDirectory(QUrl::fromLocalFile(QStringLiteral(VP_CURSOR_DIR) + "/"));
-    const QImage zoomIn = canvas.cursor().pixmap().toImage();
-    checkCursorSize(canvas.cursor());
-    check(canvas.cursor().shape() == Qt::BitmapCursor && !zoomIn.isNull(), "existing zoom in cursor loads");
-    QKeyEvent press(QEvent::KeyPress, Qt::Key_Alt, Qt::AltModifier);
-    canvas.keyPressEvent(&press);
-    const QImage zoomOut = canvas.cursor().pixmap().toImage();
-    checkCursorSize(canvas.cursor());
-    check(!zoomOut.isNull() && zoomOut != zoomIn, "Alt switches to distinct zoom out cursor");
-    QKeyEvent release(QEvent::KeyRelease, Qt::Key_Alt, Qt::NoModifier);
-    canvas.keyReleaseEvent(&release);
-    check(canvas.cursor().pixmap().toImage() == zoomIn, "Alt release restores zoom in cursor");
-    QHoverEvent enter(QEvent::HoverEnter, QPointF(10, 10), QPointF(), Qt::AltModifier);
-    canvas.hoverEnterEvent(&enter);
-    check(canvas.cursor().pixmap().toImage() == zoomOut, "entering canvas respects current zoom modifier");
-    controller.setTool(VpTools::Hand);
-    check(canvas.cursor().shape() == Qt::OpenHandCursor, "leaving zoom tool restores normal tool cursor");
-
 }
 
 QTEST_MAIN(CanvasNavigationTest)

@@ -49,6 +49,7 @@ class PlaneCreateToolTest : public QObject
     Q_OBJECT
 
 private slots:
+    void clearSelectionPreservesCreationPoints();
     void creationPreviewsAndDiagnosticValidation();
     void creationOrderPreservesSelectionOrientation();
     void startsEmpty();
@@ -73,6 +74,14 @@ private slots:
     void partialCreationStates();
     void planeSnapshotsDoNotConsumeCreationState();
 };
+
+void PlaneCreateToolTest::clearSelectionPreservesCreationPoints()
+{
+    VpController controller; QVERIFY(controller.document().setImage(creationBackground()));
+    controller.setTool(VpTools::CreatePlane); controller.pointerPress({10,10},1,Qt::NoModifier);
+    const auto points=controller.creationPoints(); controller.clearSelection();
+    QCOMPARE(points.size(),1); QCOMPARE(controller.creationPoints(),points);
+}
 
 static void addRectangle(PlaneCreateTool &tool)
 {

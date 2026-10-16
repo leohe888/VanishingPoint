@@ -148,6 +148,7 @@ class PlaneEditToolTest : public QObject
     Q_OBJECT
 
 private slots:
+    void deleteCommandRemovesDescendantsAndClearPreservesPlane();
     void cornerEditsRestoreGeometryAndDiagnosticColor();
     void adjacentMidpointsExtendAfterExtrusion();
     void adjacentMidpointsExtendAfterExtrusion_data();
@@ -1065,6 +1066,18 @@ void PlaneEditToolTest::toolReuseAndInvalidOutputs()
             QVERIFY(result == source);
         }
     }
+}
+
+void PlaneEditToolTest::deleteCommandRemovesDescendantsAndClearPreservesPlane()
+{
+    VpController controller; QVERIFY(controller.document().setImage(editBackground())); auto &doc=controller.document();
+    auto parent=editPlane(); parent.setEdgeLocked(1,true); doc.appendPlane(parent);
+    auto child=editPlane(); child.setParent(0,1); child.setEdgeLocked(0,true); doc.appendPlane(child);
+    auto grandchild=editPlane(); grandchild.setParent(1,2); doc.appendPlane(grandchild); doc.appendPlane(editPlane());
+    doc.setSelectedPlane(0); doc.resetHistory(); const auto original=doc.planes();
+    controller.setTool(VpTools::EditPlane); controller.deleteSelection(); QCOMPARE(doc.planes().size(),1);
+    controller.undo(); QVERIFY(doc.planes()==original); QVERIFY(!doc.canUndo());
+    controller.clearSelection(); QVERIFY(doc.planes()==original);
 }
 
 QTEST_MAIN(PlaneEditToolTest)
