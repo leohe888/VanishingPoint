@@ -89,7 +89,7 @@ void EyedropperToolTest::cursorArtworkPreservesSamplingHotspot()
     canvas.setController(&controller);
     canvas.setEyedropperCursorSource(QUrl::fromLocalFile(QStringLiteral(VP_EYEDROPPER_CURSOR)));
     const QPixmap source(QStringLiteral(VP_EYEDROPPER_CURSOR));
-    check(!source.isNull(), "project cursor SVG loads");
+    check(!source.isNull(), "eyedropper cursor artwork loads");
     const qreal ratio = QGuiApplication::primaryScreen()->logicalDotsPerInchX() / 96.0;
     const int padding = qMax(1,qRound(ratio));
     check(canvas.cursor().shape() == Qt::BitmapCursor
