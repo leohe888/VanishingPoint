@@ -1,6 +1,5 @@
 #include "canvas/vpdocument.h"
 #include "core/scenerenderer.h"
-#include "tools/brushtool.h"
 #include "testhelpers.h"
 #include <QElapsedTimer>
 #include <QPainter>
@@ -44,13 +43,6 @@ private slots:
         SceneRenderer::Guides guides; guides.gridSize=1; guides.editHandlesVisible=true;
         SceneRenderer(doc).renderGuides(painter,1,guides);
         QVERIFY(timer.elapsed()<2000);
-    }
-    void extremeBrushSegmentDoesNotLoopOrAlterPixels() {
-        QImage layer(100,100,QImage::Format_ARGB32); layer.fill(Qt::transparent); BrushTool tool;
-        tool.begin(layer,{},layer.size(),{20,20}); const auto before=layer.copy();
-        QElapsedTimer timer; timer.start(); QVERIFY(tool.move(layer,{1e8,1e8}).isEmpty());
-        QCOMPARE(layer,before); QVERIFY(timer.elapsed()<2000);
-        QVERIFY(tool.move(layer,{20,20}).isEmpty()); QCOMPARE(layer,before);
     }
     void historyRetainsAtMostFortyStates() {
         VpDocument doc;

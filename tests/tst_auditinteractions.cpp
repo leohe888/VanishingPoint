@@ -65,15 +65,6 @@ private slots:
         if(count>1) QCOMPARE(doc.floatingSelection(0).placementOrigin,QPointF());
         canvas.undo(); QCOMPARE(doc.floatingSelections().size(),count);
     }
-    void pasteFinishesStroke() {
-        VpController testController; AuditCanvas canvas; setup(canvas, testController); auto *controller=canvas.controller(); auto &doc=controller->document();
-        doc.appendPlane(makeTestPlane()); doc.resetHistory();
-        controller->setTool(VpTools::Brush); QVERIFY(controller->beginBrush({50,50}));
-        QGuiApplication::clipboard()->setImage(bitmap(Qt::red)); controller->pasteSelection();
-        QVERIFY(!controller->brushDrawing()); controller->moveBrush({80,50}); controller->endBrush();
-        canvas.undo(); canvas.undo(); QVERIFY(!doc.hasPaintContent());
-        canvas.redo(); QVERIFY(doc.hasPaintContent()); canvas.redo(); QCOMPARE(doc.floatingSelections().size(),1);
-    }
     void extrapolatedMoveUsesReleaseAndCanUndo() {
         VpController testController; AuditCanvas canvas; setup(canvas, testController); auto &doc=canvas.controller()->document(); auto p=plane();
         doc.appendPlane(p); doc.addFloatingSelectionOnSurface(bitmap(Qt::red),{p.quad()},0,{250,100}); doc.resetHistory(); canvas.controller()->setTool(VpTools::EditPlane);

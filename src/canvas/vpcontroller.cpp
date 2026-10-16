@@ -946,6 +946,7 @@ void VpController::pointerRelease(const QPointF &point, Qt::KeyboardModifiers mo
     }
     case VpTools::Brush:
         if (brushDrawing()) {
+            moveBrush(point);
             endBrush();
             emit repaintRequested();
         }

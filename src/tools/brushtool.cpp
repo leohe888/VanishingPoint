@@ -166,7 +166,9 @@ void BrushTool::paintDab(QPainter &painter, const QTransform &surfaceToCanvas, c
 {
     const qreal radius = m_diameter / 2.0;
     const qreal hardness = m_hardness / 100.0;
-    QRadialGradient gradient(position, radius);
+    // Qt 6 can rasterize the exact radial center as transparent. A subpixel
+    // offset keeps full center coverage without changing the dab geometry.
+    QRadialGradient gradient(position + QPointF(.001, .001), radius);
     QColor core = m_brushColor;
     core.setAlphaF(m_opacity / 100.0);
     gradient.setColorAt(0.0, core);

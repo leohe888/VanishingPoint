@@ -17,10 +17,11 @@ Window {
 
         ToolBar {
             id: toolBar
+            objectName: "toolBar"
             z: 1    // 提升工具栏的层级，因为子项默认按声明顺序堆叠，后面的显示在上面，覆盖了工具栏向右扩展的 Tooltip
             Layout.preferredWidth: 38
             Layout.fillHeight: true
-            currentTool: vpController.tool
+            currentTool: workArea.canvas.temporaryHandActive ? VpTools.Hand : vpController.tool
             onToolSelected: (toolId) => vpController.tool = toolId
         }
 
@@ -87,8 +88,18 @@ Window {
     }
 
     Shortcut {
+        sequence: "Ctrl+C"
+        onActivated: vpController.copySelection()
+    }
+
+    Shortcut {
         sequence: "Ctrl+V"
         onActivated: vpController.pasteSelection()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+D"
+        onActivated: vpController.clearSelection()
     }
 
     Shortcut {

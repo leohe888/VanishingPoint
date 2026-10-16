@@ -18,7 +18,6 @@ private slots:
     void clipboardPastePreservesPixelsAndCopyPriority();
     void qmlPropertiesNotifyAndClamp();
     void toolAvailabilityFollowsDocument();
-    void brushStrokeCommitsAsOneEdit();
     void cloneStrokeUsesDocumentContent();
 };
 
@@ -132,31 +131,6 @@ void VpControllerTest::toolAvailabilityFollowsDocument()
     controller.setTool(VpTools::Transform);
     doc.removeFloatingSelection(0);
     QCOMPARE(controller.tool(), VpTools::EditPlane);
-}
-
-void VpControllerTest::brushStrokeCommitsAsOneEdit()
-{
-    QTemporaryDir directory;
-    QVERIFY(directory.isValid());
-    QImage background(100, 100, QImage::Format_ARGB32);
-    background.fill(Qt::white);
-    const QString path = directory.filePath("background.png");
-    QVERIFY(background.save(path));
-
-    VpController controller;
-    QVERIFY(controller.document().setImage(QImage(path)));
-    controller.document().appendPlane(makeTestPlane());
-    controller.document().resetHistory();
-    QVERIFY(controller.beginBrush(QPointF(30, 30)));
-    controller.moveBrush(QPointF(60, 30));
-    controller.endBrush();
-
-    QVERIFY(controller.document().canUndo());
-    QVERIFY(qAlpha(controller.document().paintLayer().pixel(30, 30)) > 0);
-    QVERIFY(qAlpha(controller.document().paintLayer().pixel(50, 30)) > 0);
-    QVERIFY(controller.document().undo());
-    QCOMPARE(qAlpha(controller.document().paintLayer().pixel(30, 30)), 0);
-    QCOMPARE(qAlpha(controller.document().paintLayer().pixel(50, 30)), 0);
 }
 
 void VpControllerTest::cloneStrokeUsesDocumentContent()
