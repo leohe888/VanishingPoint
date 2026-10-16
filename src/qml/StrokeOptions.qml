@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls.Basic as Controls
 import VanishingPoint 1.0
 import QtQuick.Layouts
 
@@ -31,10 +30,7 @@ RowLayout {
         onEdited: (value) => root.opacityEdited(value)
     }
     Text { text: qsTr("修复"); color: VpTheme.text }
-    Controls.ComboBox {
-            palette.text: VpTheme.text
-            palette.button: VpTheme.inputBackground
-            palette.buttonText: VpTheme.text
+    OptionComboBox {
         model: [qsTr("关"), qsTr("明亮度"), qsTr("开")]
         currentIndex: root.healMode
         onActivated: root.healModeEdited(currentIndex)

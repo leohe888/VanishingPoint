@@ -206,19 +206,13 @@ Rectangle {
             onEdited: (value) => vpController.marqueeOpacity = value
         }
         Text { text: qsTr("修复"); color: VpTheme.text }
-        Controls.ComboBox {
-            palette.text: VpTheme.text
-            palette.button: VpTheme.inputBackground
-            palette.buttonText: VpTheme.text
+        OptionComboBox {
             model: [qsTr("关"), qsTr("明亮度"), qsTr("开")]
             currentIndex: vpController.marqueeHealMode
             onActivated: vpController.marqueeHealMode = currentIndex
         }
         Text { text: qsTr("移动模式"); color: VpTheme.text }
-        Controls.ComboBox {
-            palette.text: VpTheme.text
-            palette.button: VpTheme.inputBackground
-            palette.buttonText: VpTheme.text
+        OptionComboBox {
             objectName: "marqueeMoveMode"
             model: [qsTr("目标"), qsTr("源")]
             enabled: vpController.marqueeMoveModeEnabled
