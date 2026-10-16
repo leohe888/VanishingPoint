@@ -48,28 +48,28 @@ Window {
                 z: 1
                 ToolButton {
                     iconSource: "folder-open.png"
-                    tooltip: qsTr("打开图片")
+                    tooltip: qsTr("打开图片") + " (Ctrl+O)"
                     tooltipBelow: true
                     onActivated: imageDialog.open()
                 }
                 ToolButton {
                     objectName: "saveButton"
                     iconSource: "image_save.svg"
-                    tooltip: qsTr("保存图片 (Ctrl+S)")
+                    tooltip: qsTr("保存图片") + " (Ctrl+S)"
                     tooltipBelow: true
                     enabled: vpController.canSave
                     onActivated: window.requestSave(false)
                 }
                 ToolButton {
                     iconSource: "undo.png"
-                    tooltip: qsTr("撤销")
+                    tooltip: qsTr("撤销") + " (Ctrl+Z)"
                     tooltipBelow: true
                     enabled: vpController.canUndo
                     onActivated: vpController.undo()
                 }
                 ToolButton {
                     iconSource: "redo.png"
-                    tooltip: qsTr("重做")
+                    tooltip: qsTr("重做") + " (Ctrl+Y / Ctrl+Shift+Z)"
                     tooltipBelow: true
                     enabled: vpController.canRedo
                     onActivated: vpController.redo()
