@@ -163,9 +163,9 @@ RowLayout {
         objectName: "sliderPopup"
         x: inputBox.x
         y: inputBox.y + inputBox.height
-        width: 160
-        height: 64
-        padding: 10
+        width: 140
+        height: 32
+        padding: 6
         focus: true
         closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnPressOutsideParent
         background: Rectangle {
@@ -182,6 +182,31 @@ RowLayout {
             snapMode: Controls.Slider.SnapAlways
             live: true
             wheelEnabled: false
+            leftPadding: 6
+            rightPadding: 6
+            background: Rectangle {
+                x: valueSlider.leftPadding
+                y: (valueSlider.height - height) / 2
+                width: valueSlider.availableWidth
+                height: 4
+                radius: 2
+                color: VpTheme.controlBorder
+                Rectangle {
+                    width: valueSlider.visualPosition * parent.width
+                    height: parent.height
+                    radius: parent.radius
+                    color: VpTheme.accent
+                }
+            }
+            handle: Rectangle {
+                x: valueSlider.leftPadding + valueSlider.visualPosition * valueSlider.availableWidth - width / 2
+                y: (valueSlider.height - height) / 2
+                width: 12
+                height: 12
+                radius: 6
+                color: VpTheme.accent
+                border.color: VpTheme.text
+            }
             onMoved: root.preview(value)
             onPressedChanged: if (!pressed) root.commit()
         }
