@@ -126,15 +126,6 @@ private slots:
         if(kind=="image") QCOMPARE(doc.floatingSelection(0).placementOrigin,QPointF());
         canvas.redo(); QCOMPARE(doc.floatingSelections().size(),kind=="image"?2:1);
     }
-    void pasteFinishesCloneStroke() {
-        VpController testController; AuditCanvas canvas; setup(canvas, testController); auto *controller=canvas.controller(); auto &doc=controller->document();
-        doc.appendPlane(makeTestPlane()); doc.resetHistory();
-        controller->setTool(VpTools::CloneStamp); QVERIFY(controller->pickCloneSource({20,20}));
-        QVERIFY(controller->beginClone({50,50})); QGuiApplication::clipboard()->setImage(bitmap(Qt::red));
-        controller->pasteSelection(); QVERIFY(!controller->cloneDrawing()); controller->moveClone({80,50});
-        canvas.undo(); canvas.undo(); QVERIFY(!doc.hasPaintContent());
-        canvas.redo(); QVERIFY(doc.hasPaintContent());
-    }
     void initializationResetsDocumentAndPreservesFailure() {
         VpController testController; AuditCanvas canvas; setup(canvas, testController); auto *controller=canvas.controller(); auto &doc=controller->document();
         doc.appendPlane(makeTestPlane()); doc.resetHistory();

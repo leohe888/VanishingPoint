@@ -60,10 +60,11 @@ bool CloneTool::pickSource(const QVector<PerspectivePlane> &planes, const QSize 
     PerspectiveQuad quad;
     if (!resolveQuad(planes, canvasSize, point, &quad))
         return false;
-    m_sourceMapping = quad.surfaceToCanvasTransform();
+    const PerspectiveTransform mapping = quad.surfaceToCanvasTransform();
     QPointF surface;
-    if (!m_sourceMapping.mapInverse(point, &surface))
+    if (!mapping.mapInverse(point, &surface))
         return false;
+    m_sourceMapping = mapping;
     m_source = surface;
     m_marker = point;
     m_hasSource = true;

@@ -963,6 +963,7 @@ void VpController::pointerRelease(const QPointF &point, Qt::KeyboardModifiers mo
         return;
     case VpTools::CloneStamp:
         if (cloneDrawing()) {
+            moveClone(point);
             endClone();
             emit repaintRequested();
         }

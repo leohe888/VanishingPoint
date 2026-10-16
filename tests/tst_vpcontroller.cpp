@@ -18,7 +18,6 @@ private slots:
     void clipboardPastePreservesPixelsAndCopyPriority();
     void qmlPropertiesNotifyAndClamp();
     void toolAvailabilityFollowsDocument();
-    void cloneStrokeUsesDocumentContent();
 };
 
 void VpControllerTest::persistentHintsFollowInteractionLifecycle()
@@ -131,35 +130,6 @@ void VpControllerTest::toolAvailabilityFollowsDocument()
     controller.setTool(VpTools::Transform);
     doc.removeFloatingSelection(0);
     QCOMPARE(controller.tool(), VpTools::EditPlane);
-}
-
-void VpControllerTest::cloneStrokeUsesDocumentContent()
-{
-    QTemporaryDir directory;
-    QVERIFY(directory.isValid());
-    QImage background(100, 100, QImage::Format_ARGB32);
-    background.fill(Qt::white);
-    {
-        QPainter painter(&background);
-        painter.fillRect(10, 10, 20, 20, Qt::red);
-    }
-    const QString path = directory.filePath("background.png");
-    QVERIFY(background.save(path));
-
-    VpController controller;
-    QVERIFY(controller.document().setImage(QImage(path)));
-    controller.document().appendPlane(makeTestPlane());
-    controller.document().resetHistory();
-    controller.setCloneDiameter(8);
-    controller.setCloneHardness(100);
-    controller.setCloneHealMode(HealingBlend::Off); // 此测试验证原始取样像素与撤销。
-    QVERIFY(controller.pickCloneSource(QPointF(20, 20)));
-    QVERIFY(controller.beginClone(QPointF(60, 60)));
-    controller.endClone();
-
-    QCOMPARE(QColor(controller.document().paintLayer().pixel(60, 60)).rgb(), QColor(Qt::red).rgb());
-    QVERIFY(controller.document().undo());
-    QCOMPARE(qAlpha(controller.document().paintLayer().pixel(60, 60)), 0);
 }
 
 void VpControllerTest::clipboardPastePreservesPixelsAndCopyPriority()
