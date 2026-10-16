@@ -27,16 +27,6 @@ public:
     using VpCanvas::mouseReleaseEvent;
 };
 
-class TemporaryHandCanvas final : public VpCanvas {
-public:
-    using VpCanvas::keyPressEvent;
-    using VpCanvas::keyReleaseEvent;
-    using VpCanvas::mousePressEvent;
-    using VpCanvas::mouseMoveEvent;
-    using VpCanvas::mouseReleaseEvent;
-    using VpCanvas::focusOutEvent;
-};
-
 class HighlightCanvas final : public VpCanvas {
 public:
     using VpCanvas::hoverMoveEvent;
@@ -54,7 +44,6 @@ private slots:
     void zoomCursorFollowsModifiers();
     void paintAndMarqueeHighlightRendering();
     void clipsContentAtCanvasBoundaryAndPreservesGuides();
-    void temporaryHandPreservesToolInteraction();
     void externalControllerSurvivesCanvas()
     {
         VpController controller;
@@ -183,7 +172,7 @@ private slots:
         QCOMPARE(canvas.verticalSize(), 1.0);
     }
 
-    void handMovesViewport()
+    void zoomMouseClicks()
     {
         QTemporaryDir directory;
         QImage image(1000, 800, QImage::Format_RGB32);
@@ -196,15 +185,8 @@ private slots:
         canvas.setSize(QSizeF(500, 400));
         canvas.setZoom(1);
         canvas.scrollTo(0.25, 0.25);
-        canvas.controller()->setTool(VpTools::Hand);
         QMouseEvent press(QEvent::MouseButtonPress, QPointF(100, 100), QPointF(100, 100),
                           Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-        canvas.mousePressEvent(&press);
-        QMouseEvent release(QEvent::MouseButtonRelease, QPointF(150, 140), QPointF(150, 140),
-                            Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
-        canvas.mouseReleaseEvent(&release);
-        QCOMPARE(canvas.horizontalPosition(), 0.2);
-        QCOMPARE(canvas.verticalPosition(), 0.2);
         canvas.controller()->setTool(VpTools::Zoom);
         canvas.mousePressEvent(&press);
         QCOMPARE(canvas.zoom(), 2.0);
@@ -309,60 +291,6 @@ void CanvasNavigationTest::marqueePointerAccuracy()
     verifyCorners(region);
 }
 
-void CanvasNavigationTest::temporaryHandPreservesToolInteraction()
-{
-    const auto check = [](bool passed, const char *message) {
-        QVERIFY2(passed, message);
-    };
-    VpController controller;
-    QImage image(1000,1000,QImage::Format_ARGB32_Premultiplied); image.fill(Qt::white);
-    controller.document().setImage(image);
-    TemporaryHandCanvas canvas; canvas.setSize(QSizeF(400,400)); canvas.setController(&controller);
-    canvas.setZoom(1); canvas.scrollTo(.3,.3);
-    for (const QPointF &point : {QPointF(100,100),QPointF(800,100),QPointF(800,800)})
-        controller.pointerPress(point,1,Qt::NoModifier);
-    const auto points=controller.creationPoints();
-    QKeyEvent down(QEvent::KeyPress,Qt::Key_Space,Qt::NoModifier);
-    QKeyEvent up(QEvent::KeyRelease,Qt::Key_Space,Qt::NoModifier);
-    canvas.keyPressEvent(&down);
-    check(canvas.temporaryHandActive() && canvas.cursor().shape()==Qt::OpenHandCursor,
-          "Space temporarily activates hand cursor");
-    check(controller.tool()==VpTools::CreatePlane && controller.creationPoints()==points,
-          "temporary hand preserves original tool and partial creation");
-    QKeyEvent repeatUp(QEvent::KeyRelease,Qt::Key_Space,Qt::NoModifier,QString(),true);
-    canvas.keyReleaseEvent(&repeatUp);
-    check(canvas.temporaryHandActive(),"auto repeat release keeps temporary hand");
-    const qreal before=canvas.horizontalPosition();
-    QMouseEvent press(QEvent::MouseButtonPress,QPointF(100,100),Qt::LeftButton,Qt::LeftButton,Qt::NoModifier);
-    QMouseEvent move(QEvent::MouseMove,QPointF(150,100),Qt::NoButton,Qt::LeftButton,Qt::NoModifier);
-    QMouseEvent release(QEvent::MouseButtonRelease,QPointF(150,100),Qt::LeftButton,Qt::NoButton,Qt::NoModifier);
-    canvas.mousePressEvent(&press); canvas.mouseMoveEvent(&move);
-    check(canvas.cursor().shape()==Qt::ClosedHandCursor && canvas.horizontalPosition()<before,
-          "temporary hand drag pans canvas");
-    canvas.keyReleaseEvent(&up);
-    check(!canvas.temporaryHandActive(),"Space release immediately restores original tool");
-    canvas.mouseReleaseEvent(&release);
-    check(controller.creationPoints()==points,"pan release does not create an extra corner");
-    canvas.keyPressEvent(&down);
-    QFocusEvent lost(QEvent::FocusOut);
-    canvas.focusOutEvent(&lost);
-    check(!canvas.temporaryHandActive(),"focus loss clears temporary hand");
-    controller.cancelInteraction();
-    controller.document().appendPlane(PerspectivePlane(
-        {QPointF(0,0),QPointF(1000,0),QPointF(1000,1000),QPointF(0,1000)},
-        {QPointF(0,0),QPointF(1000,0),QPointF(1000,1000),QPointF(0,1000)}));
-    controller.setTool(VpTools::Brush);
-    canvas.mousePressEvent(&press);
-    check(controller.brushDrawing(),"brush gesture starts normally");
-    canvas.keyPressEvent(&down);
-    check(controller.brushDrawing() && !canvas.temporaryHandActive(),"Space does not interrupt active stroke");
-    canvas.mouseReleaseEvent(&release);
-    check(!controller.brushDrawing() && canvas.temporaryHandActive(),"hand activates after stroke completes");
-    canvas.keyReleaseEvent(&up);
-    check(controller.tool()==VpTools::Brush && !canvas.temporaryHandActive(),"Space release returns to brush");
-    canvas.keyPressEvent(&down); controller.document().setImage(image);
-    check(!canvas.temporaryHandActive(),"document replacement clears temporary state");
-}
 
 void CanvasNavigationTest::clipsContentAtCanvasBoundaryAndPreservesGuides()
 {

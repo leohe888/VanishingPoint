@@ -71,9 +71,9 @@ void VpCanvas::setController(VpController *controller)
     m_controller = controller;
     if (m_controller) {
         connect(controller, &VpController::toolChanged, this, [this] {
+            setSpaceHeld(false);
             m_panning = false;
             m_toolPointerActive = false;
-            setSpaceHeld(false);
             updateNavigationCursor(QGuiApplication::keyboardModifiers() & Qt::AltModifier);
             updateAuxiliaryOverlay();
         });
@@ -106,10 +106,10 @@ void VpCanvas::setController(VpController *controller)
 
 void VpCanvas::resetView()
 {
+    setSpaceHeld(false);
     m_panning = false;
     m_toolPointerActive = false;
     m_navigationPointerActive = false;
-    setSpaceHeld(false);
     m_cursorOnCanvas = false;
     m_cursorPoint = QPointF();
     m_scale = 1;
@@ -607,10 +607,11 @@ void VpCanvas::updateNavigationCursor(bool alt)
 void VpCanvas::setSpaceHeld(bool held)
 {
     if (m_spaceHeld == held) return;
+    const bool wasActive = temporaryHandActive();
     m_spaceHeld = held;
     if (!held && m_navigationPointerActive && m_controller && m_controller->tool() != Tool::Hand)
         m_panning = false;
-    emit temporaryHandActiveChanged();
+    if (wasActive != temporaryHandActive()) emit temporaryHandActiveChanged();
     updateNavigationCursor(QGuiApplication::keyboardModifiers() & Qt::AltModifier);
     updateAuxiliaryOverlay();
     updateCursorPreview();
@@ -618,7 +619,9 @@ void VpCanvas::setSpaceHeld(bool held)
 
 void VpCanvas::focusOutEvent(QFocusEvent *event)
 {
+    m_panning = false;
     setSpaceHeld(false);
+    updateNavigationCursor();
     QQuickPaintedItem::focusOutEvent(event);
 }
 
@@ -641,6 +644,10 @@ void VpCanvas::keyReleaseEvent(QKeyEvent *event)
 
 void VpCanvas::mousePressEvent(QMouseEvent *event)
 {
+    if (event->button() != Qt::LeftButton) {
+        event->ignore();
+        return;
+    }
     if (!m_controller) {
         event->ignore();
         return;
@@ -671,6 +678,11 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
     }
     event->accept();
     if (m_panning) {
+        if (!(event->buttons() & Qt::LeftButton)) {
+            m_panning = false;
+            updateNavigationCursor();
+            return;
+        }
         m_offset += event->position() - m_panPoint;
         m_panPoint = event->position();
         updateViewTransform();
@@ -683,11 +695,16 @@ void VpCanvas::mouseMoveEvent(QMouseEvent *event)
 
 void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (event->button() != Qt::LeftButton) {
+        event->ignore();
+        return;
+    }
     if (!m_controller) {
         event->ignore();
         return;
     }
     event->accept();
+    const bool temporaryHandWasActive = temporaryHandActive();
     if (m_panning) {
         m_offset += event->position() - m_panPoint;
         m_panning = false;
@@ -700,7 +717,7 @@ void VpCanvas::mouseReleaseEvent(QMouseEvent *event)
     m_toolPointerActive = false;
     m_cursorPoint = widgetToImage(event->position());
     updateAuxiliaryOverlay();
-    emit temporaryHandActiveChanged();
+    if (temporaryHandWasActive != temporaryHandActive()) emit temporaryHandActiveChanged();
     updateNavigationCursor(event->modifiers() & Qt::AltModifier);
     updateCursorPreview();
 }

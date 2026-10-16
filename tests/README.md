@@ -8,7 +8,7 @@ cmake --build build -j 6
 ctest --test-dir build --output-on-failure -j 1
 ~~~
 
-20 个常规测试程序默认采用 offscreen / software。启用 VP_ENABLE_GPU_TESTS 后，Windows 上额外运行 D3D11 网格渲染检查 vp_grid_d3d11。剪切板测试必须串行运行。Qt Test 日志位于 build/tests/test-results。
+21 个常规测试程序默认采用 offscreen / software。启用 VP_ENABLE_GPU_TESTS 后，Windows 上额外运行 D3D11 网格渲染检查 vp_grid_d3d11。剪切板测试必须串行运行。Qt Test 日志位于 build/tests/test-results。
 
 ## 测试覆盖
 
@@ -27,7 +27,8 @@ ctest --test-dir build --output-on-failure -j 1
 | `tst_vpdocument` | 文档事务、撤销重做、后代平面删除、索引调整及共享边解锁 |
 | `tst_vpcontroller` | 工具可用性、属性通知，以及剪切板粘贴、透明度和复制来源优先级 |
 | `tst_floatingselectionprojection` | 浮动选区投影、命中、控制点、缓存、跨曲面裁剪与像素恢复，以及旋转／缩放后的蚂蚁线显示 |
-| `tst_canvasnavigation` | 控制器生命周期、缩放和平移、临时抓手、导航光标、目标平面高亮渲染、画布边界裁剪及辅助轮廓保留；AC12拖选精度120组数据（50%／100%／200%、矩形／透视梯形、中心／四边、居中／滚动平移、正反向拖选），检查拖动中与松手后四角偏差≤2 Qt逻辑显示像素 |
+| `tst_handtool` | 四向／斜向／小数平移、50%／100%／200% 下的显示位移、松手末段与重复坐标、四边钳制及反向恢复、小图居中与单轴滚动、文档及重做保留、正式／临时抓手光标、空格释放与自动重复、活跃画笔／图章／平面编辑／选框保护、失焦／工具切换／图像及控制器替换后的恢复、鼠标按钮与视口外松手、精确状态通知 |
+| `tst_canvasnavigation` | 控制器生命周期、通用缩放与滚动条、缩放鼠标操作及导航光标、目标平面高亮渲染、画布边界裁剪及辅助轮廓保留；AC12拖选精度120组数据（50%／100%／200%、矩形／透视梯形、中心／四边、居中／滚动平移、正反向拖选），检查拖动中与松手后四角偏差≤2 Qt逻辑显示像素 |
 | `tst_auditinteractions`、`tst_auditboundaries` | 跨工具操作中断、粘贴、异常输入与历史数量上限 |
 | `tst_qmlintegration` | QML 绑定、真实滚动条和提示栏组件、临时消息替换原提示、3 秒后恢复与重复计时、错误颜色、交互进度保留、工具切换清理、画布重做调用和视图重建后的控制器所有权 |
 
@@ -38,6 +39,8 @@ ctest --test-dir build --output-on-failure -j 1
 画笔整笔历史、粘贴结束笔触和超长移动段的检查统一归入 `tst_brushtool`。画笔取消交互／切换工具会提交已绘制的笔触，可随后整笔撤销；修复的共性断言保留在 `tst_healingblend`，选框跨工具裁剪保留在 `tst_marqueetool`。
 
 图章文档采样与粘贴结束笔触的检查统一归入 `tst_clonetool`，并合并到多笔历史与中断恢复用例中。图章取消交互／切换工具同样提交已绘制的笔触；坐标缓存只检查像素正确性，不运行性能程序。
+
+抓手平移和空格临时抓手检查集中在 `tst_handtool`，通用缩放、滚动条和画布坐标验证保留在 `tst_canvasnavigation`。
 
 ## demo 的渲染适配
 

@@ -22,7 +22,7 @@ function(add_vp_test test_name)
     set_tests_properties(${test_name} PROPERTIES TIMEOUT 120)
 endfunction()
 
-foreach(name IN ITEMS canvasnavigation perspectiveplane perspectivetransform perspectivequad
+foreach(name IN ITEMS canvasnavigation handtool perspectiveplane perspectivetransform perspectivequad
         planecreatetool planeedittool marqueetool vpdocument brushtool clonetool
         vpcontroller imagesaving floatingselectionprojection floatingselectiontransformtool eyedroppertool healingblend auditinteractions auditboundaries)
     add_vp_test(tst_${name} tst_${name}.cpp)
