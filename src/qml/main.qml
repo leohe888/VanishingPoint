@@ -69,7 +69,7 @@ Window {
                 }
                 ToolButton {
                     iconSource: "redo.png"
-                    tooltip: qsTr("重做") + " (Ctrl+Y / Ctrl+Shift+Z)"
+                    tooltip: qsTr("重做") + " (Ctrl+Shift+Z)"
                     tooltipBelow: true
                     enabled: vpController.canRedo
                     onActivated: vpController.redo()
