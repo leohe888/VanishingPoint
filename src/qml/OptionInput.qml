@@ -161,7 +161,7 @@ RowLayout {
     Controls.Popup {
         id: sliderPopup
         objectName: "sliderPopup"
-        x: inputBox.x
+        x: inputBox.x + (inputBox.width - width) / 2
         y: inputBox.y + inputBox.height
         width: 140
         height: 32
