@@ -1,0 +1,1700 @@
+{
+    "contentPaintCount": 278,
+    "contentPaintP95Ms": 15.9407,
+    "contentPaintTotalMs": 3954.9713999999985,
+    "dpr": 1,
+    "eventHandlerP95Ms": 0.0299,
+    "functionalChecked": false,
+    "functionalFailures": [
+    ],
+    "functionalPassed": true,
+    "graphicsApi": 2,
+    "imageSide": 8192,
+    "inputEvents": 633,
+    "intervalP95Ms": 23.9001,
+    "latencyP50Ms": 18.9972,
+    "latencyP95Ms": 22.6438,
+    "latencyP99Ms": 30.4298,
+    "longIntervalPercent": 0.7272727272727273,
+    "phaseFrameCounts": [
+        93,
+        93,
+        92
+    ],
+    "previewDescription": "missing",
+    "previewFrames": 278,
+    "previewPointCount": 3,
+    "qt": "5.15.18",
+    "samples": [
+        {
+            "corners": 1,
+            "inputMs": 1513.666,
+            "latencyMs": 16.8692,
+            "submitMs": 1530.5352
+        },
+        {
+            "corners": 1,
+            "inputMs": 1533.2912,
+            "latencyMs": 19.3005,
+            "submitMs": 1552.5917
+        },
+        {
+            "corners": 1,
+            "inputMs": 1553.813,
+            "latencyMs": 20.142,
+            "submitMs": 1573.955
+        },
+        {
+            "corners": 1,
+            "inputMs": 1578.0558,
+            "latencyMs": 18.2792,
+            "submitMs": 1596.335
+        },
+        {
+            "corners": 1,
+            "inputMs": 1597.7407,
+            "latencyMs": 21.3589,
+            "submitMs": 1619.0996
+        },
+        {
+            "corners": 1,
+            "inputMs": 1621.7981,
+            "latencyMs": 19.2007,
+            "submitMs": 1640.9988
+        },
+        {
+            "corners": 1,
+            "inputMs": 1641.8828,
+            "latencyMs": 20.1725,
+            "submitMs": 1662.0553
+        },
+        {
+            "corners": 1,
+            "inputMs": 1665.6272,
+            "latencyMs": 16.7404,
+            "submitMs": 1682.3676
+        },
+        {
+            "corners": 1,
+            "inputMs": 1685.8704,
+            "latencyMs": 16.8377,
+            "submitMs": 1702.7081
+        },
+        {
+            "corners": 1,
+            "inputMs": 1705.4061,
+            "latencyMs": 17.6004,
+            "submitMs": 1723.0065
+        },
+        {
+            "corners": 1,
+            "inputMs": 1725.4762,
+            "latencyMs": 17.2379,
+            "submitMs": 1742.7141
+        },
+        {
+            "corners": 1,
+            "inputMs": 1745.4663,
+            "latencyMs": 18.2701,
+            "submitMs": 1763.7364
+        },
+        {
+            "corners": 1,
+            "inputMs": 1765.4293,
+            "latencyMs": 19.246,
+            "submitMs": 1784.6753
+        },
+        {
+            "corners": 1,
+            "inputMs": 1785.5744,
+            "latencyMs": 20.5174,
+            "submitMs": 1806.0918
+        },
+        {
+            "corners": 1,
+            "inputMs": 1809.438,
+            "latencyMs": 18.2078,
+            "submitMs": 1827.6458
+        },
+        {
+            "corners": 1,
+            "inputMs": 1829.4663,
+            "latencyMs": 18.1699,
+            "submitMs": 1847.6362
+        },
+        {
+            "corners": 1,
+            "inputMs": 1849.4677,
+            "latencyMs": 22.2028,
+            "submitMs": 1871.6705
+        },
+        {
+            "corners": 1,
+            "inputMs": 1873.4731,
+            "latencyMs": 20.1165,
+            "submitMs": 1893.5896
+        },
+        {
+            "corners": 1,
+            "inputMs": 1897.5429,
+            "latencyMs": 18.0369,
+            "submitMs": 1915.5798
+        },
+        {
+            "corners": 1,
+            "inputMs": 1917.5131,
+            "latencyMs": 20.1252,
+            "submitMs": 1937.6383
+        },
+        {
+            "corners": 1,
+            "inputMs": 1941.538,
+            "latencyMs": 18.6624,
+            "submitMs": 1960.2004
+        },
+        {
+            "corners": 1,
+            "inputMs": 1961.9192,
+            "latencyMs": 22.6438,
+            "submitMs": 1984.563
+        },
+        {
+            "corners": 1,
+            "inputMs": 1985.2501,
+            "latencyMs": 22.812,
+            "submitMs": 2008.0621
+        },
+        {
+            "corners": 1,
+            "inputMs": 2010.076,
+            "latencyMs": 20.9986,
+            "submitMs": 2031.0746
+        },
+        {
+            "corners": 1,
+            "inputMs": 2034.0891,
+            "latencyMs": 19.6472,
+            "submitMs": 2053.7363
+        },
+        {
+            "corners": 1,
+            "inputMs": 2057.5099,
+            "latencyMs": 20.1601,
+            "submitMs": 2077.67
+        },
+        {
+            "corners": 1,
+            "inputMs": 2081.9904,
+            "latencyMs": 19.5797,
+            "submitMs": 2101.5701
+        },
+        {
+            "corners": 1,
+            "inputMs": 2102.07,
+            "latencyMs": 21.765,
+            "submitMs": 2123.835
+        },
+        {
+            "corners": 1,
+            "inputMs": 2126.0817,
+            "latencyMs": 20.6135,
+            "submitMs": 2146.6952
+        },
+        {
+            "corners": 1,
+            "inputMs": 2150.0773,
+            "latencyMs": 20.9916,
+            "submitMs": 2171.0689
+        },
+        {
+            "corners": 1,
+            "inputMs": 2173.6108,
+            "latencyMs": 21.0025,
+            "submitMs": 2194.6133
+        },
+        {
+            "corners": 1,
+            "inputMs": 2197.6123,
+            "latencyMs": 18.7526,
+            "submitMs": 2216.3649
+        },
+        {
+            "corners": 1,
+            "inputMs": 2217.576,
+            "latencyMs": 20.9636,
+            "submitMs": 2238.5396
+        },
+        {
+            "corners": 1,
+            "inputMs": 2242.0924,
+            "latencyMs": 17.3428,
+            "submitMs": 2259.4352
+        },
+        {
+            "corners": 1,
+            "inputMs": 2261.5913,
+            "latencyMs": 18.9746,
+            "submitMs": 2280.5659
+        },
+        {
+            "corners": 1,
+            "inputMs": 2281.9762,
+            "latencyMs": 19.4014,
+            "submitMs": 2301.3776
+        },
+        {
+            "corners": 1,
+            "inputMs": 2305.9384,
+            "latencyMs": 16.6881,
+            "submitMs": 2322.6265
+        },
+        {
+            "corners": 1,
+            "inputMs": 2325.9376,
+            "latencyMs": 17.7002,
+            "submitMs": 2343.6378
+        },
+        {
+            "corners": 1,
+            "inputMs": 2345.9618,
+            "latencyMs": 18.909,
+            "submitMs": 2364.8708
+        },
+        {
+            "corners": 1,
+            "inputMs": 2365.2623,
+            "latencyMs": 23.0737,
+            "submitMs": 2388.336
+        },
+        {
+            "corners": 1,
+            "inputMs": 2389.6207,
+            "latencyMs": 20.688,
+            "submitMs": 2410.3087
+        },
+        {
+            "corners": 1,
+            "inputMs": 2413.6001,
+            "latencyMs": 19.7023,
+            "submitMs": 2433.3024
+        },
+        {
+            "corners": 1,
+            "inputMs": 2437.2454,
+            "latencyMs": 19.5166,
+            "submitMs": 2456.762
+        },
+        {
+            "corners": 1,
+            "inputMs": 2457.2669,
+            "latencyMs": 24.3275,
+            "submitMs": 2481.5944
+        },
+        {
+            "corners": 1,
+            "inputMs": 2485.5006,
+            "latencyMs": 19.7817,
+            "submitMs": 2505.2823
+        },
+        {
+            "corners": 1,
+            "inputMs": 2506.2118,
+            "latencyMs": 19.4853,
+            "submitMs": 2525.6971
+        },
+        {
+            "corners": 1,
+            "inputMs": 2529.9399,
+            "latencyMs": 16.4578,
+            "submitMs": 2546.3977
+        },
+        {
+            "corners": 1,
+            "inputMs": 2549.2589,
+            "latencyMs": 17.4434,
+            "submitMs": 2566.7023
+        },
+        {
+            "corners": 1,
+            "inputMs": 2569.8569,
+            "latencyMs": 18.3791,
+            "submitMs": 2588.236
+        },
+        {
+            "corners": 1,
+            "inputMs": 2589.9398,
+            "latencyMs": 19.0986,
+            "submitMs": 2609.0384
+        },
+        {
+            "corners": 1,
+            "inputMs": 2609.9846,
+            "latencyMs": 20.3594,
+            "submitMs": 2630.344
+        },
+        {
+            "corners": 1,
+            "inputMs": 2633.9896,
+            "latencyMs": 17.6944,
+            "submitMs": 2651.684
+        },
+        {
+            "corners": 1,
+            "inputMs": 2653.9718,
+            "latencyMs": 19.6397,
+            "submitMs": 2673.6115
+        },
+        {
+            "corners": 1,
+            "inputMs": 2677.7647,
+            "latencyMs": 17.1044,
+            "submitMs": 2694.8691
+        },
+        {
+            "corners": 1,
+            "inputMs": 2697.8338,
+            "latencyMs": 17.3496,
+            "submitMs": 2715.1834
+        },
+        {
+            "corners": 1,
+            "inputMs": 2717.8789,
+            "latencyMs": 17.5758,
+            "submitMs": 2735.4547
+        },
+        {
+            "corners": 1,
+            "inputMs": 2737.9694,
+            "latencyMs": 18.918,
+            "submitMs": 2756.8874
+        },
+        {
+            "corners": 1,
+            "inputMs": 2757.8895,
+            "latencyMs": 19.5139,
+            "submitMs": 2777.4034
+        },
+        {
+            "corners": 1,
+            "inputMs": 2777.9354,
+            "latencyMs": 20.4817,
+            "submitMs": 2798.4171
+        },
+        {
+            "corners": 1,
+            "inputMs": 2802.1452,
+            "latencyMs": 18.5002,
+            "submitMs": 2820.6454
+        },
+        {
+            "corners": 1,
+            "inputMs": 2822.281,
+            "latencyMs": 19.9224,
+            "submitMs": 2842.2034
+        },
+        {
+            "corners": 1,
+            "inputMs": 2845.8264,
+            "latencyMs": 17.4566,
+            "submitMs": 2863.283
+        },
+        {
+            "corners": 1,
+            "inputMs": 2865.7707,
+            "latencyMs": 18.3804,
+            "submitMs": 2884.1511
+        },
+        {
+            "corners": 1,
+            "inputMs": 2885.7416,
+            "latencyMs": 20.0228,
+            "submitMs": 2905.7644
+        },
+        {
+            "corners": 1,
+            "inputMs": 2909.2455,
+            "latencyMs": 17.4046,
+            "submitMs": 2926.6501
+        },
+        {
+            "corners": 1,
+            "inputMs": 2929.2404,
+            "latencyMs": 17.4622,
+            "submitMs": 2946.7026
+        },
+        {
+            "corners": 1,
+            "inputMs": 2949.2379,
+            "latencyMs": 19.0926,
+            "submitMs": 2968.3305
+        },
+        {
+            "corners": 1,
+            "inputMs": 2969.2404,
+            "latencyMs": 19.905,
+            "submitMs": 2989.1454
+        },
+        {
+            "corners": 1,
+            "inputMs": 2989.3477,
+            "latencyMs": 19.4622,
+            "submitMs": 3008.8099
+        },
+        {
+            "corners": 1,
+            "inputMs": 3009.3124,
+            "latencyMs": 20.7185,
+            "submitMs": 3030.0309
+        },
+        {
+            "corners": 1,
+            "inputMs": 3033.4108,
+            "latencyMs": 17.4575,
+            "submitMs": 3050.8683
+        },
+        {
+            "corners": 1,
+            "inputMs": 3053.6112,
+            "latencyMs": 18.5736,
+            "submitMs": 3072.1848
+        },
+        {
+            "corners": 1,
+            "inputMs": 3073.5342,
+            "latencyMs": 18.4623,
+            "submitMs": 3091.9965
+        },
+        {
+            "corners": 1,
+            "inputMs": 3094.3601,
+            "latencyMs": 19.0188,
+            "submitMs": 3113.3789
+        },
+        {
+            "corners": 1,
+            "inputMs": 3114.2533,
+            "latencyMs": 19.0656,
+            "submitMs": 3133.3189
+        },
+        {
+            "corners": 1,
+            "inputMs": 3138.0328,
+            "latencyMs": 16.6725,
+            "submitMs": 3154.7053
+        },
+        {
+            "corners": 1,
+            "inputMs": 3158.076,
+            "latencyMs": 18.6487,
+            "submitMs": 3176.7247
+        },
+        {
+            "corners": 1,
+            "inputMs": 3178.2386,
+            "latencyMs": 18.314,
+            "submitMs": 3196.5526
+        },
+        {
+            "corners": 1,
+            "inputMs": 3197.317,
+            "latencyMs": 19.1372,
+            "submitMs": 3216.4542
+        },
+        {
+            "corners": 1,
+            "inputMs": 3217.9194,
+            "latencyMs": 19.4182,
+            "submitMs": 3237.3376
+        },
+        {
+            "corners": 1,
+            "inputMs": 3242.0952,
+            "latencyMs": 16.3677,
+            "submitMs": 3258.4629
+        },
+        {
+            "corners": 1,
+            "inputMs": 3261.3109,
+            "latencyMs": 17.5507,
+            "submitMs": 3278.8616
+        },
+        {
+            "corners": 1,
+            "inputMs": 3282.3493,
+            "latencyMs": 18.2789,
+            "submitMs": 3300.6282
+        },
+        {
+            "corners": 1,
+            "inputMs": 3301.9583,
+            "latencyMs": 19.7292,
+            "submitMs": 3321.6875
+        },
+        {
+            "corners": 1,
+            "inputMs": 3326.04,
+            "latencyMs": 17.4829,
+            "submitMs": 3343.5229
+        },
+        {
+            "corners": 1,
+            "inputMs": 3345.8299,
+            "latencyMs": 18.7697,
+            "submitMs": 3364.5996
+        },
+        {
+            "corners": 1,
+            "inputMs": 3365.6028,
+            "latencyMs": 20.8987,
+            "submitMs": 3386.5015
+        },
+        {
+            "corners": 1,
+            "inputMs": 3389.4281,
+            "latencyMs": 18.5779,
+            "submitMs": 3408.006
+        },
+        {
+            "corners": 1,
+            "inputMs": 3409.9752,
+            "latencyMs": 18.1633,
+            "submitMs": 3428.1385
+        },
+        {
+            "corners": 1,
+            "inputMs": 3430.109,
+            "latencyMs": 18.244,
+            "submitMs": 3448.353
+        },
+        {
+            "corners": 1,
+            "inputMs": 3449.9601,
+            "latencyMs": 18.8241,
+            "submitMs": 3468.7842
+        },
+        {
+            "corners": 1,
+            "inputMs": 3470.1494,
+            "latencyMs": 20.5005,
+            "submitMs": 3490.6499
+        },
+        {
+            "corners": 1,
+            "inputMs": 3493.3415,
+            "latencyMs": 17.8756,
+            "submitMs": 3511.2171
+        },
+        {
+            "corners": 2,
+            "inputMs": 4013.983,
+            "latencyMs": 21.092,
+            "submitMs": 4035.075
+        },
+        {
+            "corners": 2,
+            "inputMs": 4038.05,
+            "latencyMs": 18.3308,
+            "submitMs": 4056.3808
+        },
+        {
+            "corners": 2,
+            "inputMs": 4057.3804,
+            "latencyMs": 20.7654,
+            "submitMs": 4078.1458
+        },
+        {
+            "corners": 2,
+            "inputMs": 4081.4458,
+            "latencyMs": 17.3462,
+            "submitMs": 4098.792
+        },
+        {
+            "corners": 2,
+            "inputMs": 4101.4175,
+            "latencyMs": 17.1094,
+            "submitMs": 4118.5269
+        },
+        {
+            "corners": 2,
+            "inputMs": 4122.0583,
+            "latencyMs": 18.0196,
+            "submitMs": 4140.0779
+        },
+        {
+            "corners": 2,
+            "inputMs": 4142.1844,
+            "latencyMs": 18.9099,
+            "submitMs": 4161.0943
+        },
+        {
+            "corners": 2,
+            "inputMs": 4162.1639,
+            "latencyMs": 20.4075,
+            "submitMs": 4182.5714
+        },
+        {
+            "corners": 2,
+            "inputMs": 4186.5153,
+            "latencyMs": 16.6966,
+            "submitMs": 4203.2119
+        },
+        {
+            "corners": 2,
+            "inputMs": 4205.703,
+            "latencyMs": 19.8443,
+            "submitMs": 4225.5473
+        },
+        {
+            "corners": 2,
+            "inputMs": 4229.5047,
+            "latencyMs": 17.9705,
+            "submitMs": 4247.4752
+        },
+        {
+            "corners": 2,
+            "inputMs": 4249.7898,
+            "latencyMs": 18.739,
+            "submitMs": 4268.5288
+        },
+        {
+            "corners": 2,
+            "inputMs": 4269.465,
+            "latencyMs": 18.935,
+            "submitMs": 4288.4
+        },
+        {
+            "corners": 2,
+            "inputMs": 4289.4516,
+            "latencyMs": 19.8436,
+            "submitMs": 4309.2952
+        },
+        {
+            "corners": 2,
+            "inputMs": 4309.9935,
+            "latencyMs": 21.7598,
+            "submitMs": 4331.7533
+        },
+        {
+            "corners": 2,
+            "inputMs": 4333.8797,
+            "latencyMs": 18.8454,
+            "submitMs": 4352.7251
+        },
+        {
+            "corners": 2,
+            "inputMs": 4354.0621,
+            "latencyMs": 19.9748,
+            "submitMs": 4374.0369
+        },
+        {
+            "corners": 2,
+            "inputMs": 4378.1716,
+            "latencyMs": 18.1584,
+            "submitMs": 4396.33
+        },
+        {
+            "corners": 2,
+            "inputMs": 4397.7452,
+            "latencyMs": 19.3038,
+            "submitMs": 4417.049
+        },
+        {
+            "corners": 2,
+            "inputMs": 4418.2262,
+            "latencyMs": 22.1323,
+            "submitMs": 4440.3585
+        },
+        {
+            "corners": 2,
+            "inputMs": 4442.1352,
+            "latencyMs": 18.5294,
+            "submitMs": 4460.6646
+        },
+        {
+            "corners": 2,
+            "inputMs": 4462.1378,
+            "latencyMs": 18.3142,
+            "submitMs": 4480.452
+        },
+        {
+            "corners": 2,
+            "inputMs": 4482.2193,
+            "latencyMs": 19.3629,
+            "submitMs": 4501.5822
+        },
+        {
+            "corners": 2,
+            "inputMs": 4505.2895,
+            "latencyMs": 16.6176,
+            "submitMs": 4521.9071
+        },
+        {
+            "corners": 2,
+            "inputMs": 4525.4712,
+            "latencyMs": 41.0814,
+            "submitMs": 4566.5526
+        },
+        {
+            "corners": 2,
+            "inputMs": 4569.6187,
+            "latencyMs": 35.4061,
+            "submitMs": 4605.0248
+        },
+        {
+            "corners": 2,
+            "inputMs": 4605.652,
+            "latencyMs": 23.6068,
+            "submitMs": 4629.2588
+        },
+        {
+            "corners": 2,
+            "inputMs": 4633.8182,
+            "latencyMs": 17.615,
+            "submitMs": 4651.4332
+        },
+        {
+            "corners": 2,
+            "inputMs": 4653.527,
+            "latencyMs": 18.9972,
+            "submitMs": 4672.5242
+        },
+        {
+            "corners": 2,
+            "inputMs": 4673.7074,
+            "latencyMs": 20.4756,
+            "submitMs": 4694.183
+        },
+        {
+            "corners": 2,
+            "inputMs": 4697.2957,
+            "latencyMs": 17.5562,
+            "submitMs": 4714.8519
+        },
+        {
+            "corners": 2,
+            "inputMs": 4717.7013,
+            "latencyMs": 17.5028,
+            "submitMs": 4735.2041
+        },
+        {
+            "corners": 2,
+            "inputMs": 4737.691,
+            "latencyMs": 19.11,
+            "submitMs": 4756.801
+        },
+        {
+            "corners": 2,
+            "inputMs": 4757.6762,
+            "latencyMs": 20.7372,
+            "submitMs": 4778.4134
+        },
+        {
+            "corners": 2,
+            "inputMs": 4782.0514,
+            "latencyMs": 17.7808,
+            "submitMs": 4799.8322
+        },
+        {
+            "corners": 2,
+            "inputMs": 4801.4172,
+            "latencyMs": 20.5235,
+            "submitMs": 4821.9407
+        },
+        {
+            "corners": 2,
+            "inputMs": 4825.4893,
+            "latencyMs": 17.3928,
+            "submitMs": 4842.8821
+        },
+        {
+            "corners": 2,
+            "inputMs": 4845.7357,
+            "latencyMs": 17.3008,
+            "submitMs": 4863.0365
+        },
+        {
+            "corners": 2,
+            "inputMs": 4865.7464,
+            "latencyMs": 17.5273,
+            "submitMs": 4883.2737
+        },
+        {
+            "corners": 2,
+            "inputMs": 4885.7278,
+            "latencyMs": 18.719,
+            "submitMs": 4904.4468
+        },
+        {
+            "corners": 2,
+            "inputMs": 4905.6693,
+            "latencyMs": 18.4148,
+            "submitMs": 4924.0841
+        },
+        {
+            "corners": 2,
+            "inputMs": 4926.3949,
+            "latencyMs": 18.0666,
+            "submitMs": 4944.4615
+        },
+        {
+            "corners": 2,
+            "inputMs": 4945.303,
+            "latencyMs": 19.6387,
+            "submitMs": 4964.9417
+        },
+        {
+            "corners": 2,
+            "inputMs": 4966.1607,
+            "latencyMs": 19.8698,
+            "submitMs": 4986.0305
+        },
+        {
+            "corners": 2,
+            "inputMs": 4989.3914,
+            "latencyMs": 17.9305,
+            "submitMs": 5007.3219
+        },
+        {
+            "corners": 2,
+            "inputMs": 5009.8051,
+            "latencyMs": 19.0637,
+            "submitMs": 5028.8688
+        },
+        {
+            "corners": 2,
+            "inputMs": 5030.0866,
+            "latencyMs": 19.0096,
+            "submitMs": 5049.0962
+        },
+        {
+            "corners": 2,
+            "inputMs": 5053.6952,
+            "latencyMs": 16.721,
+            "submitMs": 5070.4162
+        },
+        {
+            "corners": 2,
+            "inputMs": 5073.4509,
+            "latencyMs": 18.5842,
+            "submitMs": 5092.0351
+        },
+        {
+            "corners": 2,
+            "inputMs": 5093.4129,
+            "latencyMs": 21.5405,
+            "submitMs": 5114.9534
+        },
+        {
+            "corners": 2,
+            "inputMs": 5117.5975,
+            "latencyMs": 18.5453,
+            "submitMs": 5136.1428
+        },
+        {
+            "corners": 2,
+            "inputMs": 5137.38,
+            "latencyMs": 19.7628,
+            "submitMs": 5157.1428
+        },
+        {
+            "corners": 2,
+            "inputMs": 5162.0905,
+            "latencyMs": 16.4933,
+            "submitMs": 5178.5838
+        },
+        {
+            "corners": 2,
+            "inputMs": 5181.2916,
+            "latencyMs": 17.2294,
+            "submitMs": 5198.521
+        },
+        {
+            "corners": 2,
+            "inputMs": 5201.812,
+            "latencyMs": 18.3454,
+            "submitMs": 5220.1574
+        },
+        {
+            "corners": 2,
+            "inputMs": 5222.0586,
+            "latencyMs": 19.8246,
+            "submitMs": 5241.8832
+        },
+        {
+            "corners": 2,
+            "inputMs": 5241.774,
+            "latencyMs": 21.3258,
+            "submitMs": 5263.0998
+        },
+        {
+            "corners": 2,
+            "inputMs": 5265.8577,
+            "latencyMs": 19.9086,
+            "submitMs": 5285.7663
+        },
+        {
+            "corners": 2,
+            "inputMs": 5289.5631,
+            "latencyMs": 17.6235,
+            "submitMs": 5307.1866
+        },
+        {
+            "corners": 2,
+            "inputMs": 5309.7988,
+            "latencyMs": 18.2801,
+            "submitMs": 5328.0789
+        },
+        {
+            "corners": 2,
+            "inputMs": 5329.8569,
+            "latencyMs": 19.2343,
+            "submitMs": 5349.0912
+        },
+        {
+            "corners": 2,
+            "inputMs": 5349.9424,
+            "latencyMs": 19.1306,
+            "submitMs": 5369.073
+        },
+        {
+            "corners": 2,
+            "inputMs": 5370.1955,
+            "latencyMs": 20.2828,
+            "submitMs": 5390.4783
+        },
+        {
+            "corners": 2,
+            "inputMs": 5393.5083,
+            "latencyMs": 17.0856,
+            "submitMs": 5410.5939
+        },
+        {
+            "corners": 2,
+            "inputMs": 5413.2696,
+            "latencyMs": 17.6564,
+            "submitMs": 5430.926
+        },
+        {
+            "corners": 2,
+            "inputMs": 5433.8541,
+            "latencyMs": 18.0306,
+            "submitMs": 5451.8847
+        },
+        {
+            "corners": 2,
+            "inputMs": 5453.3569,
+            "latencyMs": 21.7858,
+            "submitMs": 5475.1427
+        },
+        {
+            "corners": 2,
+            "inputMs": 5477.3724,
+            "latencyMs": 19.75,
+            "submitMs": 5497.1224
+        },
+        {
+            "corners": 2,
+            "inputMs": 5498.1841,
+            "latencyMs": 21.9622,
+            "submitMs": 5520.1463
+        },
+        {
+            "corners": 2,
+            "inputMs": 5522.2496,
+            "latencyMs": 19.2911,
+            "submitMs": 5541.5407
+        },
+        {
+            "corners": 2,
+            "inputMs": 5541.9986,
+            "latencyMs": 19.6754,
+            "submitMs": 5561.674
+        },
+        {
+            "corners": 2,
+            "inputMs": 5565.3215,
+            "latencyMs": 17.7556,
+            "submitMs": 5583.0771
+        },
+        {
+            "corners": 2,
+            "inputMs": 5585.3154,
+            "latencyMs": 19.2946,
+            "submitMs": 5604.61
+        },
+        {
+            "corners": 2,
+            "inputMs": 5605.7976,
+            "latencyMs": 20.1227,
+            "submitMs": 5625.9203
+        },
+        {
+            "corners": 2,
+            "inputMs": 5629.5626,
+            "latencyMs": 17.7815,
+            "submitMs": 5647.3441
+        },
+        {
+            "corners": 2,
+            "inputMs": 5649.8704,
+            "latencyMs": 19.195,
+            "submitMs": 5669.0654
+        },
+        {
+            "corners": 2,
+            "inputMs": 5669.8268,
+            "latencyMs": 20.673,
+            "submitMs": 5690.4998
+        },
+        {
+            "corners": 2,
+            "inputMs": 5693.377,
+            "latencyMs": 18.4115,
+            "submitMs": 5711.7885
+        },
+        {
+            "corners": 2,
+            "inputMs": 5713.9666,
+            "latencyMs": 18.8226,
+            "submitMs": 5732.7892
+        },
+        {
+            "corners": 2,
+            "inputMs": 5733.7793,
+            "latencyMs": 20.4574,
+            "submitMs": 5754.2367
+        },
+        {
+            "corners": 2,
+            "inputMs": 5758.31,
+            "latencyMs": 16.0231,
+            "submitMs": 5774.3331
+        },
+        {
+            "corners": 2,
+            "inputMs": 5778.2823,
+            "latencyMs": 16.632,
+            "submitMs": 5794.9143
+        },
+        {
+            "corners": 2,
+            "inputMs": 5797.458,
+            "latencyMs": 17.7132,
+            "submitMs": 5815.1712
+        },
+        {
+            "corners": 2,
+            "inputMs": 5817.6718,
+            "latencyMs": 19.16,
+            "submitMs": 5836.8318
+        },
+        {
+            "corners": 2,
+            "inputMs": 5837.7043,
+            "latencyMs": 19.0178,
+            "submitMs": 5856.7221
+        },
+        {
+            "corners": 2,
+            "inputMs": 5857.5838,
+            "latencyMs": 19.5074,
+            "submitMs": 5877.0912
+        },
+        {
+            "corners": 2,
+            "inputMs": 5881.6689,
+            "latencyMs": 17.6185,
+            "submitMs": 5899.2874
+        },
+        {
+            "corners": 2,
+            "inputMs": 5902.0619,
+            "latencyMs": 18.1131,
+            "submitMs": 5920.175
+        },
+        {
+            "corners": 2,
+            "inputMs": 5921.9084,
+            "latencyMs": 19.6435,
+            "submitMs": 5941.5519
+        },
+        {
+            "corners": 2,
+            "inputMs": 5945.6543,
+            "latencyMs": 17.8853,
+            "submitMs": 5963.5396
+        },
+        {
+            "corners": 2,
+            "inputMs": 5965.5319,
+            "latencyMs": 18.5188,
+            "submitMs": 5984.0507
+        },
+        {
+            "corners": 2,
+            "inputMs": 5985.4762,
+            "latencyMs": 19.9248,
+            "submitMs": 6005.401
+        },
+        {
+            "corners": 2,
+            "inputMs": 6009.5505,
+            "latencyMs": 16.4012,
+            "submitMs": 6025.9517
+        },
+        {
+            "corners": 3,
+            "inputMs": 6525.9569,
+            "latencyMs": 29.6816,
+            "submitMs": 6555.6385
+        },
+        {
+            "corners": 3,
+            "inputMs": 6558.303,
+            "latencyMs": 27.309,
+            "submitMs": 6585.612
+        },
+        {
+            "corners": 3,
+            "inputMs": 6586.2218,
+            "latencyMs": 24.857,
+            "submitMs": 6611.0788
+        },
+        {
+            "corners": 3,
+            "inputMs": 6613.3174,
+            "latencyMs": 30.4298,
+            "submitMs": 6643.7472
+        },
+        {
+            "corners": 3,
+            "inputMs": 6646.1737,
+            "latencyMs": 22.6439,
+            "submitMs": 6668.8176
+        },
+        {
+            "corners": 3,
+            "inputMs": 6669.4062,
+            "latencyMs": 20.7138,
+            "submitMs": 6690.12
+        },
+        {
+            "corners": 3,
+            "inputMs": 6693.326,
+            "latencyMs": 18.9341,
+            "submitMs": 6712.2601
+        },
+        {
+            "corners": 3,
+            "inputMs": 6713.8096,
+            "latencyMs": 19.2048,
+            "submitMs": 6733.0144
+        },
+        {
+            "corners": 3,
+            "inputMs": 6734.254,
+            "latencyMs": 20.2522,
+            "submitMs": 6754.5062
+        },
+        {
+            "corners": 3,
+            "inputMs": 6757.9845,
+            "latencyMs": 17.2819,
+            "submitMs": 6775.2664
+        },
+        {
+            "corners": 3,
+            "inputMs": 6777.9819,
+            "latencyMs": 17.5266,
+            "submitMs": 6795.5085
+        },
+        {
+            "corners": 3,
+            "inputMs": 6797.9767,
+            "latencyMs": 18.9091,
+            "submitMs": 6816.8858
+        },
+        {
+            "corners": 3,
+            "inputMs": 6817.9333,
+            "latencyMs": 20.3883,
+            "submitMs": 6838.3216
+        },
+        {
+            "corners": 3,
+            "inputMs": 6841.2913,
+            "latencyMs": 17.2465,
+            "submitMs": 6858.5378
+        },
+        {
+            "corners": 3,
+            "inputMs": 6861.2928,
+            "latencyMs": 18.1757,
+            "submitMs": 6879.4685
+        },
+        {
+            "corners": 3,
+            "inputMs": 6881.5578,
+            "latencyMs": 18.9301,
+            "submitMs": 6900.4879
+        },
+        {
+            "corners": 3,
+            "inputMs": 6901.6245,
+            "latencyMs": 21.1572,
+            "submitMs": 6922.7817
+        },
+        {
+            "corners": 3,
+            "inputMs": 6925.6557,
+            "latencyMs": 19.6488,
+            "submitMs": 6945.3045
+        },
+        {
+            "corners": 3,
+            "inputMs": 6945.8498,
+            "latencyMs": 21.3529,
+            "submitMs": 6967.2027
+        },
+        {
+            "corners": 3,
+            "inputMs": 6969.9807,
+            "latencyMs": 19.1804,
+            "submitMs": 6989.1611
+        },
+        {
+            "corners": 3,
+            "inputMs": 6990.0791,
+            "latencyMs": 19.7881,
+            "submitMs": 7009.8672
+        },
+        {
+            "corners": 3,
+            "inputMs": 7014.1951,
+            "latencyMs": 16.1277,
+            "submitMs": 7030.3228
+        },
+        {
+            "corners": 3,
+            "inputMs": 7034.0335,
+            "latencyMs": 17.7447,
+            "submitMs": 7051.7782
+        },
+        {
+            "corners": 3,
+            "inputMs": 7053.8656,
+            "latencyMs": 18.5538,
+            "submitMs": 7072.4194
+        },
+        {
+            "corners": 3,
+            "inputMs": 7073.9191,
+            "latencyMs": 18.7808,
+            "submitMs": 7092.6999
+        },
+        {
+            "corners": 3,
+            "inputMs": 7094.1323,
+            "latencyMs": 19.5636,
+            "submitMs": 7113.6959
+        },
+        {
+            "corners": 3,
+            "inputMs": 7118.5235,
+            "latencyMs": 16.3887,
+            "submitMs": 7134.9122
+        },
+        {
+            "corners": 3,
+            "inputMs": 7137.6006,
+            "latencyMs": 18.9799,
+            "submitMs": 7156.5805
+        },
+        {
+            "corners": 3,
+            "inputMs": 7157.9484,
+            "latencyMs": 18.7841,
+            "submitMs": 7176.7325
+        },
+        {
+            "corners": 3,
+            "inputMs": 7177.9998,
+            "latencyMs": 20.0096,
+            "submitMs": 7198.0094
+        },
+        {
+            "corners": 3,
+            "inputMs": 7201.6217,
+            "latencyMs": 18.0478,
+            "submitMs": 7219.6695
+        },
+        {
+            "corners": 3,
+            "inputMs": 7221.7232,
+            "latencyMs": 18.4948,
+            "submitMs": 7240.218
+        },
+        {
+            "corners": 3,
+            "inputMs": 7241.7094,
+            "latencyMs": 18.7154,
+            "submitMs": 7260.4248
+        },
+        {
+            "corners": 3,
+            "inputMs": 7261.4528,
+            "latencyMs": 19.4448,
+            "submitMs": 7280.8976
+        },
+        {
+            "corners": 3,
+            "inputMs": 7282.1158,
+            "latencyMs": 20.4261,
+            "submitMs": 7302.5419
+        },
+        {
+            "corners": 3,
+            "inputMs": 7306.4965,
+            "latencyMs": 17.8468,
+            "submitMs": 7324.3433
+        },
+        {
+            "corners": 3,
+            "inputMs": 7325.269,
+            "latencyMs": 19.2764,
+            "submitMs": 7344.5454
+        },
+        {
+            "corners": 3,
+            "inputMs": 7345.3888,
+            "latencyMs": 20.1046,
+            "submitMs": 7365.4934
+        },
+        {
+            "corners": 3,
+            "inputMs": 7369.5865,
+            "latencyMs": 17.6619,
+            "submitMs": 7387.2484
+        },
+        {
+            "corners": 3,
+            "inputMs": 7390.1494,
+            "latencyMs": 17.8059,
+            "submitMs": 7407.9553
+        },
+        {
+            "corners": 3,
+            "inputMs": 7410.1809,
+            "latencyMs": 18.8679,
+            "submitMs": 7429.0488
+        },
+        {
+            "corners": 3,
+            "inputMs": 7429.4196,
+            "latencyMs": 19.9312,
+            "submitMs": 7449.3508
+        },
+        {
+            "corners": 3,
+            "inputMs": 7453.8259,
+            "latencyMs": 17.4252,
+            "submitMs": 7471.2511
+        },
+        {
+            "corners": 3,
+            "inputMs": 7473.8267,
+            "latencyMs": 18.3752,
+            "submitMs": 7492.2019
+        },
+        {
+            "corners": 3,
+            "inputMs": 7493.6207,
+            "latencyMs": 18.4704,
+            "submitMs": 7512.0911
+        },
+        {
+            "corners": 3,
+            "inputMs": 7514.3519,
+            "latencyMs": 18.3449,
+            "submitMs": 7532.6968
+        },
+        {
+            "corners": 3,
+            "inputMs": 7533.5474,
+            "latencyMs": 26.721,
+            "submitMs": 7560.2684
+        },
+        {
+            "corners": 3,
+            "inputMs": 7561.4534,
+            "latencyMs": 19.1649,
+            "submitMs": 7580.6183
+        },
+        {
+            "corners": 3,
+            "inputMs": 7581.9701,
+            "latencyMs": 21.5362,
+            "submitMs": 7603.5063
+        },
+        {
+            "corners": 3,
+            "inputMs": 7605.6522,
+            "latencyMs": 18.593,
+            "submitMs": 7624.2452
+        },
+        {
+            "corners": 3,
+            "inputMs": 7625.4693,
+            "latencyMs": 19.4861,
+            "submitMs": 7644.9554
+        },
+        {
+            "corners": 3,
+            "inputMs": 7645.72,
+            "latencyMs": 19.3682,
+            "submitMs": 7665.0882
+        },
+        {
+            "corners": 3,
+            "inputMs": 7665.656,
+            "latencyMs": 19.5928,
+            "submitMs": 7685.2488
+        },
+        {
+            "corners": 3,
+            "inputMs": 7686.0973,
+            "latencyMs": 19.3878,
+            "submitMs": 7705.4851
+        },
+        {
+            "corners": 3,
+            "inputMs": 7709.9079,
+            "latencyMs": 16.3721,
+            "submitMs": 7726.28
+        },
+        {
+            "corners": 3,
+            "inputMs": 7729.7153,
+            "latencyMs": 17.7092,
+            "submitMs": 7747.4245
+        },
+        {
+            "corners": 3,
+            "inputMs": 7749.4779,
+            "latencyMs": 18.7159,
+            "submitMs": 7768.1938
+        },
+        {
+            "corners": 3,
+            "inputMs": 7769.6546,
+            "latencyMs": 19.3588,
+            "submitMs": 7789.0134
+        },
+        {
+            "corners": 3,
+            "inputMs": 7789.5822,
+            "latencyMs": 23.0586,
+            "submitMs": 7812.6408
+        },
+        {
+            "corners": 3,
+            "inputMs": 7813.9656,
+            "latencyMs": 20.4894,
+            "submitMs": 7834.455
+        },
+        {
+            "corners": 3,
+            "inputMs": 7837.4096,
+            "latencyMs": 17.4054,
+            "submitMs": 7854.815
+        },
+        {
+            "corners": 3,
+            "inputMs": 7857.7123,
+            "latencyMs": 19.5724,
+            "submitMs": 7877.2847
+        },
+        {
+            "corners": 3,
+            "inputMs": 7881.7451,
+            "latencyMs": 16.4817,
+            "submitMs": 7898.2268
+        },
+        {
+            "corners": 3,
+            "inputMs": 7902.0617,
+            "latencyMs": 18.0393,
+            "submitMs": 7920.101
+        },
+        {
+            "corners": 3,
+            "inputMs": 7922.186,
+            "latencyMs": 20.0829,
+            "submitMs": 7942.2689
+        },
+        {
+            "corners": 3,
+            "inputMs": 7945.9944,
+            "latencyMs": 17.6528,
+            "submitMs": 7963.6472
+        },
+        {
+            "corners": 3,
+            "inputMs": 7966.0982,
+            "latencyMs": 18.9523,
+            "submitMs": 7985.0505
+        },
+        {
+            "corners": 3,
+            "inputMs": 7986.3174,
+            "latencyMs": 19.3894,
+            "submitMs": 8005.7068
+        },
+        {
+            "corners": 3,
+            "inputMs": 8006.2341,
+            "latencyMs": 19.5207,
+            "submitMs": 8025.7548
+        },
+        {
+            "corners": 3,
+            "inputMs": 8029.4918,
+            "latencyMs": 18.4911,
+            "submitMs": 8047.9829
+        },
+        {
+            "corners": 3,
+            "inputMs": 8050.048,
+            "latencyMs": 19.018,
+            "submitMs": 8069.066
+        },
+        {
+            "corners": 3,
+            "inputMs": 8069.9944,
+            "latencyMs": 19.8193,
+            "submitMs": 8089.8137
+        },
+        {
+            "corners": 3,
+            "inputMs": 8093.3606,
+            "latencyMs": 17.341,
+            "submitMs": 8110.7016
+        },
+        {
+            "corners": 3,
+            "inputMs": 8113.9229,
+            "latencyMs": 17.4095,
+            "submitMs": 8131.3324
+        },
+        {
+            "corners": 3,
+            "inputMs": 8134.0409,
+            "latencyMs": 18.9662,
+            "submitMs": 8153.0071
+        },
+        {
+            "corners": 3,
+            "inputMs": 8157.7979,
+            "latencyMs": 16.7197,
+            "submitMs": 8174.5176
+        },
+        {
+            "corners": 3,
+            "inputMs": 8177.8867,
+            "latencyMs": 19.198,
+            "submitMs": 8197.0847
+        },
+        {
+            "corners": 3,
+            "inputMs": 8198.0218,
+            "latencyMs": 20.1581,
+            "submitMs": 8218.1799
+        },
+        {
+            "corners": 3,
+            "inputMs": 8221.4213,
+            "latencyMs": 19.7248,
+            "submitMs": 8241.1461
+        },
+        {
+            "corners": 3,
+            "inputMs": 8246.2524,
+            "latencyMs": 17.994,
+            "submitMs": 8264.2464
+        },
+        {
+            "corners": 3,
+            "inputMs": 8265.6358,
+            "latencyMs": 20.0792,
+            "submitMs": 8285.715
+        },
+        {
+            "corners": 3,
+            "inputMs": 8289.6851,
+            "latencyMs": 19.5228,
+            "submitMs": 8309.2079
+        },
+        {
+            "corners": 3,
+            "inputMs": 8310.097,
+            "latencyMs": 19.8574,
+            "submitMs": 8329.9544
+        },
+        {
+            "corners": 3,
+            "inputMs": 8334.1965,
+            "latencyMs": 17.303,
+            "submitMs": 8351.4995
+        },
+        {
+            "corners": 3,
+            "inputMs": 8354.1403,
+            "latencyMs": 19.8816,
+            "submitMs": 8374.0219
+        },
+        {
+            "corners": 3,
+            "inputMs": 8378.2391,
+            "latencyMs": 17.8265,
+            "submitMs": 8396.0656
+        },
+        {
+            "corners": 3,
+            "inputMs": 8397.8309,
+            "latencyMs": 19.7444,
+            "submitMs": 8417.5753
+        },
+        {
+            "corners": 3,
+            "inputMs": 8421.7953,
+            "latencyMs": 17.9198,
+            "submitMs": 8439.7151
+        },
+        {
+            "corners": 3,
+            "inputMs": 8441.813,
+            "latencyMs": 20.1613,
+            "submitMs": 8461.9743
+        },
+        {
+            "corners": 3,
+            "inputMs": 8466.0289,
+            "latencyMs": 18.4714,
+            "submitMs": 8484.5003
+        },
+        {
+            "corners": 3,
+            "inputMs": 8485.8755,
+            "latencyMs": 20.5867,
+            "submitMs": 8506.4622
+        },
+        {
+            "corners": 3,
+            "inputMs": 8509.3469,
+            "latencyMs": 20.1074,
+            "submitMs": 8529.4543
+        }
+    ],
+    "windowHeight": 1000,
+    "windowWidth": 1600
+}

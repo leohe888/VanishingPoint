@@ -1,0 +1,40 @@
+{
+    "cloneHash": "da29858db3739250bbe37aeedc9deffab9b0710b172384f14e5a99b7267fc7bd",
+    "copyHash": "0cb2842ce4edc3265b61e41db06965195648cb3f16bb1f898f31017f43fab202",
+    "dpr": 1,
+    "failures": [
+    ],
+    "imageSide": 4096,
+    "metrics": [
+        {
+            "contentPaintCount": 0,
+            "frames": 175,
+            "intervalP95Ms": 9.11830000000009,
+            "latencyP95Ms": 2.4201000000000477,
+            "operation": "create"
+        },
+        {
+            "contentPaintCount": 0,
+            "frames": 175,
+            "intervalP95Ms": 9.376700000000255,
+            "latencyP95Ms": 2.819300000000112,
+            "operation": "move_outline"
+        },
+        {
+            "contentPaintCount": 0,
+            "frames": 159,
+            "intervalP95Ms": 9.981600000000071,
+            "latencyP95Ms": 7.015599999999722,
+            "operation": "ctrl_clone"
+        },
+        {
+            "contentPaintCount": 63,
+            "frames": 63,
+            "intervalP95Ms": 24.016900000000533,
+            "latencyP95Ms": 22.196799999999712,
+            "operation": "floating_move"
+        }
+    ],
+    "passed": true,
+    "stage": 2
+}

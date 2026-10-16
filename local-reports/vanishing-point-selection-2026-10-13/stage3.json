@@ -1,0 +1,54 @@
+{
+    "cloneHash": "da29858db3739250bbe37aeedc9deffab9b0710b172384f14e5a99b7267fc7bd",
+    "copyHash": "0cb2842ce4edc3265b61e41db06965195648cb3f16bb1f898f31017f43fab202",
+    "dpr": 1,
+    "failures": [
+    ],
+    "imageSide": 4096,
+    "metrics": [
+        {
+            "contentPaintCount": 0,
+            "frames": 175,
+            "intervalP95Ms": 9.165700000000015,
+            "latencyP95Ms": 2.3240999999999303,
+            "operation": "create"
+        },
+        {
+            "contentPaintCount": 0,
+            "frames": 175,
+            "intervalP95Ms": 9.114599999999882,
+            "latencyP95Ms": 2.268499999999676,
+            "operation": "move_outline"
+        },
+        {
+            "contentPaintCount": 0,
+            "frames": 153,
+            "intervalP95Ms": 10.465099999999438,
+            "latencyP95Ms": 7.461199999999735,
+            "operation": "ctrl_clone"
+        },
+        {
+            "contentPaintCount": 0,
+            "frames": 171,
+            "intervalP95Ms": 9.353500000000167,
+            "latencyP95Ms": 6.886700000000019,
+            "operation": "floating_move"
+        },
+        {
+            "contentPaintCount": 0,
+            "frames": 144,
+            "intervalP95Ms": 11.102500000000873,
+            "latencyP95Ms": 9.184699999999793,
+            "operation": "floating_scale"
+        },
+        {
+            "contentPaintCount": 0,
+            "frames": 159,
+            "intervalP95Ms": 9.974099999999453,
+            "latencyP95Ms": 7.929699999998775,
+            "operation": "floating_rotate"
+        }
+    ],
+    "passed": true,
+    "stage": 3
+}

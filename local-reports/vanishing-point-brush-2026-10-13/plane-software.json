@@ -1,0 +1,4132 @@
+{
+    "dpr": 1,
+    "failures": [
+    ],
+    "functionalChecked": true,
+    "imageSide": 4096,
+    "passed": true,
+    "qt": "5.15.18",
+    "results": [
+        {
+            "contentPaintCount": 0,
+            "contentPaintP95Ms": 0,
+            "handlerP95Ms": 0.1983,
+            "inputEvents": 407,
+            "intervalP95Ms": 13.031399999999849,
+            "latencyP95Ms": 10.02520000000004,
+            "latencyP99Ms": 10.850399999999809,
+            "longIntervalPercent": 0,
+            "operation": "move",
+            "planeBuilds": 388,
+            "previewFrames": 179,
+            "samples": [
+                {
+                    "inputMs": 1653.3578,
+                    "submitMs": 1660.1162
+                },
+                {
+                    "inputMs": 1665.4051,
+                    "submitMs": 1671.593
+                },
+                {
+                    "inputMs": 1673.2258,
+                    "submitMs": 1683.0529
+                },
+                {
+                    "inputMs": 1685.6001,
+                    "submitMs": 1694.3444
+                },
+                {
+                    "inputMs": 1697.3399,
+                    "submitMs": 1706.3096
+                },
+                {
+                    "inputMs": 1709.2266,
+                    "submitMs": 1716.5584
+                },
+                {
+                    "inputMs": 1721.23,
+                    "submitMs": 1728.9814
+                },
+                {
+                    "inputMs": 1733.5979,
+                    "submitMs": 1740.9915
+                },
+                {
+                    "inputMs": 1745.2649,
+                    "submitMs": 1751.7969
+                },
+                {
+                    "inputMs": 1753.2092,
+                    "submitMs": 1762.8588
+                },
+                {
+                    "inputMs": 1765.2688,
+                    "submitMs": 1774.4351
+                },
+                {
+                    "inputMs": 1778.2183,
+                    "submitMs": 1785.3507
+                },
+                {
+                    "inputMs": 1790.0216,
+                    "submitMs": 1796.6861
+                },
+                {
+                    "inputMs": 1801.3767,
+                    "submitMs": 1807.2689
+                },
+                {
+                    "inputMs": 1810.0754,
+                    "submitMs": 1817.5321
+                },
+                {
+                    "inputMs": 1821.5513,
+                    "submitMs": 1828.1731
+                },
+                {
+                    "inputMs": 1829.4231,
+                    "submitMs": 1836.781
+                },
+                {
+                    "inputMs": 1842.4123,
+                    "submitMs": 1848.0783
+                },
+                {
+                    "inputMs": 1849.4764,
+                    "submitMs": 1858.4073
+                },
+                {
+                    "inputMs": 1861.5367,
+                    "submitMs": 1869.7242
+                },
+                {
+                    "inputMs": 1874.0257,
+                    "submitMs": 1881.6098
+                },
+                {
+                    "inputMs": 1885.4923,
+                    "submitMs": 1892.7276
+                },
+                {
+                    "inputMs": 1897.4841,
+                    "submitMs": 1902.8094
+                },
+                {
+                    "inputMs": 1905.4404,
+                    "submitMs": 1912.3396
+                },
+                {
+                    "inputMs": 1917.7146,
+                    "submitMs": 1923.9972
+                },
+                {
+                    "inputMs": 1925.5383,
+                    "submitMs": 1934.7804
+                },
+                {
+                    "inputMs": 1937.6979,
+                    "submitMs": 1945.7158
+                },
+                {
+                    "inputMs": 1950.3209,
+                    "submitMs": 1959.2842
+                },
+                {
+                    "inputMs": 1962.1779,
+                    "submitMs": 1971.3726
+                },
+                {
+                    "inputMs": 1973.4517,
+                    "submitMs": 1983.1395
+                },
+                {
+                    "inputMs": 1985.7284,
+                    "submitMs": 1992.9085
+                },
+                {
+                    "inputMs": 1997.9943,
+                    "submitMs": 2006.4815
+                },
+                {
+                    "inputMs": 2009.7361,
+                    "submitMs": 2018.2807
+                },
+                {
+                    "inputMs": 2022.5864,
+                    "submitMs": 2027.9966
+                },
+                {
+                    "inputMs": 2030.618,
+                    "submitMs": 2038.3088
+                },
+                {
+                    "inputMs": 2042.3216,
+                    "submitMs": 2048.3207
+                },
+                {
+                    "inputMs": 2050.187,
+                    "submitMs": 2058.5079
+                },
+                {
+                    "inputMs": 2061.808,
+                    "submitMs": 2069.496
+                },
+                {
+                    "inputMs": 2073.5243,
+                    "submitMs": 2080.1744
+                },
+                {
+                    "inputMs": 2081.5254,
+                    "submitMs": 2090.7685
+                },
+                {
+                    "inputMs": 2093.7386,
+                    "submitMs": 2101.8734
+                },
+                {
+                    "inputMs": 2105.3776,
+                    "submitMs": 2114.0704
+                },
+                {
+                    "inputMs": 2118.0319,
+                    "submitMs": 2124.6231
+                },
+                {
+                    "inputMs": 2130.0405,
+                    "submitMs": 2136.3181
+                },
+                {
+                    "inputMs": 2137.9631,
+                    "submitMs": 2147.492
+                },
+                {
+                    "inputMs": 2150.0166,
+                    "submitMs": 2159.5819
+                },
+                {
+                    "inputMs": 2162.0061,
+                    "submitMs": 2171.5674
+                },
+                {
+                    "inputMs": 2174.1587,
+                    "submitMs": 2184.5695
+                },
+                {
+                    "inputMs": 2186.0112,
+                    "submitMs": 2195.1294
+                },
+                {
+                    "inputMs": 2198.0924,
+                    "submitMs": 2207.1966
+                },
+                {
+                    "inputMs": 2210.1876,
+                    "submitMs": 2219.6038
+                },
+                {
+                    "inputMs": 2226.2161,
+                    "submitMs": 2233.5992
+                },
+                {
+                    "inputMs": 2239.9153,
+                    "submitMs": 2246.5805
+                },
+                {
+                    "inputMs": 2250.1419,
+                    "submitMs": 2258.9305
+                },
+                {
+                    "inputMs": 2262.9719,
+                    "submitMs": 2271.6863
+                },
+                {
+                    "inputMs": 2274.0558,
+                    "submitMs": 2281.9623
+                },
+                {
+                    "inputMs": 2286.4622,
+                    "submitMs": 2294.7976
+                },
+                {
+                    "inputMs": 2297.9312,
+                    "submitMs": 2306.6529
+                },
+                {
+                    "inputMs": 2309.9259,
+                    "submitMs": 2319.9511
+                },
+                {
+                    "inputMs": 2321.8744,
+                    "submitMs": 2332.7248
+                },
+                {
+                    "inputMs": 2337.5358,
+                    "submitMs": 2343.5309
+                },
+                {
+                    "inputMs": 2345.7812,
+                    "submitMs": 2355.3136
+                },
+                {
+                    "inputMs": 2357.4892,
+                    "submitMs": 2366.9562
+                },
+                {
+                    "inputMs": 2369.4945,
+                    "submitMs": 2377.6352
+                },
+                {
+                    "inputMs": 2381.5353,
+                    "submitMs": 2389.359
+                },
+                {
+                    "inputMs": 2393.6162,
+                    "submitMs": 2400.8488
+                },
+                {
+                    "inputMs": 2405.613,
+                    "submitMs": 2411.6383
+                },
+                {
+                    "inputMs": 2413.6034,
+                    "submitMs": 2423.0963
+                },
+                {
+                    "inputMs": 2425.6145,
+                    "submitMs": 2433.6761
+                },
+                {
+                    "inputMs": 2438.2128,
+                    "submitMs": 2445.3941
+                },
+                {
+                    "inputMs": 2450.2706,
+                    "submitMs": 2458.7247
+                },
+                {
+                    "inputMs": 2462.2099,
+                    "submitMs": 2468.9275
+                },
+                {
+                    "inputMs": 2474.2202,
+                    "submitMs": 2480.3104
+                },
+                {
+                    "inputMs": 2482.1721,
+                    "submitMs": 2492.613
+                },
+                {
+                    "inputMs": 2494.2039,
+                    "submitMs": 2503.0542
+                },
+                {
+                    "inputMs": 2506.2266,
+                    "submitMs": 2514.5542
+                },
+                {
+                    "inputMs": 2518.2208,
+                    "submitMs": 2525.3054
+                },
+                {
+                    "inputMs": 2530.2441,
+                    "submitMs": 2538.1005
+                },
+                {
+                    "inputMs": 2542.5131,
+                    "submitMs": 2550.303
+                },
+                {
+                    "inputMs": 2554.2361,
+                    "submitMs": 2562.1207
+                },
+                {
+                    "inputMs": 2565.7578,
+                    "submitMs": 2574.6106
+                },
+                {
+                    "inputMs": 2577.3133,
+                    "submitMs": 2590.3211
+                },
+                {
+                    "inputMs": 2593.7937,
+                    "submitMs": 2603.3525
+                },
+                {
+                    "inputMs": 2606.5708,
+                    "submitMs": 2615.0817
+                },
+                {
+                    "inputMs": 2617.8126,
+                    "submitMs": 2628.5452
+                },
+                {
+                    "inputMs": 2633.826,
+                    "submitMs": 2642.0215
+                },
+                {
+                    "inputMs": 2645.8409,
+                    "submitMs": 2653.5254
+                },
+                {
+                    "inputMs": 2657.803,
+                    "submitMs": 2664.8338
+                },
+                {
+                    "inputMs": 2669.7976,
+                    "submitMs": 2677.1762
+                },
+                {
+                    "inputMs": 2681.7956,
+                    "submitMs": 2688.2849
+                },
+                {
+                    "inputMs": 2689.7644,
+                    "submitMs": 2699.6152
+                },
+                {
+                    "inputMs": 2701.7342,
+                    "submitMs": 2712.0076
+                },
+                {
+                    "inputMs": 2713.7789,
+                    "submitMs": 2723.1937
+                },
+                {
+                    "inputMs": 2725.7854,
+                    "submitMs": 2734.1806
+                },
+                {
+                    "inputMs": 2737.9049,
+                    "submitMs": 2746.0523
+                },
+                {
+                    "inputMs": 2750.1093,
+                    "submitMs": 2758.5633
+                },
+                {
+                    "inputMs": 2761.5638,
+                    "submitMs": 2769.3975
+                },
+                {
+                    "inputMs": 2773.566,
+                    "submitMs": 2780.6127
+                },
+                {
+                    "inputMs": 2785.5473,
+                    "submitMs": 2791.254
+                },
+                {
+                    "inputMs": 2793.983,
+                    "submitMs": 2802.3658
+                },
+                {
+                    "inputMs": 2806.0087,
+                    "submitMs": 2811.4501
+                },
+                {
+                    "inputMs": 2813.9467,
+                    "submitMs": 2821.6515
+                },
+                {
+                    "inputMs": 2826.0108,
+                    "submitMs": 2831.433
+                },
+                {
+                    "inputMs": 2833.9765,
+                    "submitMs": 2842.0302
+                },
+                {
+                    "inputMs": 2846.0231,
+                    "submitMs": 2853.6736
+                },
+                {
+                    "inputMs": 2858.0097,
+                    "submitMs": 2865.0484
+                },
+                {
+                    "inputMs": 2870.0257,
+                    "submitMs": 2875.1097
+                },
+                {
+                    "inputMs": 2877.9657,
+                    "submitMs": 2886.3973
+                },
+                {
+                    "inputMs": 2890.0589,
+                    "submitMs": 2896.8751
+                },
+                {
+                    "inputMs": 2902.1384,
+                    "submitMs": 2907.0614
+                },
+                {
+                    "inputMs": 2910.0528,
+                    "submitMs": 2917.4652
+                },
+                {
+                    "inputMs": 2922.0289,
+                    "submitMs": 2928.1448
+                },
+                {
+                    "inputMs": 2930.0231,
+                    "submitMs": 2937.8039
+                },
+                {
+                    "inputMs": 2942.0069,
+                    "submitMs": 2948.5373
+                },
+                {
+                    "inputMs": 2950.0239,
+                    "submitMs": 2958.5267
+                },
+                {
+                    "inputMs": 2961.5038,
+                    "submitMs": 2969.3948
+                },
+                {
+                    "inputMs": 2974.1313,
+                    "submitMs": 2979.2412
+                },
+                {
+                    "inputMs": 2981.5579,
+                    "submitMs": 2989.7891
+                },
+                {
+                    "inputMs": 2994.0963,
+                    "submitMs": 3000.5173
+                },
+                {
+                    "inputMs": 3002.0618,
+                    "submitMs": 3010.572
+                },
+                {
+                    "inputMs": 3014.0881,
+                    "submitMs": 3020.83
+                },
+                {
+                    "inputMs": 3026.0728,
+                    "submitMs": 3032.0044
+                },
+                {
+                    "inputMs": 3034.0657,
+                    "submitMs": 3043.0001
+                },
+                {
+                    "inputMs": 3046.2394,
+                    "submitMs": 3052.9056
+                },
+                {
+                    "inputMs": 3058.307,
+                    "submitMs": 3063.3224
+                },
+                {
+                    "inputMs": 3066.1756,
+                    "submitMs": 3074.2346
+                },
+                {
+                    "inputMs": 3078.1695,
+                    "submitMs": 3084.1558
+                },
+                {
+                    "inputMs": 3086.3541,
+                    "submitMs": 3094.7692
+                },
+                {
+                    "inputMs": 3098.2163,
+                    "submitMs": 3105.1178
+                },
+                {
+                    "inputMs": 3110.256,
+                    "submitMs": 3115.6872
+                },
+                {
+                    "inputMs": 3117.2131,
+                    "submitMs": 3126.5459
+                },
+                {
+                    "inputMs": 3130.2198,
+                    "submitMs": 3137.3659
+                },
+                {
+                    "inputMs": 3142.2298,
+                    "submitMs": 3147.3913
+                },
+                {
+                    "inputMs": 3149.1982,
+                    "submitMs": 3158.2811
+                },
+                {
+                    "inputMs": 3162.2721,
+                    "submitMs": 3170.291
+                },
+                {
+                    "inputMs": 3174.3271,
+                    "submitMs": 3180.5033
+                },
+                {
+                    "inputMs": 3185.2566,
+                    "submitMs": 3190.4793
+                },
+                {
+                    "inputMs": 3193.7306,
+                    "submitMs": 3201.389
+                },
+                {
+                    "inputMs": 3205.8286,
+                    "submitMs": 3212.529
+                },
+                {
+                    "inputMs": 3217.7777,
+                    "submitMs": 3223.895
+                },
+                {
+                    "inputMs": 3225.7883,
+                    "submitMs": 3236.1446
+                },
+                {
+                    "inputMs": 3237.7712,
+                    "submitMs": 3246.8363
+                },
+                {
+                    "inputMs": 3249.8036,
+                    "submitMs": 3257.1177
+                },
+                {
+                    "inputMs": 3262.2569,
+                    "submitMs": 3267.2051
+                },
+                {
+                    "inputMs": 3269.8105,
+                    "submitMs": 3277.5568
+                },
+                {
+                    "inputMs": 3281.8566,
+                    "submitMs": 3288.3811
+                },
+                {
+                    "inputMs": 3289.745,
+                    "submitMs": 3298.6195
+                },
+                {
+                    "inputMs": 3301.8148,
+                    "submitMs": 3309.5302
+                },
+                {
+                    "inputMs": 3313.7594,
+                    "submitMs": 3319.2997
+                },
+                {
+                    "inputMs": 3322.1032,
+                    "submitMs": 3328.9504
+                },
+                {
+                    "inputMs": 3333.7574,
+                    "submitMs": 3340.1696
+                },
+                {
+                    "inputMs": 3341.9968,
+                    "submitMs": 3350.5951
+                },
+                {
+                    "inputMs": 3354.0387,
+                    "submitMs": 3362.4363
+                },
+                {
+                    "inputMs": 3365.7821,
+                    "submitMs": 3372.9149
+                },
+                {
+                    "inputMs": 3377.7764,
+                    "submitMs": 3382.6254
+                },
+                {
+                    "inputMs": 3385.5517,
+                    "submitMs": 3393.6189
+                },
+                {
+                    "inputMs": 3397.2826,
+                    "submitMs": 3404.0915
+                },
+                {
+                    "inputMs": 3409.2859,
+                    "submitMs": 3414.6178
+                },
+                {
+                    "inputMs": 3417.7075,
+                    "submitMs": 3426.9032
+                },
+                {
+                    "inputMs": 3429.3457,
+                    "submitMs": 3437.6483
+                },
+                {
+                    "inputMs": 3441.3296,
+                    "submitMs": 3448.2146
+                },
+                {
+                    "inputMs": 3453.2955,
+                    "submitMs": 3458.8326
+                },
+                {
+                    "inputMs": 3461.3526,
+                    "submitMs": 3471.4154
+                },
+                {
+                    "inputMs": 3473.2955,
+                    "submitMs": 3482.2553
+                },
+                {
+                    "inputMs": 3485.2418,
+                    "submitMs": 3493.1578
+                },
+                {
+                    "inputMs": 3497.8478,
+                    "submitMs": 3503.7453
+                },
+                {
+                    "inputMs": 3505.3958,
+                    "submitMs": 3514.4898
+                },
+                {
+                    "inputMs": 3517.371,
+                    "submitMs": 3525.8511
+                },
+                {
+                    "inputMs": 3529.9428,
+                    "submitMs": 3537.8524
+                },
+                {
+                    "inputMs": 3541.3716,
+                    "submitMs": 3548.0776
+                },
+                {
+                    "inputMs": 3553.339,
+                    "submitMs": 3558.713
+                },
+                {
+                    "inputMs": 3561.3221,
+                    "submitMs": 3569.8714
+                },
+                {
+                    "inputMs": 3574.0116,
+                    "submitMs": 3581.359
+                },
+                {
+                    "inputMs": 3585.8329,
+                    "submitMs": 3592.7514
+                },
+                {
+                    "inputMs": 3598.6526,
+                    "submitMs": 3604.3666
+                },
+                {
+                    "inputMs": 3605.8802,
+                    "submitMs": 3614.1824
+                },
+                {
+                    "inputMs": 3617.9093,
+                    "submitMs": 3625.1045
+                },
+                {
+                    "inputMs": 3629.8938,
+                    "submitMs": 3635.6225
+                },
+                {
+                    "inputMs": 3637.8714,
+                    "submitMs": 3645.0275
+                }
+            ]
+        },
+        {
+            "contentPaintCount": 0,
+            "contentPaintP95Ms": 0,
+            "handlerP95Ms": 0.138,
+            "inputEvents": 478,
+            "intervalP95Ms": 10.717799999999443,
+            "latencyP95Ms": 8.225199999999859,
+            "latencyP99Ms": 8.692699999999604,
+            "longIntervalPercent": 0,
+            "operation": "resize_edge",
+            "planeBuilds": 463,
+            "previewFrames": 209,
+            "samples": [
+                {
+                    "inputMs": 4763.0059,
+                    "submitMs": 4770.5795
+                },
+                {
+                    "inputMs": 4774.5372,
+                    "submitMs": 4781.2557
+                },
+                {
+                    "inputMs": 4786.4711,
+                    "submitMs": 4793.1136
+                },
+                {
+                    "inputMs": 4794.9146,
+                    "submitMs": 4802.9583
+                },
+                {
+                    "inputMs": 4806.7953,
+                    "submitMs": 4814.0271
+                },
+                {
+                    "inputMs": 4818.5966,
+                    "submitMs": 4823.968
+                },
+                {
+                    "inputMs": 4826.5623,
+                    "submitMs": 4833.685
+                },
+                {
+                    "inputMs": 4838.5623,
+                    "submitMs": 4844.4028
+                },
+                {
+                    "inputMs": 4846.5339,
+                    "submitMs": 4854.2297
+                },
+                {
+                    "inputMs": 4858.5427,
+                    "submitMs": 4863.9471
+                },
+                {
+                    "inputMs": 4866.5007,
+                    "submitMs": 4873.69
+                },
+                {
+                    "inputMs": 4878.5219,
+                    "submitMs": 4884.0485
+                },
+                {
+                    "inputMs": 4886.5503,
+                    "submitMs": 4893.7035
+                },
+                {
+                    "inputMs": 4898.5227,
+                    "submitMs": 4904.9994
+                },
+                {
+                    "inputMs": 4906.5293,
+                    "submitMs": 4915.222
+                },
+                {
+                    "inputMs": 4918.5381,
+                    "submitMs": 4924.5796
+                },
+                {
+                    "inputMs": 4926.4813,
+                    "submitMs": 4936.0772
+                },
+                {
+                    "inputMs": 4938.5639,
+                    "submitMs": 4944.9727
+                },
+                {
+                    "inputMs": 4946.4817,
+                    "submitMs": 4953.8511
+                },
+                {
+                    "inputMs": 4958.4864,
+                    "submitMs": 4962.9359
+                },
+                {
+                    "inputMs": 4966.5263,
+                    "submitMs": 4971.6718
+                },
+                {
+                    "inputMs": 4974.2175,
+                    "submitMs": 4980.175
+                },
+                {
+                    "inputMs": 4982.3165,
+                    "submitMs": 4990.2177
+                },
+                {
+                    "inputMs": 4994.9172,
+                    "submitMs": 5000.0903
+                },
+                {
+                    "inputMs": 5002.8722,
+                    "submitMs": 5008.7218
+                },
+                {
+                    "inputMs": 5010.8982,
+                    "submitMs": 5019.2189
+                },
+                {
+                    "inputMs": 5022.9207,
+                    "submitMs": 5028.9354
+                },
+                {
+                    "inputMs": 5030.5907,
+                    "submitMs": 5038.4859
+                },
+                {
+                    "inputMs": 5042.5796,
+                    "submitMs": 5049.0713
+                },
+                {
+                    "inputMs": 5050.6216,
+                    "submitMs": 5058.593
+                },
+                {
+                    "inputMs": 5062.718,
+                    "submitMs": 5069.4218
+                },
+                {
+                    "inputMs": 5074.1974,
+                    "submitMs": 5080.4935
+                },
+                {
+                    "inputMs": 5082.5587,
+                    "submitMs": 5090.1241
+                },
+                {
+                    "inputMs": 5094.6572,
+                    "submitMs": 5099.5691
+                },
+                {
+                    "inputMs": 5102.5482,
+                    "submitMs": 5109.2904
+                },
+                {
+                    "inputMs": 5114.2742,
+                    "submitMs": 5119.4102
+                },
+                {
+                    "inputMs": 5122.2562,
+                    "submitMs": 5130.8803
+                },
+                {
+                    "inputMs": 5134.2913,
+                    "submitMs": 5140.5402
+                },
+                {
+                    "inputMs": 5142.9126,
+                    "submitMs": 5152.3182
+                },
+                {
+                    "inputMs": 5155.1477,
+                    "submitMs": 5161.5275
+                },
+                {
+                    "inputMs": 5163.2491,
+                    "submitMs": 5170.335
+                },
+                {
+                    "inputMs": 5175.0906,
+                    "submitMs": 5180.1897
+                },
+                {
+                    "inputMs": 5182.1767,
+                    "submitMs": 5189.5723
+                },
+                {
+                    "inputMs": 5194.7813,
+                    "submitMs": 5199.3897
+                },
+                {
+                    "inputMs": 5202.9161,
+                    "submitMs": 5210.1026
+                },
+                {
+                    "inputMs": 5215.5875,
+                    "submitMs": 5221.6658
+                },
+                {
+                    "inputMs": 5226.7698,
+                    "submitMs": 5231.8922
+                },
+                {
+                    "inputMs": 5234.7615,
+                    "submitMs": 5241.7096
+                },
+                {
+                    "inputMs": 5246.7974,
+                    "submitMs": 5251.8659
+                },
+                {
+                    "inputMs": 5254.7732,
+                    "submitMs": 5261.8079
+                },
+                {
+                    "inputMs": 5266.7314,
+                    "submitMs": 5271.6369
+                },
+                {
+                    "inputMs": 5274.7973,
+                    "submitMs": 5282.2466
+                },
+                {
+                    "inputMs": 5286.8186,
+                    "submitMs": 5291.8176
+                },
+                {
+                    "inputMs": 5294.712,
+                    "submitMs": 5301.6624
+                },
+                {
+                    "inputMs": 5306.7231,
+                    "submitMs": 5312.185
+                },
+                {
+                    "inputMs": 5314.768,
+                    "submitMs": 5320.9119
+                },
+                {
+                    "inputMs": 5323.1133,
+                    "submitMs": 5330.3428
+                },
+                {
+                    "inputMs": 5334.1564,
+                    "submitMs": 5340.5671
+                },
+                {
+                    "inputMs": 5346.3018,
+                    "submitMs": 5350.7691
+                },
+                {
+                    "inputMs": 5354.3459,
+                    "submitMs": 5360.9309
+                },
+                {
+                    "inputMs": 5362.2837,
+                    "submitMs": 5369.3039
+                },
+                {
+                    "inputMs": 5374.2797,
+                    "submitMs": 5379.0828
+                },
+                {
+                    "inputMs": 5382.3763,
+                    "submitMs": 5387.2507
+                },
+                {
+                    "inputMs": 5390.3338,
+                    "submitMs": 5397.0992
+                },
+                {
+                    "inputMs": 5398.9186,
+                    "submitMs": 5406.5482
+                },
+                {
+                    "inputMs": 5410.928,
+                    "submitMs": 5416.4278
+                },
+                {
+                    "inputMs": 5418.8936,
+                    "submitMs": 5426.1028
+                },
+                {
+                    "inputMs": 5430.9397,
+                    "submitMs": 5436.6684
+                },
+                {
+                    "inputMs": 5438.9544,
+                    "submitMs": 5447.115
+                },
+                {
+                    "inputMs": 5451.0363,
+                    "submitMs": 5456.9131
+                },
+                {
+                    "inputMs": 5458.9397,
+                    "submitMs": 5467.3739
+                },
+                {
+                    "inputMs": 5470.9231,
+                    "submitMs": 5477.1337
+                },
+                {
+                    "inputMs": 5478.9208,
+                    "submitMs": 5487.0665
+                },
+                {
+                    "inputMs": 5490.935,
+                    "submitMs": 5496.5934
+                },
+                {
+                    "inputMs": 5498.9155,
+                    "submitMs": 5505.681
+                },
+                {
+                    "inputMs": 5510.9181,
+                    "submitMs": 5516.0123
+                },
+                {
+                    "inputMs": 5518.5939,
+                    "submitMs": 5525.5145
+                },
+                {
+                    "inputMs": 5530.6104,
+                    "submitMs": 5534.6573
+                },
+                {
+                    "inputMs": 5538.6224,
+                    "submitMs": 5544.0024
+                },
+                {
+                    "inputMs": 5546.8629,
+                    "submitMs": 5552.6744
+                },
+                {
+                    "inputMs": 5554.9002,
+                    "submitMs": 5561.7357
+                },
+                {
+                    "inputMs": 5562.4463,
+                    "submitMs": 5570.4699
+                },
+                {
+                    "inputMs": 5574.9484,
+                    "submitMs": 5579.4134
+                },
+                {
+                    "inputMs": 5582.3149,
+                    "submitMs": 5588.3551
+                },
+                {
+                    "inputMs": 5591.0722,
+                    "submitMs": 5598.1829
+                },
+                {
+                    "inputMs": 5602.9003,
+                    "submitMs": 5607.4543
+                },
+                {
+                    "inputMs": 5610.8688,
+                    "submitMs": 5615.7335
+                },
+                {
+                    "inputMs": 5618.8783,
+                    "submitMs": 5625.1784
+                },
+                {
+                    "inputMs": 5626.8821,
+                    "submitMs": 5633.8475
+                },
+                {
+                    "inputMs": 5638.8389,
+                    "submitMs": 5643.5637
+                },
+                {
+                    "inputMs": 5646.8373,
+                    "submitMs": 5652.4936
+                },
+                {
+                    "inputMs": 5654.8444,
+                    "submitMs": 5661.8651
+                },
+                {
+                    "inputMs": 5666.8427,
+                    "submitMs": 5672.3562
+                },
+                {
+                    "inputMs": 5674.9032,
+                    "submitMs": 5681.9445
+                },
+                {
+                    "inputMs": 5686.8521,
+                    "submitMs": 5691.5962
+                },
+                {
+                    "inputMs": 5694.8739,
+                    "submitMs": 5700.0726
+                },
+                {
+                    "inputMs": 5702.8431,
+                    "submitMs": 5708.8636
+                },
+                {
+                    "inputMs": 5710.8714,
+                    "submitMs": 5718.8462
+                },
+                {
+                    "inputMs": 5722.8811,
+                    "submitMs": 5727.4772
+                },
+                {
+                    "inputMs": 5730.8721,
+                    "submitMs": 5736.9186
+                },
+                {
+                    "inputMs": 5738.879,
+                    "submitMs": 5745.8722
+                },
+                {
+                    "inputMs": 5751.0928,
+                    "submitMs": 5754.9633
+                },
+                {
+                    "inputMs": 5759.0993,
+                    "submitMs": 5764.5368
+                },
+                {
+                    "inputMs": 5767.0664,
+                    "submitMs": 5772.6884
+                },
+                {
+                    "inputMs": 5775.0549,
+                    "submitMs": 5782.4638
+                },
+                {
+                    "inputMs": 5787.0629,
+                    "submitMs": 5791.7066
+                },
+                {
+                    "inputMs": 5795.2696,
+                    "submitMs": 5800.0597
+                },
+                {
+                    "inputMs": 5802.2988,
+                    "submitMs": 5808.2967
+                },
+                {
+                    "inputMs": 5810.2849,
+                    "submitMs": 5817.1814
+                },
+                {
+                    "inputMs": 5822.3029,
+                    "submitMs": 5827.2335
+                },
+                {
+                    "inputMs": 5830.2762,
+                    "submitMs": 5836.9179
+                },
+                {
+                    "inputMs": 5838.3042,
+                    "submitMs": 5846.2837
+                },
+                {
+                    "inputMs": 5850.2969,
+                    "submitMs": 5856.1519
+                },
+                {
+                    "inputMs": 5858.2965,
+                    "submitMs": 5865.1368
+                },
+                {
+                    "inputMs": 5870.2672,
+                    "submitMs": 5875.7436
+                },
+                {
+                    "inputMs": 5878.2897,
+                    "submitMs": 5885.1501
+                },
+                {
+                    "inputMs": 5890.2715,
+                    "submitMs": 5894.2366
+                },
+                {
+                    "inputMs": 5898.3161,
+                    "submitMs": 5904.2541
+                },
+                {
+                    "inputMs": 5906.2967,
+                    "submitMs": 5913.9369
+                },
+                {
+                    "inputMs": 5918.3048,
+                    "submitMs": 5923.2857
+                },
+                {
+                    "inputMs": 5926.3242,
+                    "submitMs": 5932.9402
+                },
+                {
+                    "inputMs": 5935.1453,
+                    "submitMs": 5942.1706
+                },
+                {
+                    "inputMs": 5946.3062,
+                    "submitMs": 5951.5204
+                },
+                {
+                    "inputMs": 5954.3096,
+                    "submitMs": 5960.1377
+                },
+                {
+                    "inputMs": 5962.3263,
+                    "submitMs": 5969.4942
+                },
+                {
+                    "inputMs": 5974.4264,
+                    "submitMs": 5979.1552
+                },
+                {
+                    "inputMs": 5982.4907,
+                    "submitMs": 5987.1819
+                },
+                {
+                    "inputMs": 5990.4735,
+                    "submitMs": 5996.1135
+                },
+                {
+                    "inputMs": 5999.0504,
+                    "submitMs": 6004.8148
+                },
+                {
+                    "inputMs": 6006.9957,
+                    "submitMs": 6013.6174
+                },
+                {
+                    "inputMs": 6015.0507,
+                    "submitMs": 6022.2989
+                },
+                {
+                    "inputMs": 6027.0843,
+                    "submitMs": 6032.2318
+                },
+                {
+                    "inputMs": 6035.1431,
+                    "submitMs": 6041.7247
+                },
+                {
+                    "inputMs": 6043.051,
+                    "submitMs": 6050.7892
+                },
+                {
+                    "inputMs": 6055.061,
+                    "submitMs": 6059.5302
+                },
+                {
+                    "inputMs": 6063.0793,
+                    "submitMs": 6067.7585
+                },
+                {
+                    "inputMs": 6071.0578,
+                    "submitMs": 6077.1896
+                },
+                {
+                    "inputMs": 6079.0467,
+                    "submitMs": 6086.0921
+                },
+                {
+                    "inputMs": 6090.3938,
+                    "submitMs": 6094.4879
+                },
+                {
+                    "inputMs": 6098.4474,
+                    "submitMs": 6103.0298
+                },
+                {
+                    "inputMs": 6106.1941,
+                    "submitMs": 6113.4649
+                },
+                {
+                    "inputMs": 6118.2734,
+                    "submitMs": 6123.9598
+                },
+                {
+                    "inputMs": 6126.2562,
+                    "submitMs": 6134.1799
+                },
+                {
+                    "inputMs": 6138.3029,
+                    "submitMs": 6144.4521
+                },
+                {
+                    "inputMs": 6146.2161,
+                    "submitMs": 6153.9152
+                },
+                {
+                    "inputMs": 6158.2921,
+                    "submitMs": 6162.7073
+                },
+                {
+                    "inputMs": 6166.2934,
+                    "submitMs": 6172.7643
+                },
+                {
+                    "inputMs": 6174.1683,
+                    "submitMs": 6181.107
+                },
+                {
+                    "inputMs": 6186.2727,
+                    "submitMs": 6191.1331
+                },
+                {
+                    "inputMs": 6194.7844,
+                    "submitMs": 6200.9518
+                },
+                {
+                    "inputMs": 6203.0413,
+                    "submitMs": 6209.8601
+                },
+                {
+                    "inputMs": 6214.8245,
+                    "submitMs": 6219.8309
+                },
+                {
+                    "inputMs": 6222.8567,
+                    "submitMs": 6228.8256
+                },
+                {
+                    "inputMs": 6230.8017,
+                    "submitMs": 6237.8124
+                },
+                {
+                    "inputMs": 6242.7941,
+                    "submitMs": 6246.784
+                },
+                {
+                    "inputMs": 6250.8202,
+                    "submitMs": 6256.6078
+                },
+                {
+                    "inputMs": 6258.8253,
+                    "submitMs": 6267.0505
+                },
+                {
+                    "inputMs": 6270.8352,
+                    "submitMs": 6276.5315
+                },
+                {
+                    "inputMs": 6278.8272,
+                    "submitMs": 6284.8783
+                },
+                {
+                    "inputMs": 6286.8022,
+                    "submitMs": 6293.4337
+                },
+                {
+                    "inputMs": 6294.8111,
+                    "submitMs": 6303.2917
+                },
+                {
+                    "inputMs": 6306.823,
+                    "submitMs": 6311.7056
+                },
+                {
+                    "inputMs": 6314.8222,
+                    "submitMs": 6321.5581
+                },
+                {
+                    "inputMs": 6322.8234,
+                    "submitMs": 6329.9659
+                },
+                {
+                    "inputMs": 6334.8134,
+                    "submitMs": 6338.7367
+                },
+                {
+                    "inputMs": 6342.8187,
+                    "submitMs": 6348.0165
+                },
+                {
+                    "inputMs": 6350.8271,
+                    "submitMs": 6357.5113
+                },
+                {
+                    "inputMs": 6358.8152,
+                    "submitMs": 6366.5464
+                },
+                {
+                    "inputMs": 6370.8156,
+                    "submitMs": 6374.8383
+                },
+                {
+                    "inputMs": 6378.8447,
+                    "submitMs": 6384.5646
+                },
+                {
+                    "inputMs": 6386.8314,
+                    "submitMs": 6392.9086
+                },
+                {
+                    "inputMs": 6394.852,
+                    "submitMs": 6401.7715
+                },
+                {
+                    "inputMs": 6403.0673,
+                    "submitMs": 6409.9386
+                },
+                {
+                    "inputMs": 6415.0298,
+                    "submitMs": 6419.7199
+                },
+                {
+                    "inputMs": 6423.1034,
+                    "submitMs": 6429.0299
+                },
+                {
+                    "inputMs": 6431.0792,
+                    "submitMs": 6437.8254
+                },
+                {
+                    "inputMs": 6439.4033,
+                    "submitMs": 6446.8224
+                },
+                {
+                    "inputMs": 6450.5025,
+                    "submitMs": 6455.8568
+                },
+                {
+                    "inputMs": 6458.4211,
+                    "submitMs": 6466.067
+                },
+                {
+                    "inputMs": 6470.7907,
+                    "submitMs": 6474.9543
+                },
+                {
+                    "inputMs": 6478.8048,
+                    "submitMs": 6483.598
+                },
+                {
+                    "inputMs": 6486.7608,
+                    "submitMs": 6492.5186
+                },
+                {
+                    "inputMs": 6494.7924,
+                    "submitMs": 6501.7727
+                },
+                {
+                    "inputMs": 6506.754,
+                    "submitMs": 6511.639
+                },
+                {
+                    "inputMs": 6514.7899,
+                    "submitMs": 6521.5518
+                },
+                {
+                    "inputMs": 6526.7209,
+                    "submitMs": 6532.1488
+                },
+                {
+                    "inputMs": 6534.7972,
+                    "submitMs": 6541.8361
+                },
+                {
+                    "inputMs": 6546.7597,
+                    "submitMs": 6552.2093
+                },
+                {
+                    "inputMs": 6554.2381,
+                    "submitMs": 6561.4063
+                },
+                {
+                    "inputMs": 6562.8514,
+                    "submitMs": 6570.0309
+                },
+                {
+                    "inputMs": 6574.9073,
+                    "submitMs": 6580.2262
+                },
+                {
+                    "inputMs": 6582.5633,
+                    "submitMs": 6589.4967
+                },
+                {
+                    "inputMs": 6595.2854,
+                    "submitMs": 6599.2055
+                },
+                {
+                    "inputMs": 6602.1451,
+                    "submitMs": 6609.0036
+                },
+                {
+                    "inputMs": 6614.2112,
+                    "submitMs": 6618.1878
+                },
+                {
+                    "inputMs": 6622.1758,
+                    "submitMs": 6628.2592
+                },
+                {
+                    "inputMs": 6630.161,
+                    "submitMs": 6638.4839
+                },
+                {
+                    "inputMs": 6642.2437,
+                    "submitMs": 6648.3176
+                },
+                {
+                    "inputMs": 6650.188,
+                    "submitMs": 6657.2121
+                },
+                {
+                    "inputMs": 6662.2443,
+                    "submitMs": 6668.0323
+                },
+                {
+                    "inputMs": 6670.1466,
+                    "submitMs": 6678.5844
+                },
+                {
+                    "inputMs": 6682.2049,
+                    "submitMs": 6687.1829
+                },
+                {
+                    "inputMs": 6690.3555,
+                    "submitMs": 6696.4277
+                },
+                {
+                    "inputMs": 6698.176,
+                    "submitMs": 6706.7778
+                },
+                {
+                    "inputMs": 6710.1628,
+                    "submitMs": 6716.6054
+                },
+                {
+                    "inputMs": 6718.1602,
+                    "submitMs": 6726.2554
+                },
+                {
+                    "inputMs": 6730.4655,
+                    "submitMs": 6736.1775
+                },
+                {
+                    "inputMs": 6738.8014,
+                    "submitMs": 6745.3992
+                },
+                {
+                    "inputMs": 6746.7177,
+                    "submitMs": 6754.385
+                }
+            ]
+        },
+        {
+            "contentPaintCount": 0,
+            "contentPaintP95Ms": 0,
+            "handlerP95Ms": 0.1221,
+            "inputEvents": 453,
+            "intervalP95Ms": 12.076200000001336,
+            "latencyP95Ms": 9.356499999999869,
+            "latencyP99Ms": 10.627900000000409,
+            "longIntervalPercent": 0,
+            "operation": "extrude",
+            "planeBuilds": 435,
+            "previewFrames": 198,
+            "samples": [
+                {
+                    "inputMs": 7665.2828,
+                    "submitMs": 7672.5169
+                },
+                {
+                    "inputMs": 7677.057,
+                    "submitMs": 7682.7405
+                },
+                {
+                    "inputMs": 7685.32,
+                    "submitMs": 7692.3652
+                },
+                {
+                    "inputMs": 7697.0732,
+                    "submitMs": 7701.7566
+                },
+                {
+                    "inputMs": 7705.1007,
+                    "submitMs": 7710.7998
+                },
+                {
+                    "inputMs": 7713.0509,
+                    "submitMs": 7719.8437
+                },
+                {
+                    "inputMs": 7725.0435,
+                    "submitMs": 7729.2696
+                },
+                {
+                    "inputMs": 7732.9534,
+                    "submitMs": 7740.8878
+                },
+                {
+                    "inputMs": 7744.9932,
+                    "submitMs": 7751.8779
+                },
+                {
+                    "inputMs": 7756.9968,
+                    "submitMs": 7761.3965
+                },
+                {
+                    "inputMs": 7764.9602,
+                    "submitMs": 7770.8381
+                },
+                {
+                    "inputMs": 7772.9667,
+                    "submitMs": 7780.3206
+                },
+                {
+                    "inputMs": 7785.0093,
+                    "submitMs": 7789.5472
+                },
+                {
+                    "inputMs": 7793.0234,
+                    "submitMs": 7799.497
+                },
+                {
+                    "inputMs": 7801.5403,
+                    "submitMs": 7810.0117
+                },
+                {
+                    "inputMs": 7813.6194,
+                    "submitMs": 7819.13
+                },
+                {
+                    "inputMs": 7821.58,
+                    "submitMs": 7827.9519
+                },
+                {
+                    "inputMs": 7829.7594,
+                    "submitMs": 7837.0761
+                },
+                {
+                    "inputMs": 7841.5521,
+                    "submitMs": 7847.7381
+                },
+                {
+                    "inputMs": 7849.5815,
+                    "submitMs": 7856.9027
+                },
+                {
+                    "inputMs": 7861.893,
+                    "submitMs": 7868.1411
+                },
+                {
+                    "inputMs": 7869.5655,
+                    "submitMs": 7878.9752
+                },
+                {
+                    "inputMs": 7881.5853,
+                    "submitMs": 7889.9659
+                },
+                {
+                    "inputMs": 7893.4619,
+                    "submitMs": 7900.2685
+                },
+                {
+                    "inputMs": 7905.2057,
+                    "submitMs": 7911.8276
+                },
+                {
+                    "inputMs": 7913.0394,
+                    "submitMs": 7921.8348
+                },
+                {
+                    "inputMs": 7925.3647,
+                    "submitMs": 7932.0307
+                },
+                {
+                    "inputMs": 7937.8388,
+                    "submitMs": 7944.3337
+                },
+                {
+                    "inputMs": 7949.1587,
+                    "submitMs": 7954.7509
+                },
+                {
+                    "inputMs": 7957.156,
+                    "submitMs": 7965.7413
+                },
+                {
+                    "inputMs": 7969.6134,
+                    "submitMs": 7975.9004
+                },
+                {
+                    "inputMs": 7977.2454,
+                    "submitMs": 7987.6671
+                },
+                {
+                    "inputMs": 7989.2468,
+                    "submitMs": 7997.7013
+                },
+                {
+                    "inputMs": 8001.396,
+                    "submitMs": 8007.9279
+                },
+                {
+                    "inputMs": 8009.3491,
+                    "submitMs": 8018.7056
+                },
+                {
+                    "inputMs": 8021.3461,
+                    "submitMs": 8027.8977
+                },
+                {
+                    "inputMs": 8029.3115,
+                    "submitMs": 8039.9394
+                },
+                {
+                    "inputMs": 8041.3723,
+                    "submitMs": 8049.0457
+                },
+                {
+                    "inputMs": 8053.3273,
+                    "submitMs": 8059.101
+                },
+                {
+                    "inputMs": 8061.6243,
+                    "submitMs": 8069.7548
+                },
+                {
+                    "inputMs": 8073.6644,
+                    "submitMs": 8079.1991
+                },
+                {
+                    "inputMs": 8081.626,
+                    "submitMs": 8087.8153
+                },
+                {
+                    "inputMs": 8089.6262,
+                    "submitMs": 8096.8488
+                },
+                {
+                    "inputMs": 8101.6557,
+                    "submitMs": 8106.2413
+                },
+                {
+                    "inputMs": 8109.2312,
+                    "submitMs": 8115.9795
+                },
+                {
+                    "inputMs": 8121.2428,
+                    "submitMs": 8126.6412
+                },
+                {
+                    "inputMs": 8129.2515,
+                    "submitMs": 8135.5617
+                },
+                {
+                    "inputMs": 8137.2521,
+                    "submitMs": 8144.5853
+                },
+                {
+                    "inputMs": 8149.2914,
+                    "submitMs": 8154.0093
+                },
+                {
+                    "inputMs": 8157.2637,
+                    "submitMs": 8166.1343
+                },
+                {
+                    "inputMs": 8170.438,
+                    "submitMs": 8177.3128
+                },
+                {
+                    "inputMs": 8181.3247,
+                    "submitMs": 8187.9844
+                },
+                {
+                    "inputMs": 8193.278,
+                    "submitMs": 8198.2958
+                },
+                {
+                    "inputMs": 8201.8098,
+                    "submitMs": 8207.7898
+                },
+                {
+                    "inputMs": 8209.9092,
+                    "submitMs": 8218.3774
+                },
+                {
+                    "inputMs": 8221.1132,
+                    "submitMs": 8232.9211
+                },
+                {
+                    "inputMs": 8237.0116,
+                    "submitMs": 8244.5649
+                },
+                {
+                    "inputMs": 8248.9931,
+                    "submitMs": 8256.6411
+                },
+                {
+                    "inputMs": 8261.5416,
+                    "submitMs": 8266.3659
+                },
+                {
+                    "inputMs": 8269.0495,
+                    "submitMs": 8276.508
+                },
+                {
+                    "inputMs": 8281.0043,
+                    "submitMs": 8286.9508
+                },
+                {
+                    "inputMs": 8288.9683,
+                    "submitMs": 8297.3995
+                },
+                {
+                    "inputMs": 8300.9648,
+                    "submitMs": 8306.3419
+                },
+                {
+                    "inputMs": 8308.9754,
+                    "submitMs": 8315.3881
+                },
+                {
+                    "inputMs": 8316.9325,
+                    "submitMs": 8324.2935
+                },
+                {
+                    "inputMs": 8328.9339,
+                    "submitMs": 8334.3026
+                },
+                {
+                    "inputMs": 8336.964,
+                    "submitMs": 8344.4726
+                },
+                {
+                    "inputMs": 8348.9587,
+                    "submitMs": 8353.3214
+                },
+                {
+                    "inputMs": 8356.9737,
+                    "submitMs": 8363.3435
+                },
+                {
+                    "inputMs": 8365.2665,
+                    "submitMs": 8372.5178
+                },
+                {
+                    "inputMs": 8377.2407,
+                    "submitMs": 8382.9068
+                },
+                {
+                    "inputMs": 8385.2972,
+                    "submitMs": 8391.5368
+                },
+                {
+                    "inputMs": 8393.3048,
+                    "submitMs": 8400.591
+                },
+                {
+                    "inputMs": 8404.8099,
+                    "submitMs": 8410.2332
+                },
+                {
+                    "inputMs": 8412.8155,
+                    "submitMs": 8419.1985
+                },
+                {
+                    "inputMs": 8420.8166,
+                    "submitMs": 8429.1063
+                },
+                {
+                    "inputMs": 8432.873,
+                    "submitMs": 8438.3057
+                },
+                {
+                    "inputMs": 8440.8469,
+                    "submitMs": 8448.8697
+                },
+                {
+                    "inputMs": 8452.8991,
+                    "submitMs": 8457.9957
+                },
+                {
+                    "inputMs": 8460.8238,
+                    "submitMs": 8468.8586
+                },
+                {
+                    "inputMs": 8472.9007,
+                    "submitMs": 8478.6453
+                },
+                {
+                    "inputMs": 8480.8544,
+                    "submitMs": 8488.9625
+                },
+                {
+                    "inputMs": 8492.874,
+                    "submitMs": 8499.1929
+                },
+                {
+                    "inputMs": 8500.8422,
+                    "submitMs": 8507.9617
+                },
+                {
+                    "inputMs": 8512.8567,
+                    "submitMs": 8518.0399
+                },
+                {
+                    "inputMs": 8520.8237,
+                    "submitMs": 8528.2438
+                },
+                {
+                    "inputMs": 8532.9422,
+                    "submitMs": 8538.0117
+                },
+                {
+                    "inputMs": 8540.9004,
+                    "submitMs": 8547.3369
+                },
+                {
+                    "inputMs": 8548.8776,
+                    "submitMs": 8556.0519
+                },
+                {
+                    "inputMs": 8560.919,
+                    "submitMs": 8566.3132
+                },
+                {
+                    "inputMs": 8569.1367,
+                    "submitMs": 8577.92
+                },
+                {
+                    "inputMs": 8581.6421,
+                    "submitMs": 8587.2853
+                },
+                {
+                    "inputMs": 8589.689,
+                    "submitMs": 8596.8652
+                },
+                {
+                    "inputMs": 8601.2483,
+                    "submitMs": 8606.6976
+                },
+                {
+                    "inputMs": 8609.2809,
+                    "submitMs": 8615.6833
+                },
+                {
+                    "inputMs": 8617.2558,
+                    "submitMs": 8624.6104
+                },
+                {
+                    "inputMs": 8629.2939,
+                    "submitMs": 8634.3588
+                },
+                {
+                    "inputMs": 8637.2791,
+                    "submitMs": 8644.6672
+                },
+                {
+                    "inputMs": 8649.2968,
+                    "submitMs": 8654.2389
+                },
+                {
+                    "inputMs": 8657.3012,
+                    "submitMs": 8663.6026
+                },
+                {
+                    "inputMs": 8665.2713,
+                    "submitMs": 8673.4087
+                },
+                {
+                    "inputMs": 8677.2204,
+                    "submitMs": 8683.9265
+                },
+                {
+                    "inputMs": 8689.1744,
+                    "submitMs": 8693.4741
+                },
+                {
+                    "inputMs": 8697.1605,
+                    "submitMs": 8703.6164
+                },
+                {
+                    "inputMs": 8705.1809,
+                    "submitMs": 8712.3822
+                },
+                {
+                    "inputMs": 8717.1607,
+                    "submitMs": 8722.5054
+                },
+                {
+                    "inputMs": 8725.124,
+                    "submitMs": 8732.8249
+                },
+                {
+                    "inputMs": 8737.1137,
+                    "submitMs": 8741.4128
+                },
+                {
+                    "inputMs": 8745.1738,
+                    "submitMs": 8750.9326
+                },
+                {
+                    "inputMs": 8753.4597,
+                    "submitMs": 8761.9616
+                },
+                {
+                    "inputMs": 8765.1295,
+                    "submitMs": 8770.3649
+                },
+                {
+                    "inputMs": 8773.1803,
+                    "submitMs": 8780.592
+                },
+                {
+                    "inputMs": 8785.3868,
+                    "submitMs": 8789.788
+                },
+                {
+                    "inputMs": 8793.7325,
+                    "submitMs": 8799.6437
+                },
+                {
+                    "inputMs": 8804.9087,
+                    "submitMs": 8811.1875
+                },
+                {
+                    "inputMs": 8812.911,
+                    "submitMs": 8820.4007
+                },
+                {
+                    "inputMs": 8824.8812,
+                    "submitMs": 8831.2736
+                },
+                {
+                    "inputMs": 8832.9549,
+                    "submitMs": 8840.9074
+                },
+                {
+                    "inputMs": 8844.9465,
+                    "submitMs": 8850.6514
+                },
+                {
+                    "inputMs": 8853.1964,
+                    "submitMs": 8860.6094
+                },
+                {
+                    "inputMs": 8865.155,
+                    "submitMs": 8870.8447
+                },
+                {
+                    "inputMs": 8873.1675,
+                    "submitMs": 8879.6931
+                },
+                {
+                    "inputMs": 8881.215,
+                    "submitMs": 8888.713
+                },
+                {
+                    "inputMs": 8893.2341,
+                    "submitMs": 8898.0432
+                },
+                {
+                    "inputMs": 8901.4842,
+                    "submitMs": 8907.729
+                },
+                {
+                    "inputMs": 8909.421,
+                    "submitMs": 8916.5896
+                },
+                {
+                    "inputMs": 8921.3707,
+                    "submitMs": 8926.5564
+                },
+                {
+                    "inputMs": 8929.4254,
+                    "submitMs": 8937.0105
+                },
+                {
+                    "inputMs": 8941.4054,
+                    "submitMs": 8945.7896
+                },
+                {
+                    "inputMs": 8949.4256,
+                    "submitMs": 8955.9454
+                },
+                {
+                    "inputMs": 8957.4554,
+                    "submitMs": 8964.8161
+                },
+                {
+                    "inputMs": 8969.0084,
+                    "submitMs": 8974.6949
+                },
+                {
+                    "inputMs": 8976.9767,
+                    "submitMs": 8984.9191
+                },
+                {
+                    "inputMs": 8989.6757,
+                    "submitMs": 8994.0132
+                },
+                {
+                    "inputMs": 8997.734,
+                    "submitMs": 9003.5411
+                },
+                {
+                    "inputMs": 9005.1023,
+                    "submitMs": 9012.472
+                },
+                {
+                    "inputMs": 9017.0901,
+                    "submitMs": 9021.7973
+                },
+                {
+                    "inputMs": 9025.1104,
+                    "submitMs": 9033.6017
+                },
+                {
+                    "inputMs": 9037.1473,
+                    "submitMs": 9043.4283
+                },
+                {
+                    "inputMs": 9049.1103,
+                    "submitMs": 9055.4423
+                },
+                {
+                    "inputMs": 9056.8508,
+                    "submitMs": 9066.3442
+                },
+                {
+                    "inputMs": 9069.2119,
+                    "submitMs": 9076.7587
+                },
+                {
+                    "inputMs": 9081.8589,
+                    "submitMs": 9087.7749
+                },
+                {
+                    "inputMs": 9089.8409,
+                    "submitMs": 9097.9343
+                },
+                {
+                    "inputMs": 9100.8905,
+                    "submitMs": 9108.8065
+                },
+                {
+                    "inputMs": 9112.8863,
+                    "submitMs": 9119.4509
+                },
+                {
+                    "inputMs": 9122.0498,
+                    "submitMs": 9130.0026
+                },
+                {
+                    "inputMs": 9132.9465,
+                    "submitMs": 9142.3812
+                },
+                {
+                    "inputMs": 9144.8812,
+                    "submitMs": 9153.1986
+                },
+                {
+                    "inputMs": 9156.914,
+                    "submitMs": 9163.2112
+                },
+                {
+                    "inputMs": 9165.0377,
+                    "submitMs": 9175.0068
+                },
+                {
+                    "inputMs": 9176.9246,
+                    "submitMs": 9186.0073
+                },
+                {
+                    "inputMs": 9189.6429,
+                    "submitMs": 9198.1997
+                },
+                {
+                    "inputMs": 9201.146,
+                    "submitMs": 9209.1482
+                },
+                {
+                    "inputMs": 9213.1241,
+                    "submitMs": 9221.7645
+                },
+                {
+                    "inputMs": 9225.7694,
+                    "submitMs": 9234.4124
+                },
+                {
+                    "inputMs": 9237.1532,
+                    "submitMs": 9243.6356
+                },
+                {
+                    "inputMs": 9245.5637,
+                    "submitMs": 9253.5047
+                },
+                {
+                    "inputMs": 9257.1049,
+                    "submitMs": 9264.0307
+                },
+                {
+                    "inputMs": 9269.1086,
+                    "submitMs": 9274.8226
+                },
+                {
+                    "inputMs": 9277.1775,
+                    "submitMs": 9283.5575
+                },
+                {
+                    "inputMs": 9285.1127,
+                    "submitMs": 9293.5833
+                },
+                {
+                    "inputMs": 9297.1378,
+                    "submitMs": 9302.5675
+                },
+                {
+                    "inputMs": 9305.0958,
+                    "submitMs": 9312.5781
+                },
+                {
+                    "inputMs": 9317.1055,
+                    "submitMs": 9321.6091
+                },
+                {
+                    "inputMs": 9325.1206,
+                    "submitMs": 9331.9187
+                },
+                {
+                    "inputMs": 9337.1519,
+                    "submitMs": 9343.6317
+                },
+                {
+                    "inputMs": 9345.106,
+                    "submitMs": 9354.6317
+                },
+                {
+                    "inputMs": 9357.9533,
+                    "submitMs": 9364.687
+                },
+                {
+                    "inputMs": 9369.3381,
+                    "submitMs": 9374.8573
+                },
+                {
+                    "inputMs": 9377.3387,
+                    "submitMs": 9385.1229
+                },
+                {
+                    "inputMs": 9389.2844,
+                    "submitMs": 9396.1828
+                },
+                {
+                    "inputMs": 9401.9282,
+                    "submitMs": 9409.4267
+                },
+                {
+                    "inputMs": 9413.8301,
+                    "submitMs": 9420.371
+                },
+                {
+                    "inputMs": 9425.7762,
+                    "submitMs": 9432.8242
+                },
+                {
+                    "inputMs": 9437.7703,
+                    "submitMs": 9443.2089
+                },
+                {
+                    "inputMs": 9445.7716,
+                    "submitMs": 9453.0819
+                },
+                {
+                    "inputMs": 9457.4771,
+                    "submitMs": 9463.0684
+                },
+                {
+                    "inputMs": 9465.454,
+                    "submitMs": 9472.8872
+                },
+                {
+                    "inputMs": 9477.6013,
+                    "submitMs": 9482.1249
+                },
+                {
+                    "inputMs": 9485.507,
+                    "submitMs": 9491.8907
+                },
+                {
+                    "inputMs": 9493.4632,
+                    "submitMs": 9501.1815
+                },
+                {
+                    "inputMs": 9505.4648,
+                    "submitMs": 9510.1247
+                },
+                {
+                    "inputMs": 9514.1765,
+                    "submitMs": 9521.6617
+                },
+                {
+                    "inputMs": 9525.4427,
+                    "submitMs": 9531.1178
+                },
+                {
+                    "inputMs": 9533.3694,
+                    "submitMs": 9541.6393
+                },
+                {
+                    "inputMs": 9546.3758,
+                    "submitMs": 9552.4481
+                },
+                {
+                    "inputMs": 9557.4721,
+                    "submitMs": 9564.3629
+                },
+                {
+                    "inputMs": 9564.806,
+                    "submitMs": 9575.3321
+                },
+                {
+                    "inputMs": 9577.778,
+                    "submitMs": 9585.2869
+                },
+                {
+                    "inputMs": 9588.8387,
+                    "submitMs": 9596.5172
+                },
+                {
+                    "inputMs": 9601.4207,
+                    "submitMs": 9606.2779
+                },
+                {
+                    "inputMs": 9609.4223,
+                    "submitMs": 9616.4974
+                },
+                {
+                    "inputMs": 9621.4291,
+                    "submitMs": 9626.194
+                },
+                {
+                    "inputMs": 9629.4147,
+                    "submitMs": 9635.8912
+                },
+                {
+                    "inputMs": 9637.4288,
+                    "submitMs": 9646.329
+                },
+                {
+                    "inputMs": 9649.4474,
+                    "submitMs": 9656.6327
+                },
+                {
+                    "inputMs": 9661.401,
+                    "submitMs": 9667.1463
+                }
+            ]
+        },
+        {
+            "contentPaintCount": 0,
+            "contentPaintP95Ms": 0,
+            "handlerP95Ms": 0.1279,
+            "inputEvents": 482,
+            "intervalP95Ms": 10.85189999999966,
+            "latencyP95Ms": 8.211600000000544,
+            "latencyP99Ms": 8.705200000000332,
+            "longIntervalPercent": 0,
+            "operation": "rotate_drag",
+            "planeBuilds": 464,
+            "previewFrames": 210,
+            "samples": [
+                {
+                    "inputMs": 10588.8643,
+                    "submitMs": 10592.8693
+                },
+                {
+                    "inputMs": 10596.6819,
+                    "submitMs": 10601.6665
+                },
+                {
+                    "inputMs": 10605.1908,
+                    "submitMs": 10609.8755
+                },
+                {
+                    "inputMs": 10613.1882,
+                    "submitMs": 10618.7911
+                },
+                {
+                    "inputMs": 10621.1905,
+                    "submitMs": 10626.7387
+                },
+                {
+                    "inputMs": 10629.2267,
+                    "submitMs": 10635.2475
+                },
+                {
+                    "inputMs": 10637.1535,
+                    "submitMs": 10644.6417
+                },
+                {
+                    "inputMs": 10648.3034,
+                    "submitMs": 10653.5708
+                },
+                {
+                    "inputMs": 10656.3196,
+                    "submitMs": 10662.8189
+                },
+                {
+                    "inputMs": 10664.2927,
+                    "submitMs": 10673.8759
+                },
+                {
+                    "inputMs": 10676.3291,
+                    "submitMs": 10683.2083
+                },
+                {
+                    "inputMs": 10688.3023,
+                    "submitMs": 10693.2009
+                },
+                {
+                    "inputMs": 10696.3152,
+                    "submitMs": 10702.7924
+                },
+                {
+                    "inputMs": 10704.3048,
+                    "submitMs": 10712.0528
+                },
+                {
+                    "inputMs": 10716.9697,
+                    "submitMs": 10722.2713
+                },
+                {
+                    "inputMs": 10724.3194,
+                    "submitMs": 10732.6888
+                },
+                {
+                    "inputMs": 10736.3782,
+                    "submitMs": 10742.4287
+                },
+                {
+                    "inputMs": 10744.3154,
+                    "submitMs": 10752.0529
+                },
+                {
+                    "inputMs": 10756.357,
+                    "submitMs": 10761.8916
+                },
+                {
+                    "inputMs": 10764.327,
+                    "submitMs": 10771.6923
+                },
+                {
+                    "inputMs": 10776.3765,
+                    "submitMs": 10781.0687
+                },
+                {
+                    "inputMs": 10784.6499,
+                    "submitMs": 10791.9206
+                },
+                {
+                    "inputMs": 10797.1268,
+                    "submitMs": 10801.7898
+                },
+                {
+                    "inputMs": 10804.6478,
+                    "submitMs": 10811.7298
+                },
+                {
+                    "inputMs": 10813.1504,
+                    "submitMs": 10821.1405
+                },
+                {
+                    "inputMs": 10825.1328,
+                    "submitMs": 10831.3509
+                },
+                {
+                    "inputMs": 10833.1594,
+                    "submitMs": 10840.0827
+                },
+                {
+                    "inputMs": 10845.1286,
+                    "submitMs": 10850.6068
+                },
+                {
+                    "inputMs": 10853.1416,
+                    "submitMs": 10859.6168
+                },
+                {
+                    "inputMs": 10861.1462,
+                    "submitMs": 10868.9834
+                },
+                {
+                    "inputMs": 10873.6918,
+                    "submitMs": 10880.0834
+                },
+                {
+                    "inputMs": 10885.1134,
+                    "submitMs": 10890.1067
+                },
+                {
+                    "inputMs": 10893.1615,
+                    "submitMs": 10900.339
+                },
+                {
+                    "inputMs": 10905.1071,
+                    "submitMs": 10910.1107
+                },
+                {
+                    "inputMs": 10913.0889,
+                    "submitMs": 10920.2412
+                },
+                {
+                    "inputMs": 10925.0862,
+                    "submitMs": 10930.716
+                },
+                {
+                    "inputMs": 10933.1235,
+                    "submitMs": 10940.9028
+                },
+                {
+                    "inputMs": 10945.1136,
+                    "submitMs": 10952.262
+                },
+                {
+                    "inputMs": 10957.1003,
+                    "submitMs": 10960.8624
+                },
+                {
+                    "inputMs": 10965.1352,
+                    "submitMs": 10970.7514
+                },
+                {
+                    "inputMs": 10973.1696,
+                    "submitMs": 10979.7265
+                },
+                {
+                    "inputMs": 10981.1688,
+                    "submitMs": 10988.4587
+                },
+                {
+                    "inputMs": 10993.2309,
+                    "submitMs": 10996.7921
+                },
+                {
+                    "inputMs": 11001.7034,
+                    "submitMs": 11006.6564
+                },
+                {
+                    "inputMs": 11008.7091,
+                    "submitMs": 11016.483
+                },
+                {
+                    "inputMs": 11020.703,
+                    "submitMs": 11025.5397
+                },
+                {
+                    "inputMs": 11029.495,
+                    "submitMs": 11034.972
+                },
+                {
+                    "inputMs": 11036.686,
+                    "submitMs": 11044.291
+                },
+                {
+                    "inputMs": 11048.6989,
+                    "submitMs": 11052.5455
+                },
+                {
+                    "inputMs": 11056.7171,
+                    "submitMs": 11062.9943
+                },
+                {
+                    "inputMs": 11064.633,
+                    "submitMs": 11072.0199
+                },
+                {
+                    "inputMs": 11077.4209,
+                    "submitMs": 11082.1445
+                },
+                {
+                    "inputMs": 11084.6977,
+                    "submitMs": 11091.6104
+                },
+                {
+                    "inputMs": 11096.7085,
+                    "submitMs": 11100.8441
+                },
+                {
+                    "inputMs": 11104.7498,
+                    "submitMs": 11112.4143
+                },
+                {
+                    "inputMs": 11116.3611,
+                    "submitMs": 11122.1958
+                },
+                {
+                    "inputMs": 11124.2967,
+                    "submitMs": 11132.3862
+                },
+                {
+                    "inputMs": 11136.9453,
+                    "submitMs": 11143.4246
+                },
+                {
+                    "inputMs": 11144.7695,
+                    "submitMs": 11153.1363
+                },
+                {
+                    "inputMs": 11156.8089,
+                    "submitMs": 11165.3672
+                },
+                {
+                    "inputMs": 11169.1859,
+                    "submitMs": 11175.3283
+                },
+                {
+                    "inputMs": 11176.7973,
+                    "submitMs": 11184.6587
+                },
+                {
+                    "inputMs": 11188.7872,
+                    "submitMs": 11194.3741
+                },
+                {
+                    "inputMs": 11196.8373,
+                    "submitMs": 11203.2078
+                },
+                {
+                    "inputMs": 11208.3599,
+                    "submitMs": 11214.098
+                },
+                {
+                    "inputMs": 11216.7941,
+                    "submitMs": 11225.113
+                },
+                {
+                    "inputMs": 11228.2816,
+                    "submitMs": 11236.2074
+                },
+                {
+                    "inputMs": 11240.3049,
+                    "submitMs": 11246.3411
+                },
+                {
+                    "inputMs": 11248.2686,
+                    "submitMs": 11256.1817
+                },
+                {
+                    "inputMs": 11260.2536,
+                    "submitMs": 11266.7765
+                },
+                {
+                    "inputMs": 11268.2423,
+                    "submitMs": 11276.2247
+                },
+                {
+                    "inputMs": 11280.2817,
+                    "submitMs": 11286.4999
+                },
+                {
+                    "inputMs": 11288.2469,
+                    "submitMs": 11295.0887
+                },
+                {
+                    "inputMs": 11301.1864,
+                    "submitMs": 11305.1531
+                },
+                {
+                    "inputMs": 11309.2762,
+                    "submitMs": 11314.7637
+                },
+                {
+                    "inputMs": 11317.2297,
+                    "submitMs": 11323.0384
+                },
+                {
+                    "inputMs": 11325.2147,
+                    "submitMs": 11332.8044
+                },
+                {
+                    "inputMs": 11337.202,
+                    "submitMs": 11341.9925
+                },
+                {
+                    "inputMs": 11345.3083,
+                    "submitMs": 11351.3875
+                },
+                {
+                    "inputMs": 11352.3229,
+                    "submitMs": 11361.5008
+                },
+                {
+                    "inputMs": 11364.3345,
+                    "submitMs": 11370.1191
+                },
+                {
+                    "inputMs": 11372.3139,
+                    "submitMs": 11380.9261
+                },
+                {
+                    "inputMs": 11385.2387,
+                    "submitMs": 11390.5021
+                },
+                {
+                    "inputMs": 11393.2695,
+                    "submitMs": 11400.7852
+                },
+                {
+                    "inputMs": 11404.8682,
+                    "submitMs": 11409.8504
+                },
+                {
+                    "inputMs": 11412.9188,
+                    "submitMs": 11418.8525
+                },
+                {
+                    "inputMs": 11420.8651,
+                    "submitMs": 11427.6205
+                },
+                {
+                    "inputMs": 11428.8666,
+                    "submitMs": 11436.9095
+                },
+                {
+                    "inputMs": 11440.887,
+                    "submitMs": 11445.7226
+                },
+                {
+                    "inputMs": 11448.8438,
+                    "submitMs": 11455.8978
+                },
+                {
+                    "inputMs": 11460.664,
+                    "submitMs": 11464.6079
+                },
+                {
+                    "inputMs": 11468.7916,
+                    "submitMs": 11474.2568
+                },
+                {
+                    "inputMs": 11477.0126,
+                    "submitMs": 11483.5668
+                },
+                {
+                    "inputMs": 11488.6843,
+                    "submitMs": 11493.1137
+                },
+                {
+                    "inputMs": 11496.6824,
+                    "submitMs": 11501.8204
+                },
+                {
+                    "inputMs": 11504.6605,
+                    "submitMs": 11511.9363
+                },
+                {
+                    "inputMs": 11516.6909,
+                    "submitMs": 11522.7251
+                },
+                {
+                    "inputMs": 11524.7149,
+                    "submitMs": 11531.9854
+                },
+                {
+                    "inputMs": 11536.6766,
+                    "submitMs": 11540.5576
+                },
+                {
+                    "inputMs": 11544.7136,
+                    "submitMs": 11549.7713
+                },
+                {
+                    "inputMs": 11552.7326,
+                    "submitMs": 11559.7577
+                },
+                {
+                    "inputMs": 11564.878,
+                    "submitMs": 11569.3101
+                },
+                {
+                    "inputMs": 11572.8671,
+                    "submitMs": 11578.7097
+                },
+                {
+                    "inputMs": 11580.8834,
+                    "submitMs": 11588.7891
+                },
+                {
+                    "inputMs": 11592.8572,
+                    "submitMs": 11598.6521
+                },
+                {
+                    "inputMs": 11600.8655,
+                    "submitMs": 11608.8353
+                },
+                {
+                    "inputMs": 11612.987,
+                    "submitMs": 11618.0502
+                },
+                {
+                    "inputMs": 11620.6177,
+                    "submitMs": 11626.675
+                },
+                {
+                    "inputMs": 11628.6309,
+                    "submitMs": 11636.4439
+                },
+                {
+                    "inputMs": 11640.669,
+                    "submitMs": 11645.717
+                },
+                {
+                    "inputMs": 11648.6711,
+                    "submitMs": 11654.7549
+                },
+                {
+                    "inputMs": 11657.2408,
+                    "submitMs": 11663.8845
+                },
+                {
+                    "inputMs": 11665.2309,
+                    "submitMs": 11673.9361
+                },
+                {
+                    "inputMs": 11676.4666,
+                    "submitMs": 11682.6522
+                },
+                {
+                    "inputMs": 11684.4536,
+                    "submitMs": 11691.2579
+                },
+                {
+                    "inputMs": 11696.4292,
+                    "submitMs": 11701.4541
+                },
+                {
+                    "inputMs": 11704.3952,
+                    "submitMs": 11711.2499
+                },
+                {
+                    "inputMs": 11716.3675,
+                    "submitMs": 11721.4427
+                },
+                {
+                    "inputMs": 11724.4362,
+                    "submitMs": 11730.3281
+                },
+                {
+                    "inputMs": 11732.4222,
+                    "submitMs": 11739.3248
+                },
+                {
+                    "inputMs": 11744.4394,
+                    "submitMs": 11748.2364
+                },
+                {
+                    "inputMs": 11752.4283,
+                    "submitMs": 11757.2969
+                },
+                {
+                    "inputMs": 11760.4075,
+                    "submitMs": 11766.8927
+                },
+                {
+                    "inputMs": 11768.3804,
+                    "submitMs": 11775.3581
+                },
+                {
+                    "inputMs": 11780.8484,
+                    "submitMs": 11785.0028
+                },
+                {
+                    "inputMs": 11788.7039,
+                    "submitMs": 11794.7723
+                },
+                {
+                    "inputMs": 11796.7257,
+                    "submitMs": 11804.5104
+                },
+                {
+                    "inputMs": 11809.2095,
+                    "submitMs": 11814.8817
+                },
+                {
+                    "inputMs": 11817.1881,
+                    "submitMs": 11824.0291
+                },
+                {
+                    "inputMs": 11829.1629,
+                    "submitMs": 11832.9057
+                },
+                {
+                    "inputMs": 11837.2051,
+                    "submitMs": 11842.389
+                },
+                {
+                    "inputMs": 11845.1892,
+                    "submitMs": 11852.1734
+                },
+                {
+                    "inputMs": 11857.1965,
+                    "submitMs": 11862.592
+                },
+                {
+                    "inputMs": 11865.1824,
+                    "submitMs": 11872.2214
+                },
+                {
+                    "inputMs": 11877.2276,
+                    "submitMs": 11882.6837
+                },
+                {
+                    "inputMs": 11885.2092,
+                    "submitMs": 11891.2449
+                },
+                {
+                    "inputMs": 11893.2128,
+                    "submitMs": 11899.9708
+                },
+                {
+                    "inputMs": 11905.192,
+                    "submitMs": 11909.2136
+                },
+                {
+                    "inputMs": 11913.1971,
+                    "submitMs": 11918.7996
+                },
+                {
+                    "inputMs": 11921.2159,
+                    "submitMs": 11927.7693
+                },
+                {
+                    "inputMs": 11929.2303,
+                    "submitMs": 11937.2499
+                },
+                {
+                    "inputMs": 11941.054,
+                    "submitMs": 11946.1237
+                },
+                {
+                    "inputMs": 11949.0717,
+                    "submitMs": 11956.0353
+                },
+                {
+                    "inputMs": 11961.0282,
+                    "submitMs": 11964.8277
+                },
+                {
+                    "inputMs": 11968.5806,
+                    "submitMs": 11974.7052
+                },
+                {
+                    "inputMs": 11977.1547,
+                    "submitMs": 11983.2782
+                },
+                {
+                    "inputMs": 11985.1402,
+                    "submitMs": 11992.4553
+                },
+                {
+                    "inputMs": 11997.1611,
+                    "submitMs": 12002.6047
+                },
+                {
+                    "inputMs": 12004.7884,
+                    "submitMs": 12011.5245
+                },
+                {
+                    "inputMs": 12016.933,
+                    "submitMs": 12021.0697
+                },
+                {
+                    "inputMs": 12024.8057,
+                    "submitMs": 12029.6862
+                },
+                {
+                    "inputMs": 12032.7701,
+                    "submitMs": 12039.5529
+                },
+                {
+                    "inputMs": 12044.8166,
+                    "submitMs": 12049.9631
+                },
+                {
+                    "inputMs": 12052.8543,
+                    "submitMs": 12059.7859
+                },
+                {
+                    "inputMs": 12064.757,
+                    "submitMs": 12070.062
+                },
+                {
+                    "inputMs": 12072.7613,
+                    "submitMs": 12080.9729
+                },
+                {
+                    "inputMs": 12084.7482,
+                    "submitMs": 12089.7587
+                },
+                {
+                    "inputMs": 12092.7934,
+                    "submitMs": 12099.0918
+                },
+                {
+                    "inputMs": 12100.7779,
+                    "submitMs": 12108.2756
+                },
+                {
+                    "inputMs": 12112.5237,
+                    "submitMs": 12117.882
+                },
+                {
+                    "inputMs": 12120.4767,
+                    "submitMs": 12127.5992
+                },
+                {
+                    "inputMs": 12132.4984,
+                    "submitMs": 12136.3313
+                },
+                {
+                    "inputMs": 12140.4857,
+                    "submitMs": 12146.6589
+                },
+                {
+                    "inputMs": 12148.4911,
+                    "submitMs": 12157.1598
+                },
+                {
+                    "inputMs": 12160.5496,
+                    "submitMs": 12165.6319
+                },
+                {
+                    "inputMs": 12168.7879,
+                    "submitMs": 12175.9463
+                },
+                {
+                    "inputMs": 12180.4936,
+                    "submitMs": 12185.1672
+                },
+                {
+                    "inputMs": 12188.4638,
+                    "submitMs": 12193.7465
+                },
+                {
+                    "inputMs": 12196.5228,
+                    "submitMs": 12203.9224
+                },
+                {
+                    "inputMs": 12209.065,
+                    "submitMs": 12213.5282
+                },
+                {
+                    "inputMs": 12217.8328,
+                    "submitMs": 12223.5502
+                },
+                {
+                    "inputMs": 12225.2715,
+                    "submitMs": 12233.1165
+                },
+                {
+                    "inputMs": 12237.1332,
+                    "submitMs": 12242.7086
+                },
+                {
+                    "inputMs": 12245.0153,
+                    "submitMs": 12250.9382
+                },
+                {
+                    "inputMs": 12253.2521,
+                    "submitMs": 12261.5432
+                },
+                {
+                    "inputMs": 12265.0311,
+                    "submitMs": 12270.045
+                },
+                {
+                    "inputMs": 12273.02,
+                    "submitMs": 12279.7184
+                },
+                {
+                    "inputMs": 12280.9992,
+                    "submitMs": 12288.9008
+                },
+                {
+                    "inputMs": 12293.0393,
+                    "submitMs": 12298.7093
+                },
+                {
+                    "inputMs": 12301.2569,
+                    "submitMs": 12308.1071
+                },
+                {
+                    "inputMs": 12313.0768,
+                    "submitMs": 12317.9895
+                },
+                {
+                    "inputMs": 12320.4995,
+                    "submitMs": 12326.7767
+                },
+                {
+                    "inputMs": 12328.4456,
+                    "submitMs": 12335.4181
+                },
+                {
+                    "inputMs": 12340.4155,
+                    "submitMs": 12345.6212
+                },
+                {
+                    "inputMs": 12348.768,
+                    "submitMs": 12355.1966
+                },
+                {
+                    "inputMs": 12360.4177,
+                    "submitMs": 12364.2313
+                },
+                {
+                    "inputMs": 12368.4862,
+                    "submitMs": 12374.5176
+                },
+                {
+                    "inputMs": 12376.4475,
+                    "submitMs": 12383.0249
+                },
+                {
+                    "inputMs": 12384.4527,
+                    "submitMs": 12392.1128
+                },
+                {
+                    "inputMs": 12396.4857,
+                    "submitMs": 12400.4328
+                },
+                {
+                    "inputMs": 12405.1535,
+                    "submitMs": 12409.9636
+                },
+                {
+                    "inputMs": 12413.0338,
+                    "submitMs": 12420.231
+                },
+                {
+                    "inputMs": 12425.0154,
+                    "submitMs": 12429.8413
+                },
+                {
+                    "inputMs": 12433.0996,
+                    "submitMs": 12439.1069
+                },
+                {
+                    "inputMs": 12441.0793,
+                    "submitMs": 12447.8281
+                },
+                {
+                    "inputMs": 12452.411,
+                    "submitMs": 12457.239
+                },
+                {
+                    "inputMs": 12460.681,
+                    "submitMs": 12467.1879
+                },
+                {
+                    "inputMs": 12468.6583,
+                    "submitMs": 12476.4188
+                },
+                {
+                    "inputMs": 12481.2734,
+                    "submitMs": 12485.2708
+                },
+                {
+                    "inputMs": 12488.6691,
+                    "submitMs": 12493.8733
+                },
+                {
+                    "inputMs": 12496.6282,
+                    "submitMs": 12503.2554
+                },
+                {
+                    "inputMs": 12504.6404,
+                    "submitMs": 12512.6488
+                },
+                {
+                    "inputMs": 12516.6165,
+                    "submitMs": 12521.8014
+                },
+                {
+                    "inputMs": 12524.6197,
+                    "submitMs": 12531.4118
+                },
+                {
+                    "inputMs": 12536.7574,
+                    "submitMs": 12541.4449
+                },
+                {
+                    "inputMs": 12544.6703,
+                    "submitMs": 12551.3087
+                },
+                {
+                    "inputMs": 12552.8735,
+                    "submitMs": 12559.9477
+                },
+                {
+                    "inputMs": 12564.6917,
+                    "submitMs": 12569.6492
+                },
+                {
+                    "inputMs": 12572.7092,
+                    "submitMs": 12579.6478
+                },
+                {
+                    "inputMs": 12584.9606,
+                    "submitMs": 12589.0329
+                }
+            ]
+        },
+        {
+            "contentPaintCount": 0,
+            "contentPaintP95Ms": 0,
+            "handlerP95Ms": 0.1455,
+            "inputEvents": 487,
+            "intervalP95Ms": 10.539800000000469,
+            "latencyP95Ms": 7.901600000001054,
+            "latencyP99Ms": 8.62920000000122,
+            "longIntervalPercent": 0,
+            "operation": "angle_parameter",
+            "planeBuilds": 473,
+            "previewFrames": 215,
+            "samples": [
+                {
+                    "inputMs": 13505.7727,
+                    "submitMs": 13509.4662
+                },
+                {
+                    "inputMs": 13513.7843,
+                    "submitMs": 13520.9182
+                },
+                {
+                    "inputMs": 13526.4448,
+                    "submitMs": 13530.7268
+                },
+                {
+                    "inputMs": 13534.5636,
+                    "submitMs": 13540.4527
+                },
+                {
+                    "inputMs": 13542.4202,
+                    "submitMs": 13550.2959
+                },
+                {
+                    "inputMs": 13554.4247,
+                    "submitMs": 13560.2739
+                },
+                {
+                    "inputMs": 13562.3978,
+                    "submitMs": 13570.7349
+                },
+                {
+                    "inputMs": 13573.9654,
+                    "submitMs": 13581.2747
+                },
+                {
+                    "inputMs": 13585.9668,
+                    "submitMs": 13591.1091
+                },
+                {
+                    "inputMs": 13593.9519,
+                    "submitMs": 13600.0349
+                },
+                {
+                    "inputMs": 13601.9492,
+                    "submitMs": 13608.6508
+                },
+                {
+                    "inputMs": 13610.4961,
+                    "submitMs": 13617.2362
+                },
+                {
+                    "inputMs": 13618.7266,
+                    "submitMs": 13625.3519
+                },
+                {
+                    "inputMs": 13630.0432,
+                    "submitMs": 13634.7809
+                },
+                {
+                    "inputMs": 13637.9912,
+                    "submitMs": 13645.1843
+                },
+                {
+                    "inputMs": 13649.9991,
+                    "submitMs": 13654.2491
+                },
+                {
+                    "inputMs": 13658.0021,
+                    "submitMs": 13663.9382
+                },
+                {
+                    "inputMs": 13665.9617,
+                    "submitMs": 13673.9539
+                },
+                {
+                    "inputMs": 13678.0488,
+                    "submitMs": 13684.4856
+                },
+                {
+                    "inputMs": 13685.9696,
+                    "submitMs": 13695.5019
+                },
+                {
+                    "inputMs": 13697.9944,
+                    "submitMs": 13705.489
+                },
+                {
+                    "inputMs": 13710.1756,
+                    "submitMs": 13714.4822
+                },
+                {
+                    "inputMs": 13718.1412,
+                    "submitMs": 13724.267
+                },
+                {
+                    "inputMs": 13726.1395,
+                    "submitMs": 13734.7687
+                },
+                {
+                    "inputMs": 13738.1878,
+                    "submitMs": 13743.1816
+                },
+                {
+                    "inputMs": 13746.1696,
+                    "submitMs": 13753.359
+                },
+                {
+                    "inputMs": 13758.1882,
+                    "submitMs": 13762.4152
+                },
+                {
+                    "inputMs": 13766.1148,
+                    "submitMs": 13771.3242
+                },
+                {
+                    "inputMs": 13774.3343,
+                    "submitMs": 13780.7835
+                },
+                {
+                    "inputMs": 13782.5702,
+                    "submitMs": 13789.5889
+                },
+                {
+                    "inputMs": 13794.4121,
+                    "submitMs": 13798.8401
+                },
+                {
+                    "inputMs": 13802.3976,
+                    "submitMs": 13808.7292
+                },
+                {
+                    "inputMs": 13813.8802,
+                    "submitMs": 13818.1563
+                },
+                {
+                    "inputMs": 13821.89,
+                    "submitMs": 13826.9646
+                },
+                {
+                    "inputMs": 13829.8501,
+                    "submitMs": 13836.8194
+                },
+                {
+                    "inputMs": 13841.8442,
+                    "submitMs": 13846.0274
+                },
+                {
+                    "inputMs": 13849.866,
+                    "submitMs": 13855.1935
+                },
+                {
+                    "inputMs": 13857.8601,
+                    "submitMs": 13865.5831
+                },
+                {
+                    "inputMs": 13869.9949,
+                    "submitMs": 13874.6267
+                },
+                {
+                    "inputMs": 13878.934,
+                    "submitMs": 13884.1119
+                },
+                {
+                    "inputMs": 13885.9611,
+                    "submitMs": 13893.3876
+                },
+                {
+                    "inputMs": 13897.952,
+                    "submitMs": 13901.5648
+                },
+                {
+                    "inputMs": 13905.9288,
+                    "submitMs": 13911.6547
+                },
+                {
+                    "inputMs": 13913.9607,
+                    "submitMs": 13920.7986
+                },
+                {
+                    "inputMs": 13926.01,
+                    "submitMs": 13929.8495
+                },
+                {
+                    "inputMs": 13934.131,
+                    "submitMs": 13938.5595
+                },
+                {
+                    "inputMs": 13942.1488,
+                    "submitMs": 13946.7355
+                },
+                {
+                    "inputMs": 13950.1493,
+                    "submitMs": 13955.999
+                },
+                {
+                    "inputMs": 13958.2054,
+                    "submitMs": 13964.7872
+                },
+                {
+                    "inputMs": 13966.6619,
+                    "submitMs": 13973.2521
+                },
+                {
+                    "inputMs": 13977.8656,
+                    "submitMs": 13981.502
+                },
+                {
+                    "inputMs": 13985.8308,
+                    "submitMs": 13991.2294
+                },
+                {
+                    "inputMs": 13993.8754,
+                    "submitMs": 14001.2444
+                },
+                {
+                    "inputMs": 14006.5447,
+                    "submitMs": 14010.986
+                },
+                {
+                    "inputMs": 14013.6045,
+                    "submitMs": 14020.4819
+                },
+                {
+                    "inputMs": 14025.6302,
+                    "submitMs": 14029.9744
+                },
+                {
+                    "inputMs": 14033.6269,
+                    "submitMs": 14040.2212
+                },
+                {
+                    "inputMs": 14045.5833,
+                    "submitMs": 14051.6172
+                },
+                {
+                    "inputMs": 14054.5174,
+                    "submitMs": 14060.4733
+                },
+                {
+                    "inputMs": 14065.5588,
+                    "submitMs": 14072.3546
+                },
+                {
+                    "inputMs": 14077.546,
+                    "submitMs": 14083.0586
+                },
+                {
+                    "inputMs": 14085.5343,
+                    "submitMs": 14092.2945
+                },
+                {
+                    "inputMs": 14097.587,
+                    "submitMs": 14101.2312
+                },
+                {
+                    "inputMs": 14105.5729,
+                    "submitMs": 14111.7587
+                },
+                {
+                    "inputMs": 14114.2362,
+                    "submitMs": 14121.0944
+                },
+                {
+                    "inputMs": 14126.2445,
+                    "submitMs": 14130.6209
+                },
+                {
+                    "inputMs": 14134.2569,
+                    "submitMs": 14139.9996
+                },
+                {
+                    "inputMs": 14142.2222,
+                    "submitMs": 14150.3896
+                },
+                {
+                    "inputMs": 14154.2936,
+                    "submitMs": 14160.5464
+                },
+                {
+                    "inputMs": 14162.266,
+                    "submitMs": 14169.6307
+                },
+                {
+                    "inputMs": 14174.4493,
+                    "submitMs": 14179.129
+                },
+                {
+                    "inputMs": 14182.3041,
+                    "submitMs": 14187.9237
+                },
+                {
+                    "inputMs": 14190.392,
+                    "submitMs": 14196.1312
+                },
+                {
+                    "inputMs": 14198.3683,
+                    "submitMs": 14205.5153
+                },
+                {
+                    "inputMs": 14209.8703,
+                    "submitMs": 14214.942
+                },
+                {
+                    "inputMs": 14217.858,
+                    "submitMs": 14225.4447
+                },
+                {
+                    "inputMs": 14230.4143,
+                    "submitMs": 14234.751
+                },
+                {
+                    "inputMs": 14237.904,
+                    "submitMs": 14243.6769
+                },
+                {
+                    "inputMs": 14245.8436,
+                    "submitMs": 14253.528
+                },
+                {
+                    "inputMs": 14257.879,
+                    "submitMs": 14262.5783
+                },
+                {
+                    "inputMs": 14265.8345,
+                    "submitMs": 14270.8112
+                },
+                {
+                    "inputMs": 14273.8876,
+                    "submitMs": 14279.6023
+                },
+                {
+                    "inputMs": 14281.8659,
+                    "submitMs": 14289.3143
+                },
+                {
+                    "inputMs": 14293.9186,
+                    "submitMs": 14297.7325
+                },
+                {
+                    "inputMs": 14301.9275,
+                    "submitMs": 14307.7577
+                },
+                {
+                    "inputMs": 14309.9055,
+                    "submitMs": 14317.68
+                },
+                {
+                    "inputMs": 14322.349,
+                    "submitMs": 14328.018
+                },
+                {
+                    "inputMs": 14329.8074,
+                    "submitMs": 14338.3982
+                },
+                {
+                    "inputMs": 14342.044,
+                    "submitMs": 14347.8452
+                },
+                {
+                    "inputMs": 14349.9183,
+                    "submitMs": 14357.8865
+                },
+                {
+                    "inputMs": 14362.039,
+                    "submitMs": 14368.4342
+                },
+                {
+                    "inputMs": 14369.999,
+                    "submitMs": 14377.0368
+                },
+                {
+                    "inputMs": 14381.9825,
+                    "submitMs": 14386.9777
+                },
+                {
+                    "inputMs": 14389.9865,
+                    "submitMs": 14396.5971
+                },
+                {
+                    "inputMs": 14398.0105,
+                    "submitMs": 14404.7228
+                },
+                {
+                    "inputMs": 14409.571,
+                    "submitMs": 14414.3877
+                },
+                {
+                    "inputMs": 14417.577,
+                    "submitMs": 14423.3308
+                },
+                {
+                    "inputMs": 14425.5725,
+                    "submitMs": 14433.3985
+                },
+                {
+                    "inputMs": 14437.5821,
+                    "submitMs": 14443.1488
+                },
+                {
+                    "inputMs": 14445.5536,
+                    "submitMs": 14453.4419
+                },
+                {
+                    "inputMs": 14457.593,
+                    "submitMs": 14462.7323
+                },
+                {
+                    "inputMs": 14465.5859,
+                    "submitMs": 14471.2379
+                },
+                {
+                    "inputMs": 14473.567,
+                    "submitMs": 14480.5621
+                },
+                {
+                    "inputMs": 14485.5657,
+                    "submitMs": 14489.9004
+                },
+                {
+                    "inputMs": 14494.2903,
+                    "submitMs": 14498.9246
+                },
+                {
+                    "inputMs": 14502.2398,
+                    "submitMs": 14506.8999
+                },
+                {
+                    "inputMs": 14510.2301,
+                    "submitMs": 14516.3704
+                },
+                {
+                    "inputMs": 14518.2428,
+                    "submitMs": 14525.5327
+                },
+                {
+                    "inputMs": 14530.2401,
+                    "submitMs": 14534.5026
+                },
+                {
+                    "inputMs": 14538.4114,
+                    "submitMs": 14542.9043
+                },
+                {
+                    "inputMs": 14546.2668,
+                    "submitMs": 14552.0618
+                },
+                {
+                    "inputMs": 14554.5377,
+                    "submitMs": 14562.0322
+                },
+                {
+                    "inputMs": 14566.363,
+                    "submitMs": 14570.9781
+                },
+                {
+                    "inputMs": 14574.3689,
+                    "submitMs": 14579.5761
+                },
+                {
+                    "inputMs": 14582.3723,
+                    "submitMs": 14589.9128
+                },
+                {
+                    "inputMs": 14594.3182,
+                    "submitMs": 14598.2212
+                },
+                {
+                    "inputMs": 14602.5276,
+                    "submitMs": 14607.1987
+                },
+                {
+                    "inputMs": 14609.83,
+                    "submitMs": 14616.4026
+                },
+                {
+                    "inputMs": 14618.0191,
+                    "submitMs": 14624.6983
+                },
+                {
+                    "inputMs": 14629.8554,
+                    "submitMs": 14633.6966
+                },
+                {
+                    "inputMs": 14637.8763,
+                    "submitMs": 14643.695
+                },
+                {
+                    "inputMs": 14645.8052,
+                    "submitMs": 14653.2845
+                },
+                {
+                    "inputMs": 14657.8599,
+                    "submitMs": 14661.8418
+                },
+                {
+                    "inputMs": 14666.0586,
+                    "submitMs": 14673.1327
+                },
+                {
+                    "inputMs": 14677.926,
+                    "submitMs": 14682.4293
+                },
+                {
+                    "inputMs": 14685.8188,
+                    "submitMs": 14691.7579
+                },
+                {
+                    "inputMs": 14693.8666,
+                    "submitMs": 14701.7217
+                },
+                {
+                    "inputMs": 14705.8499,
+                    "submitMs": 14711.5253
+                },
+                {
+                    "inputMs": 14714.5336,
+                    "submitMs": 14719.8136
+                },
+                {
+                    "inputMs": 14721.8749,
+                    "submitMs": 14728.5312
+                },
+                {
+                    "inputMs": 14730.7235,
+                    "submitMs": 14736.8075
+                },
+                {
+                    "inputMs": 14741.9257,
+                    "submitMs": 14745.7408
+                },
+                {
+                    "inputMs": 14749.8141,
+                    "submitMs": 14755.7909
+                },
+                {
+                    "inputMs": 14757.8529,
+                    "submitMs": 14765.292
+                },
+                {
+                    "inputMs": 14769.8528,
+                    "submitMs": 14774.1256
+                },
+                {
+                    "inputMs": 14778.7575,
+                    "submitMs": 14783.6264
+                },
+                {
+                    "inputMs": 14785.8565,
+                    "submitMs": 14792.4774
+                },
+                {
+                    "inputMs": 14793.8659,
+                    "submitMs": 14800.8091
+                },
+                {
+                    "inputMs": 14805.895,
+                    "submitMs": 14810.5151
+                },
+                {
+                    "inputMs": 14814.4614,
+                    "submitMs": 14819.3165
+                },
+                {
+                    "inputMs": 14822.3575,
+                    "submitMs": 14830.0921
+                },
+                {
+                    "inputMs": 14834.0673,
+                    "submitMs": 14839.4864
+                },
+                {
+                    "inputMs": 14842.2363,
+                    "submitMs": 14848.9452
+                },
+                {
+                    "inputMs": 14850.2127,
+                    "submitMs": 14856.9451
+                },
+                {
+                    "inputMs": 14858.2562,
+                    "submitMs": 14865.8165
+                },
+                {
+                    "inputMs": 14870.2032,
+                    "submitMs": 14875.4042
+                },
+                {
+                    "inputMs": 14878.2523,
+                    "submitMs": 14884.0831
+                },
+                {
+                    "inputMs": 14886.2592,
+                    "submitMs": 14893.0199
+                },
+                {
+                    "inputMs": 14898.2433,
+                    "submitMs": 14902.0264
+                },
+                {
+                    "inputMs": 14906.2097,
+                    "submitMs": 14911.7775
+                },
+                {
+                    "inputMs": 14914.2442,
+                    "submitMs": 14919.9841
+                },
+                {
+                    "inputMs": 14922.2035,
+                    "submitMs": 14928.7777
+                },
+                {
+                    "inputMs": 14930.1845,
+                    "submitMs": 14937.3045
+                },
+                {
+                    "inputMs": 14942.1835,
+                    "submitMs": 14946.0974
+                },
+                {
+                    "inputMs": 14950.1952,
+                    "submitMs": 14955.7098
+                },
+                {
+                    "inputMs": 14958.2815,
+                    "submitMs": 14964.9106
+                },
+                {
+                    "inputMs": 14966.2766,
+                    "submitMs": 14973.6673
+                },
+                {
+                    "inputMs": 14978.0348,
+                    "submitMs": 14982.6297
+                },
+                {
+                    "inputMs": 14986.0669,
+                    "submitMs": 14990.9731
+                },
+                {
+                    "inputMs": 14993.5709,
+                    "submitMs": 15000.811
+                },
+                {
+                    "inputMs": 15002.5318,
+                    "submitMs": 15010.1339
+                },
+                {
+                    "inputMs": 15014.1066,
+                    "submitMs": 15019.636
+                },
+                {
+                    "inputMs": 15021.84,
+                    "submitMs": 15029.3684
+                },
+                {
+                    "inputMs": 15033.8726,
+                    "submitMs": 15037.893
+                },
+                {
+                    "inputMs": 15041.8645,
+                    "submitMs": 15046.8128
+                },
+                {
+                    "inputMs": 15049.8448,
+                    "submitMs": 15055.4021
+                },
+                {
+                    "inputMs": 15057.8554,
+                    "submitMs": 15063.9534
+                },
+                {
+                    "inputMs": 15065.8529,
+                    "submitMs": 15072.2828
+                },
+                {
+                    "inputMs": 15073.8559,
+                    "submitMs": 15082.3415
+                },
+                {
+                    "inputMs": 15085.8775,
+                    "submitMs": 15090.5863
+                },
+                {
+                    "inputMs": 15093.9198,
+                    "submitMs": 15099.5253
+                },
+                {
+                    "inputMs": 15101.8554,
+                    "submitMs": 15109.1495
+                },
+                {
+                    "inputMs": 15114.4152,
+                    "submitMs": 15119.0218
+                },
+                {
+                    "inputMs": 15122.4277,
+                    "submitMs": 15128.5489
+                },
+                {
+                    "inputMs": 15130.4395,
+                    "submitMs": 15136.8974
+                },
+                {
+                    "inputMs": 15138.4286,
+                    "submitMs": 15145.5299
+                },
+                {
+                    "inputMs": 15150.3855,
+                    "submitMs": 15156.263
+                },
+                {
+                    "inputMs": 15158.3997,
+                    "submitMs": 15165.8477
+                },
+                {
+                    "inputMs": 15170.3054,
+                    "submitMs": 15175.6084
+                },
+                {
+                    "inputMs": 15178.3536,
+                    "submitMs": 15184.9369
+                },
+                {
+                    "inputMs": 15186.334,
+                    "submitMs": 15192.8012
+                },
+                {
+                    "inputMs": 15194.3852,
+                    "submitMs": 15201.8698
+                },
+                {
+                    "inputMs": 15206.3412,
+                    "submitMs": 15211.0551
+                },
+                {
+                    "inputMs": 15214.7565,
+                    "submitMs": 15221.6714
+                },
+                {
+                    "inputMs": 15225.8838,
+                    "submitMs": 15231.7184
+                },
+                {
+                    "inputMs": 15233.8809,
+                    "submitMs": 15240.4909
+                },
+                {
+                    "inputMs": 15241.8594,
+                    "submitMs": 15249.761
+                },
+                {
+                    "inputMs": 15253.8731,
+                    "submitMs": 15258.4229
+                },
+                {
+                    "inputMs": 15261.8775,
+                    "submitMs": 15267.8998
+                },
+                {
+                    "inputMs": 15269.8435,
+                    "submitMs": 15276.4304
+                },
+                {
+                    "inputMs": 15277.846,
+                    "submitMs": 15284.7814
+                },
+                {
+                    "inputMs": 15289.8524,
+                    "submitMs": 15294.4499
+                },
+                {
+                    "inputMs": 15297.9402,
+                    "submitMs": 15302.6329
+                },
+                {
+                    "inputMs": 15305.8635,
+                    "submitMs": 15312.6496
+                },
+                {
+                    "inputMs": 15313.9426,
+                    "submitMs": 15321.3517
+                },
+                {
+                    "inputMs": 15325.8007,
+                    "submitMs": 15329.89
+                },
+                {
+                    "inputMs": 15333.8155,
+                    "submitMs": 15339.388
+                },
+                {
+                    "inputMs": 15341.8248,
+                    "submitMs": 15348.7076
+                },
+                {
+                    "inputMs": 15353.8084,
+                    "submitMs": 15358.3074
+                },
+                {
+                    "inputMs": 15361.8053,
+                    "submitMs": 15366.3212
+                },
+                {
+                    "inputMs": 15369.7941,
+                    "submitMs": 15374.5026
+                },
+                {
+                    "inputMs": 15377.8298,
+                    "submitMs": 15382.9795
+                },
+                {
+                    "inputMs": 15385.823,
+                    "submitMs": 15392.4885
+                },
+                {
+                    "inputMs": 15393.8007,
+                    "submitMs": 15400.2904
+                },
+                {
+                    "inputMs": 15401.8056,
+                    "submitMs": 15410.5702
+                },
+                {
+                    "inputMs": 15414.3542,
+                    "submitMs": 15419.0639
+                },
+                {
+                    "inputMs": 15422.3346,
+                    "submitMs": 15427.813
+                },
+                {
+                    "inputMs": 15430.3254,
+                    "submitMs": 15435.8978
+                },
+                {
+                    "inputMs": 15438.2892,
+                    "submitMs": 15444.2909
+                },
+                {
+                    "inputMs": 15446.3319,
+                    "submitMs": 15454.6014
+                },
+                {
+                    "inputMs": 15458.3534,
+                    "submitMs": 15463.7998
+                },
+                {
+                    "inputMs": 15466.3471,
+                    "submitMs": 15472.6887
+                },
+                {
+                    "inputMs": 15474.3487,
+                    "submitMs": 15481.9992
+                },
+                {
+                    "inputMs": 15486.3129,
+                    "submitMs": 15490.8212
+                },
+                {
+                    "inputMs": 15494.3076,
+                    "submitMs": 15499.9695
+                }
+            ]
+        }
+    ],
+    "windowHeight": 1000,
+    "windowWidth": 1600
+}

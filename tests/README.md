@@ -53,4 +53,4 @@ ctest --test-dir build --output-on-failure -j 1
 
 配置 -DVP_BUILD_BENCHMARKS=ON 会构建 benchmarks 中的 5 个交互性能检查程序，不加入常规 CTest。运行需可用桌面，结果不计入日常回归测试通过数。
 
-检查产出的报告、原始 JSON、截图与构建日志按场景归档到 `local-reports/<场景>-<日期>/`，当前存放 preview、plane-overlay、selection、brush、clone 五份（2026-10-13，来自主项目）。该目录由本地 `.git/info/exclude` 排除，不提交 Git。
+检查产出的报告、原始 JSON、截图与构建日志按场景归档到 `local-reports/<场景>-<日期>/`，当前存放 preview、plane-overlay、selection、brush、clone 五份（2026-10-13，来自主项目）。该目录随仓库提交，便于跨机器和团队复用同一份性能基线；新增报告时沿用 `<场景>-<日期>/` 命名，勿覆盖历史目录。

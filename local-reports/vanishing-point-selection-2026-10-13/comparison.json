@@ -1,0 +1,80 @@
+{
+  "rows": [
+    {
+      "op": "create",
+      "oldP95": 19.332,
+      "newP95": 2.55,
+      "reduction": 86.8,
+      "oldPaints": 74,
+      "newPaints": 0,
+      "oldInterval": 20.603,
+      "newInterval": 9.208,
+      "oldUpdate": 0.05,
+      "newUpdate": 0.145
+    },
+    {
+      "op": "move_outline",
+      "oldP95": 21.509,
+      "newP95": 2.512,
+      "reduction": 88.3,
+      "oldPaints": 72,
+      "newPaints": 0,
+      "oldInterval": 23.383,
+      "newInterval": 9.217,
+      "oldUpdate": 0.05,
+      "newUpdate": 0.147
+    },
+    {
+      "op": "ctrl_clone",
+      "oldP95": 22.165,
+      "newP95": 6.589,
+      "reduction": 70.3,
+      "oldPaints": 56,
+      "newPaints": 0,
+      "oldInterval": 31.021,
+      "newInterval": 9.418,
+      "oldUpdate": 4.417,
+      "newUpdate": 0.88
+    },
+    {
+      "op": "floating_move",
+      "oldP95": 19.878,
+      "newP95": 6.448,
+      "reduction": 67.6,
+      "oldPaints": 72,
+      "newPaints": 0,
+      "oldInterval": 21.019,
+      "newInterval": 9.492,
+      "oldUpdate": 0.054,
+      "newUpdate": 0.202
+    },
+    {
+      "op": "floating_scale",
+      "oldP95": 22.541,
+      "newP95": 6.863,
+      "reduction": 69.6,
+      "oldPaints": 71,
+      "newPaints": 0,
+      "oldInterval": 24.608,
+      "newInterval": 9.267,
+      "oldUpdate": 0.055,
+      "newUpdate": 0.196
+    },
+    {
+      "op": "floating_rotate",
+      "oldP95": 27.007,
+      "newP95": 7.385,
+      "reduction": 72.7,
+      "oldPaints": 68,
+      "newPaints": 0,
+      "oldInterval": 29.097,
+      "newInterval": 9.701,
+      "oldUpdate": 0.056,
+      "newUpdate": 0.195
+    }
+  ],
+  "oldCopy": 33.7240375,
+  "newCopy": 1.5593125,
+  "allPassed": true,
+  "hashesMatch": true
+}

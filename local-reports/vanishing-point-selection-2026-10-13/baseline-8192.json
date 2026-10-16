@@ -1,0 +1,81 @@
+{
+    "cloneHash": "da29858db3739250bbe37aeedc9deffab9b0710b172384f14e5a99b7267fc7bd",
+    "copyHash": "0cb2842ce4edc3265b61e41db06965195648cb3f16bb1f898f31017f43fab202",
+    "dpr": 1,
+    "failures": [
+    ],
+    "imageSide": 8192,
+    "metrics": [
+        {
+            "contentPaintCount": 61,
+            "frames": 61,
+            "inputCount": 134,
+            "intervalP95Ms": 26.167599999999993,
+            "latencyP95Ms": 26.426499999999976,
+            "operation": "create",
+            "updateP95Ms": 0.0299
+        },
+        {
+            "contentPaintCount": 64,
+            "frames": 63,
+            "inputCount": 139,
+            "intervalP95Ms": 23.71180000000004,
+            "latencyP95Ms": 22.440599999999904,
+            "operation": "move_outline",
+            "updateP95Ms": 0.0262
+        },
+        {
+            "contentPaintCount": 25,
+            "frames": 24,
+            "inputCount": 73,
+            "intervalP95Ms": 83.89260000000013,
+            "latencyP95Ms": 45.3154999999997,
+            "operation": "ctrl_clone",
+            "updateP95Ms": 19.0134
+        },
+        {
+            "contentPaintCount": 60,
+            "frames": 60,
+            "inputCount": 134,
+            "intervalP95Ms": 28.194499999999607,
+            "latencyP95Ms": 24.837799999999334,
+            "operation": "floating_move",
+            "updateP95Ms": 0.0576
+        },
+        {
+            "contentPaintCount": 60,
+            "frames": 60,
+            "inputCount": 136,
+            "intervalP95Ms": 31.21099999999933,
+            "latencyP95Ms": 29.084100000000035,
+            "operation": "floating_scale",
+            "updateP95Ms": 0.0594
+        },
+        {
+            "contentPaintCount": 61,
+            "frames": 61,
+            "inputCount": 134,
+            "intervalP95Ms": 23.862199999999575,
+            "latencyP95Ms": 22.513999999999214,
+            "operation": "floating_rotate",
+            "updateP95Ms": 0.0541
+        }
+    ],
+    "passed": true,
+    "repeatCopyMs": 151.20225,
+    "stage": 0,
+    "variantHashes": [
+        "802f8c077d6e934601ccd1dddc1e4d81e65bed81465f778caeeb134b292318ac",
+        "0b20686d8d19b34aad40e9a6dabf56ba89250c54ee3189f672266249f2ad779b",
+        "e12130aecf7442f83125a82ad844321a418306eddf7a4b8772a4b4f0a1235c41",
+        "0e511320bd71e41ad0e740b3740fc5be3aec135d50d7da5e0e742ba25b27155e",
+        "b3a30f85d1e99cbd8015f85c978014b92c21a6753792a4264204bfda5aaf986f",
+        "d465a044a552e3c3d0801e881a129075349d0b687ca1d5458e80953853471064",
+        "c7d023db76b717163bc4924032c0b3ecf6fadc91dff31050989cafc94a2b1ee5",
+        "f78d6ae4ff6065c3e30c86275293851d42183b4af7fdd2cdb5cbd7a0219cce4d",
+        "e0e74cdc0f100d1589121e34b9d3d78f9c99ad28af172b504d3a89d844412220",
+        "ab117dec893ca9f3cc0e49f65a0dbee239d9510afa22c77cb39a4aeda9684dd6",
+        "ee52638e36af2cad2c5f3b8047ace86ac5dab5d6ae35219a56681c8129d5219c",
+        "09957d92ba89f833abd812b672602965fd6724db93fdb8beccaab5a11b0b5bcb"
+    ]
+}

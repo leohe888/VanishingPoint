@@ -1,0 +1,42 @@
+{
+    "dpr": 1,
+    "failures": [
+    ],
+    "hashes": [
+        "15e694c26d2b8353861e1432d5e97d04b3210336ec0e64ffd2a87ce3d5da8f98",
+        "2b0c00a145013fb6b3891980a8ca54795529a45ba6572dc09a16f5c1f379de93",
+        "a459e7d14fd10fdf33f147f2d7bb5731a86f317b7301df75668ef11b1e9575d2",
+        "01b4fbe5eb5f47f2bcfaff83a898aca7a0a0b9b501e2bc3c2ad7179c40e42938",
+        "173e88a42b32160434be1ae03eaf90e95794eac72e54867dfeaaf0fc34113a52",
+        "03a5b9872cf36ab71baa0719a6bb21ffc9349c3aa711a998ef4544c8452d3883"
+    ],
+    "imageSide": 4096,
+    "metrics": [
+        {
+            "backgroundPaintCount": 61,
+            "diameter": 42,
+            "frames": 61,
+            "inputCount": 134,
+            "intervalP95Ms": 26.053100000000086,
+            "latencyP95Ms": 24.761799999999994,
+            "paintLayerPaintCount": 61,
+            "paintedLogicalPixels": 97600000,
+            "pressMs": 19.2136,
+            "updateP95Ms": 0.4213
+        },
+        {
+            "backgroundPaintCount": 62,
+            "diameter": 200,
+            "frames": 62,
+            "inputCount": 142,
+            "intervalP95Ms": 26.57109999999966,
+            "latencyP95Ms": 24.998499999999694,
+            "paintLayerPaintCount": 62,
+            "paintedLogicalPixels": 99200000,
+            "pressMs": 17.2639,
+            "updateP95Ms": 0.8261
+        }
+    ],
+    "passed": true,
+    "stage": 0
+}
