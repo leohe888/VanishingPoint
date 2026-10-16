@@ -37,7 +37,7 @@ target_compile_definitions(tst_qmlboundaries PRIVATE VP_TEST_DIR="${CMAKE_CURREN
 set_tests_properties(tst_qmlboundaries PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software")
 foreach(target IN ITEMS tst_eyedroppertool tst_canvasnavigation tst_floatingselectiontransformtool)
     target_compile_definitions(${target} PRIVATE
-        VP_EYEDROPPER_CURSOR="${PROJECT_SOURCE_DIR}/assets/icons/dropper.png"
+        VP_EYEDROPPER_CURSOR="${PROJECT_SOURCE_DIR}/assets/cursors/image_absorption.svg"
         VP_CURSOR_DIR="${PROJECT_SOURCE_DIR}/assets/cursors")
 endforeach()
 

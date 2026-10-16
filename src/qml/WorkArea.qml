@@ -25,7 +25,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 controller: vpController
-                eyedropperCursorSource: "qrc:/assets/icons/dropper.png"
+                eyedropperCursorSource: "qrc:/assets/cursors/image_absorption.svg"
                 zoomCursorDirectory: "qrc:/assets/cursors/"
                 clip: true
             }
