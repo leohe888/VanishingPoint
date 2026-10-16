@@ -173,6 +173,7 @@ bool resolveQuad(const QVector<PerspectivePlane> &planes, const QSize &canvasSiz
     // 查找包含画布点的最上层平面；命中时复制其四边形并立即返回成功。
     const int index = topmostPlaneIndexAt(planes, point);
     if (index >= 0) {
+        if (!planes[index].quad().isProjectable()) return false;
         *quad = planes[index].quad();
         return true;
     }

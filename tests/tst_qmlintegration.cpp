@@ -38,7 +38,7 @@ private slots:
             return find(find, window->contentItem());
         };
         for (auto tool : {VpTools::CreatePlane, VpTools::EditPlane, VpTools::Marquee, VpTools::CloneStamp,
-                          VpTools::Brush, VpTools::Transform, VpTools::Hand, VpTools::Zoom})
+                          VpTools::Brush, VpTools::Transform, VpTools::Eyedropper, VpTools::Hand, VpTools::Zoom})
             QVERIFY(toolButton(tool));
         auto *brush = toolButton(VpTools::Brush);
         auto *transform = toolButton(VpTools::Transform);
@@ -55,16 +55,16 @@ private slots:
         QImage image(64,64,QImage::Format_ARGB32); image.fill(Qt::white); QVERIFY(image.save(path));
         QVERIFY(canvas->controller()->openImage(QUrl::fromLocalFile(path)));
         image=QImage(8,8,QImage::Format_ARGB32); image.fill(Qt::red);
-        auto &doc=canvas->controller()->document(); doc.addFloatingImage(image); canvas->controller()->undo();
-        QVERIFY(doc.floatingImages().isEmpty()); QVERIFY(canvas->controller()->canRedo());
+        auto &doc=canvas->controller()->document(); doc.addFloatingSelection(makeTestSelection(image)); canvas->controller()->undo();
+        QVERIFY(doc.floatingSelections().isEmpty()); QVERIFY(canvas->controller()->canRedo());
         QObject *redo=nullptr;
         for(auto *object:root->findChildren<QObject*>())
             if(object->property("sequences").toStringList().contains("Ctrl+Y")) redo=object;
         QVERIFY(redo); QVERIFY(QMetaObject::invokeMethod(redo,"activated",Qt::DirectConnection));
-        QCOMPARE(doc.floatingImages().size(),1); QVERIFY(!canvas->controller()->canRedo());
+        QCOMPARE(doc.floatingSelections().size(),1); QVERIFY(!canvas->controller()->canRedo());
         QVERIFY(canvas->controller()->canUndo());
         QVERIFY(transform->property("enabled").toBool());
-        doc.removeFloatingImage(0);
+        doc.removeFloatingSelection(0);
         QVERIFY(!transform->property("enabled").toBool());
         doc.beginEdit(); doc.appendPlane(makeTestPlane()); doc.commitEdit(true);
         QVERIFY(brush->property("enabled").toBool());
@@ -99,6 +99,27 @@ private slots:
         QVERIFY(QMetaObject::invokeMethod(strokeOptions, "diameterEdited", Qt::DirectConnection,
                                          Q_ARG(int, 51)));
         QCOMPARE(controller.brushDiameter(), 51);
+        controller.setBrushHealMode(1);
+        QCOMPARE(strokeOptions->property("healMode").toInt(), 1);
+        QVERIFY(QMetaObject::invokeMethod(strokeOptions, "healModeEdited", Q_ARG(int, 2)));
+        QCOMPARE(controller.brushHealMode(), 2);
+        controller.setTool(VpTools::Marquee);
+        QVERIFY(brushOptions->property("marqueeOptionsVisible").toBool());
+        auto *moveMode = root->findChild<QObject *>("marqueeMoveMode");
+        QVERIFY(moveMode);
+        QCOMPARE(moveMode->property("enabled").toBool(), controller.marqueeMoveModeEnabled());
+        doc.addFloatingSelection(makeTestSelection(image));
+        controller.setTool(VpTools::Transform);
+        QVERIFY(brushOptions->property("transformOptionsVisible").toBool());
+        auto *flip = root->findChild<QObject *>("flipHorizontal");
+        QVERIFY(flip && flip->property("enabled").toBool());
+        controller.setFlippedHorizontally(true);
+        QCOMPARE(flip->property("checked").toBool(), true);
+        flip->setProperty("checked", false);
+        QVERIFY(QMetaObject::invokeMethod(flip, "clicked"));
+        QVERIFY(!controller.flippedHorizontally());
+        controller.setTool(VpTools::Eyedropper);
+        QVERIFY(brushOptions->property("eyedropperOptionsVisible").toBool());
         engine.collectGarbage();
         QCOMPARE(QQmlEngine::objectOwnership(&controller), QQmlEngine::CppOwnership);
         QVERIFY(canvas->controller()->openImage(QUrl::fromLocalFile(path)));

@@ -47,17 +47,14 @@ bool PerspectiveTransform::mapPoint(const QTransform &transform, const QPointF &
     return true;
 }
 
-bool PerspectiveTransform::mapsDomain(const QTransform &transform, const QRectF &domain)
+bool PerspectiveTransform::canProject(const QRectF &domain) const
 {
-    qreal sign = 0;
+    if (!m_valid)
+        return false;
     for (const QPointF &p : {domain.topLeft(), domain.topRight(), domain.bottomLeft(), domain.bottomRight()}) {
         QPointF mapped;
-        if (!mapPoint(transform, p, &mapped))
+        if (!mapForward(p, &mapped))
             return false;
-        const qreal w = transform.m13()*p.x()+transform.m23()*p.y()+transform.m33();
-        if (sign != 0 && (w > 0) != (sign > 0))
-            return false;
-        sign = w;
     }
     return true;
 }

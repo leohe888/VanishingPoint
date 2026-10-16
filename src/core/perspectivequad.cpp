@@ -5,6 +5,7 @@
 #include <QtMath>
 
 #include <utility>
+#include <cmath>
 
 PerspectiveQuad::PerspectiveQuad(Corners canvasCorners, Corners surfaceCorners)
     : m_canvasCorners(std::move(canvasCorners)),
@@ -28,14 +29,14 @@ void PerspectiveQuad::setSurfaceCorner(int index, const QPointF &point)
 
 QPolygonF PerspectiveQuad::canvasPolygon() const
 {
-    return {m_canvasCorners[0], m_canvasCorners[1],
-            m_canvasCorners[2], m_canvasCorners[3]};
+    return QPolygonF(QVector<QPointF>{m_canvasCorners[0], m_canvasCorners[1],
+                                     m_canvasCorners[2], m_canvasCorners[3]});
 }
 
 QPolygonF PerspectiveQuad::surfacePolygon() const
 {
-    return {m_surfaceCorners[0], m_surfaceCorners[1],
-            m_surfaceCorners[2], m_surfaceCorners[3]};
+    return QPolygonF(QVector<QPointF>{m_surfaceCorners[0], m_surfaceCorners[1],
+                                     m_surfaceCorners[2], m_surfaceCorners[3]});
 }
 
 QVector<QPointF> PerspectiveQuad::controlPoints() const
@@ -82,8 +83,8 @@ bool PerspectiveQuad::isValid() const
     if (qAbs(twiceArea) / 2.0 < MinimumCanvasArea)
         return false;
 
-    const QPolygonF unit{QPointF(0, 0), QPointF(1, 0),
-                         QPointF(1, 1), QPointF(0, 1)};
+    const QPolygonF unit(QVector<QPointF>{QPointF(0, 0), QPointF(1, 0),
+                                        QPointF(1, 1), QPointF(0, 1)});
     QTransform transform;
     if (!QTransform::quadToQuad(unit, canvasPolygon(), transform))
         return false;
@@ -103,6 +104,59 @@ bool PerspectiveQuad::isValid() const
             return false;
     }
     return true;
+}
+
+PerspectiveQuad::Status PerspectiveQuad::status(const QSize &backgroundSize) const
+{
+    if (!isProjectable()) return Status::InvalidAspectRatio;
+    // Same camera assumptions as plane extrusion: square pixels, principal point
+    // at image center. Adobe does not publish its classification thresholds.
+    const QRectF bounds = canvasPolygon().boundingRect();
+    const QPointF center = backgroundSize.isEmpty() ? bounds.center()
+        : QPointF(backgroundSize.width() / 2.0, backgroundSize.height() / 2.0);
+    const qreal extent = backgroundSize.isEmpty() ? qMax(bounds.width(), bounds.height())
+        : qMax(backgroundSize.width(), backgroundSize.height());
+    const QPolygonF unit(QVector<QPointF>{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)});
+    QPolygonF normalized;
+    for (const QPointF &point : canvasPolygon()) normalized.append((point - center) / extent);
+    QTransform h;
+    if (!QTransform::quadToQuad(unit, normalized, h)) return Status::InvalidAspectRatio;
+    const qreal ux = h.m11(), uy = h.m12(), uw = h.m13();
+    const qreal vx = h.m21(), vy = h.m22(), vw = h.m23();
+    const qreal un = std::hypot(std::hypot(ux, uy), uw), vn = std::hypot(std::hypot(vx, vy), vw);
+    if (!qIsFinite(un) || !qIsFinite(vn) || un < 1e-12 || vn < 1e-12)
+        return Status::UnresolvedVanishingPoints;
+    const bool uInfinite = qAbs(uw / un) < 1e-9, vInfinite = qAbs(vw / vn) < 1e-9;
+    qreal focalSquared = 1.2 * 1.2;
+    if (uInfinite || vInfinite) {
+        // Parallel opposite edges give a valid direction at infinity, not an
+        // automatic warning. Inconsistent orthogonality cannot be resolved.
+        if (qAbs((ux * vx + uy * vy) / (un * vn)) > .02)
+            return Status::UnresolvedVanishingPoints;
+    } else {
+        focalSquared = -(ux * vx + uy * vy) / (uw * vw);
+        if (!qIsFinite(focalSquared)) return Status::UnresolvedVanishingPoints;
+        if (focalSquared <= 0) return Status::InvalidAspectRatio;
+        if (focalSquared < .08 * .08 || focalSquared > 20 * 20)
+            return Status::UnresolvedVanishingPoints;
+    }
+    const qreal width = std::sqrt(ux * ux + uy * uy + focalSquared * uw * uw);
+    const qreal height = std::sqrt(vx * vx + vy * vy + focalSquared * vw * vw);
+    const qreal aspect = width / height;
+    if (!qIsFinite(aspect) || aspect < 1e-4 || aspect > 1e4)
+        return Status::InvalidAspectRatio;
+    return Status::Valid;
+}
+
+QColor PerspectiveQuad::guideColor(bool, const QSize &backgroundSize) const
+{
+    QColor color;
+    switch (status(backgroundSize)) {
+    case Status::Valid: color = QColor("#017AFF"); break;
+    case Status::UnresolvedVanishingPoints: color = QColor("#E6B94A"); break;
+    case Status::InvalidAspectRatio: color = QColor("#E60012"); break;
+    }
+    return color;
 }
 
 bool PerspectiveQuad::containsCanvasPoint(const QPointF &point) const
@@ -126,12 +180,6 @@ int PerspectiveQuad::controlPointIndexAt(const QPointF &point, qreal tolerance) 
 PerspectiveTransform PerspectiveQuad::surfaceToCanvasTransform() const
 {
     return {surfacePolygon(), canvasPolygon()};
-}
-
-PerspectiveTransform PerspectiveQuad::uvToCanvasTransform() const
-{
-    return {{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)},
-            canvasPolygon()};
 }
 
 bool PerspectiveQuad::isProjectable() const

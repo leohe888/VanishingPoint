@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/perspectiveplane.h"
+#include "../core/perspectiveplane.h"
 
 #include <QPointF>
 #include <QVector>

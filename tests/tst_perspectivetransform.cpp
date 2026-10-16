@@ -6,23 +6,23 @@
 // 展开图 100×70 的规整矩形 -> 画布上同尺寸、平移 (10, 10) 的矩形（仿射，结果可手算）
 static QPolygonF rectSurface()
 {
-    return QPolygonF{QPointF(0, 0), QPointF(100, 0), QPointF(100, 70), QPointF(0, 70)};
+    return QPolygonF(QVector<QPointF>{QPointF(0, 0), QPointF(100, 0), QPointF(100, 70), QPointF(0, 70)});
 }
 
 static QPolygonF rectCanvas()
 {
-    return QPolygonF{QPointF(10, 10), QPointF(110, 10), QPointF(110, 80), QPointF(10, 80)};
+    return QPolygonF(QVector<QPointF>{QPointF(10, 10), QPointF(110, 10), QPointF(110, 80), QPointF(10, 80)});
 }
 
 // 展开图 100×100 -> 画布上底 200、下底 320 的梯形（真实透视，非仿射）
 static QPolygonF trapezoidSurface()
 {
-    return QPolygonF{QPointF(0, 0), QPointF(100, 0), QPointF(100, 100), QPointF(0, 100)};
+    return QPolygonF(QVector<QPointF>{QPointF(0, 0), QPointF(100, 0), QPointF(100, 100), QPointF(0, 100)});
 }
 
 static QPolygonF trapezoidCanvas()
 {
-    return QPolygonF{QPointF(100, 0), QPointF(300, 0), QPointF(360, 200), QPointF(40, 200)};
+    return QPolygonF(QVector<QPointF>{QPointF(100, 0), QPointF(300, 0), QPointF(360, 200), QPointF(40, 200)});
 }
 
 // 逐点比较：失败时把两边的数值都打出来，方便定位偏差
@@ -226,11 +226,11 @@ void PerspectiveTransformTest::rejectsDegenerateInputs_data()
     QTest::addColumn<QPolygonF>("degenerate");
     QTest::addColumn<bool>("invalidSource");
     const QList<QPair<QByteArray, QPolygonF>> cases{
-        {"collapsed", {QPointF(5, 5), QPointF(5, 5), QPointF(5, 5), QPointF(5, 5)}},
-        {"horizontal-line", {QPointF(0, 0), QPointF(10, 0), QPointF(20, 0), QPointF(30, 0)}},
-        {"vertical-line", {QPointF(0, 0), QPointF(0, 10), QPointF(0, 20), QPointF(0, 30)}},
-        {"zero-width", {QPointF(5, 0), QPointF(5, 0), QPointF(5, 70), QPointF(5, 70)}},
-        {"zero-height", {QPointF(0, 5), QPointF(100, 5), QPointF(100, 5), QPointF(0, 5)}}
+        {"collapsed", QPolygonF(QVector<QPointF>{QPointF(5, 5), QPointF(5, 5), QPointF(5, 5), QPointF(5, 5)})},
+        {"horizontal-line", QPolygonF(QVector<QPointF>{QPointF(0, 0), QPointF(10, 0), QPointF(20, 0), QPointF(30, 0)})},
+        {"vertical-line", QPolygonF(QVector<QPointF>{QPointF(0, 0), QPointF(0, 10), QPointF(0, 20), QPointF(0, 30)})},
+        {"zero-width", QPolygonF(QVector<QPointF>{QPointF(5, 0), QPointF(5, 0), QPointF(5, 70), QPointF(5, 70)})},
+        {"zero-height", QPolygonF(QVector<QPointF>{QPointF(0, 5), QPointF(100, 5), QPointF(100, 5), QPointF(0, 5)})}
     };
     for (const auto &entry : cases) {
         const QByteArray sourceRow = "source-" + entry.first;
@@ -291,7 +291,7 @@ void PerspectiveTransformTest::mapsAffineCoordinates()
     const PerspectiveTransform transform(source, target);
     QVERIFY(transform.isValid());
     QVERIFY(transform.forward().isAffine());
-    QList<QPointF> points = source;
+    QList<QPointF> points = source.toList();
     points.append({QPointF(50, 35), QPointF(12.5, 63.75), QPointF(-30, 100),
                    QPointF(150, -25), QPointF(0, 35), QPointF(50, 0)});
     for (const QPointF &point : points) {
@@ -339,7 +339,7 @@ void PerspectiveTransformTest::mapsAnalyticalPerspectivePoints()
 
 void PerspectiveTransformTest::mapsBetweenNonRectangularQuads()
 {
-    const QPolygonF source{QPointF(-3, 7), QPointF(5, 9), QPointF(6, 16), QPointF(-4, 15)};
+    const QPolygonF source(QVector<QPointF>{QPointF(-3, 7), QPointF(5, 9), QPointF(6, 16), QPointF(-4, 15)});
     QPolygonF target;
     for (const QPointF &point : source)
         target.append(projectivePoint(point));
@@ -347,7 +347,7 @@ void PerspectiveTransformTest::mapsBetweenNonRectangularQuads()
     const PerspectiveTransform swapped(target, source);
     QVERIFY(transform.isValid());
     QVERIFY(swapped.isValid());
-    QList<QPointF> points = source;
+    QList<QPointF> points = source.toList();
     points.append({QPointF(0, 10), QPointF(2, 12), QPointF(-8, 5), QPointF(10, 18)});
     for (const QPointF &point : points) {
         const QPointF expected = projectivePoint(point);

@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Controls.Basic as Controls
 import QtQuick.Dialogs
 import VanishingPoint 1.0
 
@@ -11,6 +12,9 @@ Rectangle {
     border.width: 1
 
     // 只显示当前工具有意义的选项
+    readonly property bool eyedropperOptionsVisible: vpController.tool === VpTools.Eyedropper
+    readonly property bool marqueeOptionsVisible: vpController.tool === VpTools.Marquee
+    readonly property bool transformOptionsVisible: vpController.tool === VpTools.Transform
     readonly property bool brushOptionsVisible: vpController.tool === VpTools.Brush
     readonly property bool cloneOptionsVisible: vpController.tool === VpTools.CloneStamp
     readonly property bool planeOptionsVisible: vpController.tool === VpTools.CreatePlane
@@ -21,12 +25,15 @@ Rectangle {
         anchors.leftMargin: 10
         anchors.rightMargin: 10
         spacing: 18
-        visible: root.brushOptionsVisible
+        visible: root.brushOptionsVisible || root.eyedropperOptionsVisible
 
         StrokeOptions {
+            visible: root.brushOptionsVisible
             diameter: vpController.brushDiameter
             hardness: vpController.brushHardness
             strokeOpacity: vpController.brushOpacity
+            healMode: vpController.brushHealMode
+            onHealModeEdited: (value) => vpController.brushHealMode = value
             onDiameterEdited: (value) => vpController.brushDiameter = value
             onHardnessEdited: (value) => vpController.brushHardness = value
             onOpacityEdited: (value) => vpController.brushOpacity = value
@@ -81,6 +88,8 @@ Rectangle {
             diameter: vpController.cloneDiameter
             hardness: vpController.cloneHardness
             strokeOpacity: vpController.cloneOpacity
+            healMode: vpController.cloneHealMode
+            onHealModeEdited: (value) => vpController.cloneHealMode = value
             onDiameterEdited: (value) => vpController.cloneDiameter = value
             onHardnessEdited: (value) => vpController.cloneHardness = value
             onOpacityEdited: (value) => vpController.cloneOpacity = value
@@ -157,5 +166,65 @@ Rectangle {
         Item {
             Layout.fillWidth: true
         }
+    }
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: 10
+        spacing: 18
+        visible: root.transformOptionsVisible
+        enabled: vpController.transformEditable
+        Controls.CheckBox {
+            palette.windowText: VpTheme.text
+            objectName: "flipHorizontal"
+            text: qsTr("水平翻转")
+            checked: vpController.flippedHorizontally
+            onClicked: vpController.flippedHorizontally = checked
+        }
+        Controls.CheckBox {
+            palette.windowText: VpTheme.text
+            objectName: "flipVertical"
+            text: qsTr("垂直翻转")
+            checked: vpController.flippedVertically
+            onClicked: vpController.flippedVertically = checked
+        }
+        Item { Layout.fillWidth: true }
+    }
+    RowLayout {
+        anchors.fill: parent
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10
+        spacing: 18
+        visible: root.marqueeOptionsVisible
+        OptionInput {
+            label: qsTr("羽化"); from: 0; to: 50
+            value: vpController.marqueeFeather
+            onEdited: (value) => vpController.marqueeFeather = value
+        }
+        OptionInput {
+            label: qsTr("不透明度"); from: 0; to: 100
+            value: vpController.marqueeOpacity
+            onEdited: (value) => vpController.marqueeOpacity = value
+        }
+        Text { text: qsTr("修复"); color: VpTheme.text }
+        Controls.ComboBox {
+            palette.text: VpTheme.text
+            palette.button: VpTheme.inputBackground
+            palette.buttonText: VpTheme.text
+            model: [qsTr("关"), qsTr("明亮度"), qsTr("开")]
+            currentIndex: vpController.marqueeHealMode
+            onActivated: vpController.marqueeHealMode = currentIndex
+        }
+        Text { text: qsTr("移动模式"); color: VpTheme.text }
+        Controls.ComboBox {
+            palette.text: VpTheme.text
+            palette.button: VpTheme.inputBackground
+            palette.buttonText: VpTheme.text
+            objectName: "marqueeMoveMode"
+            model: [qsTr("目标"), qsTr("源")]
+            enabled: vpController.marqueeMoveModeEnabled
+            currentIndex: vpController.marqueeMoveMode
+            onActivated: vpController.marqueeMoveMode = currentIndex
+        }
+        Item { Layout.fillWidth: true }
     }
 }

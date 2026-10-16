@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/perspectiveplane.h"
+#include "../core/perspectiveplane.h"
 
 class PlaneEditTool
 {
@@ -13,6 +13,7 @@ public:
     bool rotating() const { return m_mode == Mode::Rotate; }
     bool resizing() const { return m_mode == Mode::Edge; }
     int edgeIndex() const { return m_edgeIndex; }
+    int controlPointIndex() const { return m_controlPointIndex; }
 
 private:
     PerspectivePlane m_initialPlane;

@@ -1,9 +1,21 @@
-#include <QtTest>
-
 #include <algorithm>
 #include <limits>
+#include <QGuiApplication>
+#include <QPainter>
+#include <QPainterPath>
+#include <QtTest>
 
+#include "canvas/auxiliaryoverlayitem.h"
+#include "canvas/vpcontroller.h"
+#include "core/scenerenderer.h"
+
+// Use the general surface mapping API for normalized coordinates.
 #include "core/perspectivequad.h"
+static PerspectiveTransform normalizedMapping(const PerspectiveQuad &quad)
+{
+    return PerspectiveQuad(quad.canvasCorners(),
+        {QPointF(0,0), QPointF(1,0), QPointF(1,1), QPointF(0,1)}).surfaceToCanvasTransform();
+}
 
 using Corners = PerspectiveQuad::Corners;
 Q_DECLARE_METATYPE(Corners)
@@ -42,6 +54,7 @@ class PerspectiveQuadTest : public QObject
     Q_OBJECT
 
 private slots:
+    void diagnosticStatusAndGuideRendering();
     void defaultState();
     void storesIndependentCoordinates();
     void settersAndCopies();
@@ -73,7 +86,7 @@ void PerspectiveQuadTest::defaultState()
     QVERIFY(!quad.isValid());
     QVERIFY(!quad.containsCanvasPoint(QPointF(1, 1)));
     QVERIFY(!quad.surfaceToCanvasTransform().isValid());
-    QVERIFY(!quad.uvToCanvasTransform().isValid());
+    QVERIFY(!normalizedMapping(quad).isValid());
 }
 
 void PerspectiveQuadTest::storesIndependentCoordinates()
@@ -219,7 +232,7 @@ void PerspectiveQuadTest::validityDoesNotCheckSurface()
     PerspectiveQuad quad(canvasRectangle(), Corners{});
     QVERIFY(quad.isValid());
     QVERIFY(!quad.surfaceToCanvasTransform().isValid());
-    QVERIFY(quad.uvToCanvasTransform().isValid());
+    QVERIFY(normalizedMapping(quad).isValid());
     quad.setSurfaceCorner(2, QPointF(std::numeric_limits<qreal>::quiet_NaN(), 0));
     QVERIFY(quad.isValid());
 }
@@ -270,12 +283,6 @@ void PerspectiveQuadTest::hitsControlPoints()
     QCOMPARE(quad.controlPointIndexAt(point + QPointF(3, 4), 4.999), -1);
 }
 
-
-
-
-
-
-
 void PerspectiveQuadTest::invalidHitInput_data()
 {
     QTest::addColumn<QPointF>("point");
@@ -306,7 +313,7 @@ void PerspectiveQuadTest::affineTransforms()
 {
     const PerspectiveQuad quad(canvasRectangle(), surfaceRectangle());
     const PerspectiveTransform surface = quad.surfaceToCanvasTransform();
-    const PerspectiveTransform uv = quad.uvToCanvasTransform();
+    const PerspectiveTransform uv = normalizedMapping(quad);
     QVERIFY(surface.isValid());
     QVERIFY(uv.isValid());
     const Corners unit{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)};
@@ -350,7 +357,7 @@ void PerspectiveQuadTest::perspectiveTransforms()
     const PerspectiveQuad quad(trapezoid(),
         {QPointF(-20, 30), QPointF(180, 30), QPointF(180, 110), QPointF(-20, 110)});
     const QPointF surfacePoint(-20 + 200 * uvPoint.x(), 30 + 80 * uvPoint.y());
-    const PerspectiveTransform uv = quad.uvToCanvasTransform();
+    const PerspectiveTransform uv = normalizedMapping(quad);
     const PerspectiveTransform surface = quad.surfaceToCanvasTransform();
     QVERIFY(uv.isValid());
     QVERIFY(surface.isValid());
@@ -380,7 +387,7 @@ void PerspectiveQuadTest::transformsAreSnapshots()
     quad.setSurfaceCorners({QPointF(0, 0), QPointF(200, 0), QPointF(200, 140), QPointF(0, 140)});
     QVERIFY(quad.surfaceToCanvasTransform().mapForward(QPointF(50, 35), &result));
     comparePoints(result, QPointF(70, 65));
-    QVERIFY(quad.uvToCanvasTransform().mapForward(QPointF(0.5, 0.5), &result));
+    QVERIFY(normalizedMapping(quad).mapForward(QPointF(0.5, 0.5), &result));
     comparePoints(result, QPointF(120, 100));
 }
 
@@ -389,15 +396,110 @@ void PerspectiveQuadTest::degenerateTransforms()
     const PerspectiveQuad collapsedCanvas(Corners{}, surfaceRectangle());
     const PerspectiveQuad collapsedSurface(canvasRectangle(), Corners{});
     QVERIFY(!collapsedCanvas.surfaceToCanvasTransform().isValid());
-    QVERIFY(!collapsedCanvas.uvToCanvasTransform().isValid());
+    QVERIFY(!normalizedMapping(collapsedCanvas).isValid());
     QVERIFY(!collapsedSurface.surfaceToCanvasTransform().isValid());
-    QVERIFY(collapsedSurface.uvToCanvasTransform().isValid());
+    QVERIFY(normalizedMapping(collapsedSurface).isValid());
     QPointF result(123, 456);
-    QVERIFY(!collapsedCanvas.uvToCanvasTransform().mapForward(QPointF(0.5, 0.5), &result));
+    QVERIFY(!normalizedMapping(collapsedCanvas).mapForward(QPointF(0.5, 0.5), &result));
     QCOMPARE(result, QPointF(123, 456));
     QVERIFY(!collapsedSurface.surfaceToCanvasTransform().mapInverse(QPointF(60, 45), &result));
     QCOMPARE(result, QPointF(123, 456));
 }
 
-QTEST_APPLESS_MAIN(PerspectiveQuadTest)
+void PerspectiveQuadTest::diagnosticStatusAndGuideRendering()
+{
+    QQuickWindow window;
+    window.resize(300, 300);
+    window.show();
+    QCoreApplication::processEvents();
+    const auto check = [](bool passed, const char *message) {
+        QVERIFY2(passed, message);
+    };
+    using Status = PerspectiveQuad::Status;
+    const QSize size(300, 300);
+    const PerspectiveQuad::Corners surface{{QPointF(0, 0), QPointF(200, 0), QPointF(200, 150), QPointF(0, 150)}};
+    const PerspectiveQuad rectangle({QPointF(50, 50), QPointF(250, 50), QPointF(250, 250), QPointF(50, 250)}, surface);
+    const PerspectiveQuad yellow({QPointF(50, 50), QPointF(200, 50), QPointF(230, 200), QPointF(80, 200)}, surface);
+    const PerspectiveQuad degenerate({QPointF(50, 50), QPointF(250, 50), QPointF(100, 100), QPointF(50, 250)}, surface);
+    const auto fromHomography = [&](const QTransform &h) {
+        PerspectiveQuad::Corners corners;
+        const PerspectiveQuad::Corners uv{{QPointF(0, 0), QPointF(1, 0), QPointF(1, 1), QPointF(0, 1)}};
+        for (int i = 0; i < 4; ++i) corners[i] = h.map(uv[i]) * 300 + QPointF(150, 150);
+        return PerspectiveQuad(corners, surface);
+    };
+    const auto blue = fromHomography(QTransform(.4, .05, .1, -.12, .4, .2, -.3, -.3, 1));
+    const auto red = fromHomography(QTransform(.4, .05, .1, -.05, .5, .2, -.3, -.3, 1));
+    check(rectangle.status(size) == Status::Valid, "parallel rectangle is blue");
+    check(blue.status(size) == Status::Valid, "recoverable orthogonal perspective is blue");
+    check(yellow.status(size) == Status::UnresolvedVanishingPoints, "unresolved orthogonality is yellow");
+    check(red.status(size) == Status::InvalidAspectRatio && red.isProjectable(), "impossible metric aspect is red but safe 2D projection remains");
+    check(degenerate.status(size) == Status::InvalidAspectRatio && !degenerate.isProjectable(), "degenerate geometry is red");
+    for (const auto &quad : {rectangle, blue, yellow, red}) {
+        auto scaled = quad;
+        for (int i = 0; i < 4; ++i) scaled.setCanvasCorner(i, quad.canvasCorners()[i] * 2);
+        check(scaled.status(QSize(600, 600)) == quad.status(size), "status invariant under image scale");
+        check(quad.guideColor(false, size) == quad.guideColor(true, size), "inactive plane preserves status color");
+        check(quad.guideColor(true, size).alpha() == 255, "active plane border is opaque");
+    }
+    auto invalid = rectangle;
+    invalid.setCanvasCorner(0, QPointF(std::numeric_limits<qreal>::infinity(), 1));
+    check(!invalid.isProjectable() && invalid.status(size) == Status::InvalidAspectRatio, "nonfinite coordinates rejected");
+
+    QImage background(size, QImage::Format_ARGB32_Premultiplied); background.fill(Qt::white);
+    for (const auto &quad : {blue, yellow, red}) {
+        VpDocument doc; doc.setImage(background);
+        PerspectivePlane plane(quad.canvasCorners(), quad.surfaceCorners());
+        check(doc.appendPlane(plane) == 0, "warning plane retained for editing");
+        doc.setSelectedPlane(0);
+        QImage guides(size, QImage::Format_ARGB32_Premultiplied); guides.fill(Qt::transparent);
+        QPainter painter(&guides);
+        SceneRenderer renderer(doc); SceneRenderer::Guides options;
+        options.editHandlesVisible = true;
+        renderer.renderGuides(painter, 1, options); painter.end();
+        const QColor expected = quad.guideColor(true, size);
+        int matches = 0;
+        for (int y = 0; y < guides.height(); ++y)
+            for (int x = 0; x < guides.width(); ++x) {
+                const QColor actual = guides.pixelColor(x, y);
+                if (actual.alpha() && qAbs(actual.red() - expected.red()) < 3
+                    && qAbs(actual.green() - expected.green()) < 3 && qAbs(actual.blue() - expected.blue()) < 3) ++matches;
+            }
+        check(matches > 30, "raster guides use diagnostic color");
+        AuxiliaryOverlayItem overlay(window.contentItem()); overlay.setSize(size);
+        overlay.setPlaneGuides({plane}, 0, true, false, nullptr, 50, 1, {}, size);
+        AuxiliaryRasterItem *raster = nullptr;
+        for (QQuickItem *child : overlay.childItems())
+            if (auto *item = dynamic_cast<AuxiliaryRasterItem *>(child)) raster = item;
+        check(raster && !raster->pictures.isEmpty(), "overlay builds software guide commands");
+        if (raster && !raster->pictures.isEmpty()) {
+            QImage overlayImage(size, QImage::Format_ARGB32_Premultiplied); overlayImage.fill(Qt::transparent);
+            QPainter overlayPainter(&overlayImage); raster->paint(&overlayPainter); overlayPainter.end();
+            int overlayMatches = 0;
+            for (int y = 0; y < overlayImage.height(); ++y)
+                for (int x = 0; x < overlayImage.width(); ++x) {
+                    const QColor actual = overlayImage.pixelColor(x, y);
+                    if (actual.alpha() > 120 && qAbs(actual.red() - expected.red()) < 3
+                        && qAbs(actual.green() - expected.green()) < 3 && qAbs(actual.blue() - expected.blue()) < 3) ++overlayMatches;
+                }
+            check(overlayMatches > 30, "cached overlay uses diagnostic color");
+        }
+        const auto builds = overlay.planeGeometryBuildCount();
+        overlay.setPlaneGuides({plane}, 0, true, false, nullptr, 50, 1, {}, size);
+        check(overlay.planeGeometryBuildCount() == builds, "unchanged status retains cached geometry");
+        overlay.setPlaneGuides({plane}, 0, true, false, nullptr, 50, 1, {}, size, 2);
+        if (raster) {
+            QImage dragged(size, QImage::Format_ARGB32_Premultiplied); dragged.fill(Qt::transparent);
+            QPainter draggedPainter(&dragged); raster->paint(&draggedPainter); draggedPainter.end();
+            const QColor center = dragged.pixelColor(quad.canvasCorners()[2].toPoint());
+            check(center.alpha() == 255 && qAbs(center.red() - expected.red()) < 3
+                  && qAbs(center.green() - expected.green()) < 3 && qAbs(center.blue() - expected.blue()) < 3,
+                  "dragged handle becomes solid status color without geometry change");
+        }
+        overlay.setPlaneGuides({plane}, 0, true, false, nullptr, 50, 1, {}, size);
+        check(overlay.planeGeometryBuildCount() == builds + 2, "release restores normal handle without geometry change");
+    }
+
+}
+
+QTEST_MAIN(PerspectiveQuadTest)
 #include "tst_perspectivequad.moc"

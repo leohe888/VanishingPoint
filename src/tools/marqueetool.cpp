@@ -2,6 +2,7 @@
 
 #include <QPainter>
 #include <QtMath>
+#include <cmath>
 
 namespace {
 QSize extractionSize(const QRectF &rect)
@@ -18,12 +19,18 @@ bool MarqueeTool::beginCreate(const QVector<PerspectivePlane> &planes, const QPo
 {
     clear();
     const int planeIndex = topmostPlaneIndexAt(planes, point);
-    if (planeIndex < 0)
+    if (planeIndex < 0 || !planes[planeIndex].quad().isProjectable())
         return false;
     const PerspectivePlane &host = planes[planeIndex];
     for (const PerspectivePlane &plane : planes) {
-        if (plane.surfaceGroupId() == host.surfaceGroupId())
+        if (plane.surfaceGroupId() == host.surfaceGroupId() && plane.quad().isProjectable()) {
             m_selectionFaces.append(plane.quad());
+            m_selectionMappings.append(plane.quad().surfaceToCanvasTransform());
+            QPainterPath path;
+            path.addPolygon(plane.quad().surfacePolygon());
+            path.closeSubpath();
+            m_selectionFacePaths.append(path);
+        }
     }
     if (!host.quad().surfaceToCanvasTransform().mapInverse(point, &m_selectionPressSurface)) {
         clear();
@@ -53,7 +60,6 @@ bool MarqueeTool::beginFill(const QPointF &point, const QImage &sampleSource,
         return false;
     m_selectionAction = Action::Fill;
     m_selectionSampleSource = sampleSource;
-    m_selectionPaintBefore = paintBefore;
     m_selectionFillOffset = QPointF();
     return true;
 }
@@ -66,7 +72,6 @@ void MarqueeTool::end()
     }
     m_selectionAction = Action::None;
     m_selectionSampleSource = QImage();
-    m_selectionPaintBefore = QImage();
 }
 
 bool MarqueeTool::contains(const QPointF &point) const
@@ -74,27 +79,70 @@ bool MarqueeTool::contains(const QPointF &point) const
     return !m_selectionRect.isEmpty() && outline().contains(point);
 }
 
-FloatingImage MarqueeTool::extractedImage(const QImage &bitmap, int hostFace) const
+FloatingSelection MarqueeTool::extractedSelection(const QImage &bitmap, int hostFace) const
 {
-    FloatingImage image;
+    FloatingSelection image;
     image.bitmap = bitmap;
-    image.placementOrigin = m_selectionRect.normalized().topLeft();
+    image.unhealedBitmap = m_healMode ? bitmap : QImage();
+    image.opacity = m_opacity;
+    image.healMode = m_healMode;
+    image.placementOrigin = extractionRect().topLeft();
+    const QRectF logical = m_selectionRect.normalized().translated(-image.placementOrigin);
+    const qreal sx = qreal(bitmap.width()) / qCeil(extractionRect().width());
+    const qreal sy = qreal(bitmap.height()) / qCeil(extractionRect().height());
+    image.selectionRectInBitmap = QRectF(logical.x() * sx, logical.y() * sy,
+                                         logical.width() * sx, logical.height() * sy);
     image.surfaceAttached = true;
     image.surfaceQuads = m_selectionFaces;
     image.hostQuadIndex = hostFace;
     return image;
 }
 
+QRectF MarqueeTool::extractionRect() const
+{
+    // Feather is a Gaussian selection mask, including its outward falloff.
+    const int margin = 2 * m_feather;
+    return m_selectionRect.normalized().adjusted(-margin, -margin, margin, margin);
+}
+
+void MarqueeTool::featherPixels(QImage &bitmap, const QRectF &rect) const
+{
+    if (m_feather == 0 || bitmap.isNull()) return;
+    const QRectF selection = m_selectionRect.normalized();
+    const qreal sigma = m_feather / 2.0;
+    const qreal denominator = std::sqrt(2.0) * sigma;
+    QVector<qreal> horizontal(bitmap.width()), vertical(bitmap.height());
+    const auto coverage = [denominator](qreal p, qreal start, qreal end) {
+        return .5 * (std::erf((p - start) / denominator) - std::erf((p - end) / denominator));
+    };
+    for (int x = 0; x < bitmap.width(); ++x)
+        horizontal[x] = coverage(rect.left() + (x + .5) * rect.width() / bitmap.width(), selection.left(), selection.right());
+    for (int y = 0; y < bitmap.height(); ++y)
+        vertical[y] = coverage(rect.top() + (y + .5) * rect.height() / bitmap.height(), selection.top(), selection.bottom());
+    for (int y = 0; y < bitmap.height(); ++y) {
+        auto *row = reinterpret_cast<QRgb *>(bitmap.scanLine(y));
+        for (int x = 0; x < bitmap.width(); ++x) {
+            const qreal mask = horizontal[x] * vertical[y];
+            const QRgb p = row[x];
+            row[x] = qRgba(qRound(qRed(p) * mask), qRound(qGreen(p) * mask),
+                           qRound(qBlue(p) * mask), qRound(qAlpha(p) * mask));
+        }
+    }
+}
+
 void MarqueeTool::clear()
 {
     m_selectionFaces.clear();
+    m_selectionMappings.clear();
+    m_selectionFacePaths.clear();
+    m_outline = QPainterPath();
+    m_outlineValid = false;
     m_selectionRect = QRectF();
     m_selectionStartRect = QRectF();
     m_selectionPressSurface = QPointF();
     m_selectionFillOffset = QPointF();
     m_selectionAction = Action::None;
     m_selectionSampleSource = QImage();
-    m_selectionPaintBefore = QImage();
 }
 
 // 把画面上的点换算到选区所在曲面的展开坐标：优先用包住它的那个面片，
@@ -107,27 +155,30 @@ bool MarqueeTool::mapToSurface(const QPointF &point, QPointF *surface) const
         const PerspectiveQuad &face = m_selectionFaces[i];
         if (!face.containsCanvasPoint(point))
             continue;
-        if (face.surfaceToCanvasTransform().mapInverse(point, surface))
+        if (m_selectionMappings[i].mapInverse(point, surface))
             return true;
     }
-    return m_selectionFaces.first().surfaceToCanvasTransform().mapInverse(point, surface);
+    return m_selectionMappings.first().mapInverse(point, surface);
 }
 
 // 选区轮廓：把展开坐标下的矩形按面片切开再逐片投影回画面，
 // 于是跨接缝的选区画出来会沿折线拐弯，而不是一个平面矩形。
 QPainterPath MarqueeTool::outline() const
 {
+    if (m_outlineValid && m_outlineRect == m_selectionRect)
+        return m_outline;
+    ++m_outlineBuildCount;
+    m_outlineRect = m_selectionRect;
+    m_outlineValid = true;
+    m_outline = QPainterPath();
     QPainterPath result;
     if (m_selectionRect.isEmpty())
         return result;
     QPainterPath rectangle;
     rectangle.addRect(m_selectionRect.normalized());
-    for (const PerspectiveQuad &face : m_selectionFaces) {
-        QPainterPath facePath;
-        facePath.addPolygon(face.surfacePolygon());
-        facePath.closeSubpath();
-        const QPainterPath clipped = rectangle.intersected(facePath);
-        const PerspectiveTransform mapping = face.surfaceToCanvasTransform();
+    for (int index = 0; index < m_selectionFaces.size(); ++index) {
+        const QPainterPath clipped = rectangle.intersected(m_selectionFacePaths[index]);
+        const PerspectiveTransform &mapping = m_selectionMappings[index];
         if (!mapping.isValid())
             continue;
         for (const QPolygonF &surfacePolygon : clipped.toFillPolygons()) {
@@ -145,7 +196,8 @@ QPainterPath MarqueeTool::outline() const
             }
         }
     }
-    return result;
+    m_outline = result;
+    return m_outline;
 }
 
 // 拖动过程中的选区：新建时从按下点拉到光标（Shift 取正方形），平移时整体位移
@@ -153,6 +205,7 @@ QPainterPath MarqueeTool::outline() const
 QRect MarqueeTool::update(const QPointF &point, Qt::KeyboardModifiers modifiers,
                          int gridSize, QImage *paintLayer)
 {
+    Q_UNUSED(paintLayer);
     QPointF surface;
     if (!mapToSurface(point, &surface))
         return {};
@@ -173,109 +226,32 @@ QRect MarqueeTool::update(const QPointF &point, Qt::KeyboardModifiers modifiers,
                 delta.setY(0);
             else
                 delta.setX(0);
-            delta.setX(qRound(delta.x() / qMax(1, gridSize)) * qMax(1, gridSize));
-            delta.setY(qRound(delta.y() / qMax(1, gridSize)) * qMax(1, gridSize));
+            // Keep the host Qt 5 half-grid tie rule on Qt 6 as well.
+            delta.setX(std::floor(delta.x() / qMax(1, gridSize) + .5) * qMax(1, gridSize));
+            delta.setY(std::floor(delta.y() / qMax(1, gridSize) + .5) * qMax(1, gridSize));
         }
         m_selectionRect = m_selectionStartRect.translated(delta);
-    } else if (m_selectionAction == Action::Fill && paintLayer) {
-        return fillFromPoint(point, *paintLayer);
+    } else if (m_selectionAction == Action::Fill) {
+        m_selectionFillOffset = surface - m_selectionPressSurface;
     }
     return {};
 }
 
-// Ctrl 克隆：把「按下时光标下方的区域」按单应搬进选区。每帧都从按下前的绘画层
-// 重建，避免重复移动把上一次的预览也当成取样内容叠上去。
-QRect MarqueeTool::fillFromPoint(const QPointF &point, QImage &paintLayer)
+// Alt 拖动：把选区里的内容（背景 + 绘画层 + 浮动选区）抠成一张浮动选区，
+// 并吸附到选区所在的同一组面片上，于是它还能继续被拖动、缩放。
+FloatingSelection MarqueeTool::copy(const QImage &source) const
 {
-    if (m_selectionSampleSource.isNull() || m_selectionPaintBefore.isNull())
+    QPointF point;
+    if (m_selectionFaces.isEmpty()
+        || !m_selectionFaces.first().surfaceToCanvasTransform().mapForward(m_selectionPressSurface, &point))
         return {};
-
-    QPointF sourceAnchor;
-    if (!mapToSurface(point, &sourceAnchor))
-        return {};
-    const QPointF sourceOffset = sourceAnchor - m_selectionPressSurface;
-    m_selectionFillOffset = sourceOffset;
-    const QPainterPath targetPath = outline();
-    const QRect dirty = targetPath.boundingRect().toAlignedRect().adjusted(-1, -1, 1, 1)
-                            .intersected(paintLayer.rect());
-    if (dirty.isEmpty())
-        return {};
-
-    QPainter painter(&paintLayer);
-    painter.setCompositionMode(QPainter::CompositionMode_Source);
-    painter.drawImage(dirty, m_selectionPaintBefore, dirty);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
-    QPainterPath selectionSurfacePath;
-    selectionSurfacePath.addRect(m_selectionRect.normalized());
-    // 每个「目标面 + 源面」组合是一片单应补丁，整片交给光栅器一次画完。
-    for (const PerspectiveQuad &targetFace : m_selectionFaces) {
-        QPainterPath targetSurfacePath;
-        targetSurfacePath.addPolygon(targetFace.surfacePolygon());
-        targetSurfacePath.closeSubpath();
-        const PerspectiveTransform targetMapping = targetFace.surfaceToCanvasTransform();
-        if (!targetMapping.isValid())
-            continue;
-        for (const PerspectiveQuad &sourceFace : m_selectionFaces) {
-            QPolygonF shiftedSourceSurface;
-            QPolygonF sourceCanvas;
-            QPolygonF targetCanvas;
-            for (int c = 0; c < 4; ++c) {
-                shiftedSourceSurface.append(sourceFace.surfaceCorners()[c] - sourceOffset);
-                sourceCanvas.append(sourceFace.canvasCorners()[c]);
-                QPointF mapped;
-                if (!targetMapping.mapForward(shiftedSourceSurface.last(), &mapped)) {
-                    targetCanvas.clear();
-                    break;
-                }
-                targetCanvas.append(mapped);
-            }
-            if (targetCanvas.size() != 4)
-                continue;
-
-            QPainterPath sourceDomain;
-            sourceDomain.addPolygon(shiftedSourceSurface);
-            sourceDomain.closeSubpath();
-            const QPainterPath surfacePatch = selectionSurfacePath
-                                                  .intersected(targetSurfacePath)
-                                                  .intersected(sourceDomain);
-            if (surfacePatch.isEmpty())
-                continue;
-
-            QPainterPath canvasClip;
-            for (const QPolygonF &polygon : surfacePatch.toFillPolygons()) {
-                QPolygonF mappedPolygon;
-                for (const QPointF &surfacePoint : polygon) {
-                    QPointF mapped;
-                    if (targetMapping.mapForward(surfacePoint, &mapped))
-                        mappedPolygon.append(mapped);
-                }
-                if (mappedPolygon.size() >= 3) {
-                    canvasClip.addPolygon(mappedPolygon);
-                    canvasClip.closeSubpath();
-                }
-            }
-            const PerspectiveTransform sourceToTarget(sourceCanvas, targetCanvas);
-            if (!sourceToTarget.isValid() || canvasClip.isEmpty())
-                continue;
-            painter.save();
-            painter.setClipPath(canvasClip, Qt::IntersectClip);
-            painter.setWorldTransform(sourceToTarget.forward());
-            painter.drawImage(QPointF(), m_selectionSampleSource);
-            painter.restore();
-        }
-    }
-    painter.end();
-    return dirty;
+    return copy(source, point);
 }
 
-// Alt 拖动：把选区里的内容（背景 + 绘画层 + 浮动图像）抠成一张浮动图像，
-// 并吸附到选区所在的同一组面片上，于是它还能继续被拖动、缩放。
-FloatingImage MarqueeTool::copy(const QImage &source, const QPointF &point) const
+FloatingSelection MarqueeTool::copy(const QImage &source, const QPointF &point) const
 {
-    const QRectF rect = m_selectionRect.normalized();
-    if (source.isNull() || rect.width() < 1 || rect.height() < 1 || m_selectionFaces.isEmpty())
+    const QRectF rect = extractionRect();
+    if (source.isNull() || m_selectionRect.width() < 1 || m_selectionRect.height() < 1 || m_selectionFaces.isEmpty())
         return {};
     const QSize size = extractionSize(rect);
     if (size.isEmpty())
@@ -304,40 +280,50 @@ FloatingImage MarqueeTool::copy(const QImage &source, const QPointF &point) cons
         const PerspectiveTransform mapping(face.canvasPolygon(), target);
         if (!mapping.isValid() || clip.isEmpty())
             continue;
+        const QRect sourceRoi = face.canvasPolygon().boundingRect().adjusted(-2,-2,2,2)
+                                    .toAlignedRect().intersected(source.rect());
+        if (sourceRoi.isEmpty()) continue;
         painter.save();
         painter.setClipPath(clip);
         painter.setWorldTransform(mapping.forward());
-        painter.drawImage(QPointF(), source);
+        painter.drawImage(sourceRoi.topLeft(), source, sourceRoi);
         painter.restore();
         if (face.surfacePolygon().containsPoint(pressSurface, Qt::OddEvenFill))
             hostFace = i;
     }
     painter.end();
-    return extractedImage(extracted, hostFace);
+    const QImage original = extracted;
+    featherPixels(extracted, rect);
+    FloatingSelection result = extractedSelection(extracted, hostFace);
+    result.unfeatheredBitmap = original;
+    result.feather = m_feather;
+    return result;
 }
 
-// Ctrl 拖动的结果不留在绘画层，而是落成一张浮动图像：与 fillFromPoint
-// 共用同一套「源面 → 目标面」单应，因此松手前后看到的像素不会跳变。
-FloatingImage MarqueeTool::clone() const
+// Ctrl 拖动只生成独立图像；预览可降低取样分辨率，松手时按原分辨率生成。
+FloatingSelection MarqueeTool::clone(qreal rasterScale) const
 {
-    const QRectF rect = m_selectionRect.normalized();
+    const QRectF rect = extractionRect();
     if (m_selectionSampleSource.isNull() || m_selectionFaces.isEmpty()
-        || rect.width() < 1 || rect.height() < 1) {
+        || m_selectionRect.width() < 1 || m_selectionRect.height() < 1) {
         return {};
     }
-    const QSize size = extractionSize(rect);
-    if (size.isEmpty())
+    const QSize fullSize = extractionSize(rect);
+    const QSize size(qMax(1, qCeil(fullSize.width() * qBound(.0001, rasterScale, 1.0))),
+                     qMax(1, qCeil(fullSize.height() * qBound(.0001, rasterScale, 1.0))));
+    if (fullSize.isEmpty())
         return {};
     QImage extracted(size, QImage::Format_ARGB32_Premultiplied);
     if (extracted.isNull())
         return {};
     extracted.fill(Qt::transparent);
     QPainter painter(&extracted);
+    painter.scale(qreal(size.width()) / fullSize.width(), qreal(size.height()) / fullSize.height());
     painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 
     const QPointF origin = rect.topLeft();
     QPainterPath bounds; // 位图范围，等价于选区矩形
-    bounds.addRect(QRectF(QPointF(), QSizeF(size)));
+    bounds.addRect(QRectF(QPointF(), QSizeF(fullSize)));
     int hostFace = 0;
     for (int i = 0; i < m_selectionFaces.size(); ++i) {
         if (m_selectionFaces[i].surfacePolygon()
@@ -352,14 +338,18 @@ FloatingImage MarqueeTool::clone() const
         QPainterPath targetSurface;
         targetSurface.addPolygon(targetQuad);
         targetSurface.closeSubpath();
+        const QPainterPath targetClip = bounds.intersected(targetSurface);
+        if (targetClip.isEmpty()) continue;
+        const QRectF targetBounds = targetClip.boundingRect();
         for (const PerspectiveQuad &sourceFace : m_selectionFaces) {
             QPolygonF shifted; // 源面按拖动偏移搬到目标位置后，在位图中的四边形
             for (int c = 0; c < 4; ++c)
                 shifted.append(sourceFace.surfaceCorners()[c] - m_selectionFillOffset - origin);
+            if (!targetBounds.intersects(shifted.boundingRect())) continue;
             QPainterPath sourceDomain;
             sourceDomain.addPolygon(shifted);
             sourceDomain.closeSubpath();
-            const QPainterPath clip = bounds.intersected(targetSurface).intersected(sourceDomain);
+            const QPainterPath clip = targetClip.intersected(sourceDomain);
             if (clip.isEmpty())
                 continue;
             QPolygonF sourceCanvas;
@@ -368,13 +358,22 @@ FloatingImage MarqueeTool::clone() const
             const PerspectiveTransform mapping(sourceCanvas, shifted);
             if (!mapping.isValid())
                 continue;
+            const QRect sourceRoi = sourceCanvas.boundingRect().adjusted(-2,-2,2,2)
+                                        .toAlignedRect().intersected(m_selectionSampleSource.rect());
+            if (sourceRoi.isEmpty()) continue;
             painter.save();
             painter.setClipPath(clip);
-            painter.setWorldTransform(mapping.forward());
-            painter.drawImage(QPointF(), m_selectionSampleSource);
+            painter.setWorldTransform(mapping.forward(), true);
+            painter.drawImage(sourceRoi.topLeft(), m_selectionSampleSource, sourceRoi);
             painter.restore();
         }
     }
     painter.end();
-    return extractedImage(extracted, hostFace);
+    const QImage original = extracted;
+    featherPixels(extracted, rect);
+    FloatingSelection result = extractedSelection(extracted, hostFace);
+    result.unfeatheredBitmap = original;
+    result.feather = m_feather;
+    result.scaleFactors = QPointF(qreal(fullSize.width()) / size.width(), qreal(fullSize.height()) / size.height());
+    return result;
 }

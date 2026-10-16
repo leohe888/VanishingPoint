@@ -15,16 +15,6 @@ RowLayout {
     spacing: 3
     Image {
         Layout.preferredWidth: 13; Layout.preferredHeight: 13
-        source: "qrc:/assets/icons/minus.png"
-        fillMode: Image.PreserveAspectFit
-        smooth: true
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.canvas.zoomStep(true)
-        }
-    }
-    Image {
-        Layout.preferredWidth: 13; Layout.preferredHeight: 13
         source: "qrc:/assets/icons/plus.png"
         fillMode: Image.PreserveAspectFit
         smooth: true
@@ -103,6 +93,16 @@ RowLayout {
                     }
                 }
             }
+        }
+    }
+    Image {
+        Layout.preferredWidth: 13; Layout.preferredHeight: 13
+        source: "qrc:/assets/icons/minus.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.canvas.zoomStep(true)
         }
     }
 }

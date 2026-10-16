@@ -1,7 +1,6 @@
 #include "vpdocument.h"
 
 #include <QPainter>
-#include <QImageReader>
 #include <QSet>
 
 namespace {
@@ -15,16 +14,9 @@ VpDocument::VpDocument(QObject *parent) : QObject(parent)
     resetHistory();
 }
 
-// 从文件加载背景图像，并清空平面、浮动图像与绘画层、重置历史记录
-bool VpDocument::loadImage(const QString &fileName)
+bool VpDocument::setImage(const QImage &source)
 {
-    QImageReader reader(fileName);
-    reader.setAutoTransform(true);
-    const QSize size = reader.size();
-    if (!size.isValid() || qint64(size.width()) * size.height() * 4 > 128*1024*1024)
-        return false;
-    QImageReader::setAllocationLimit(128);
-    const QImage image = reader.read().convertToFormat(QImage::Format_ARGB32);
+    const QImage image = source.convertToFormat(QImage::Format_ARGB32);
     if (image.isNull())
         return false;
     QImage painting(image.size(), QImage::Format_ARGB32);
@@ -37,9 +29,9 @@ bool VpDocument::loadImage(const QString &fileName)
     clearPaintTransaction();
     m_background = image;
     m_planes.clear();
-    m_floatingImages.clear();
+    m_floatingSelections.clear();
     m_selectedPlane = -1;
-    setSelectedFloatingImage(-1);
+    setSelectedFloatingSelection(-1);
     m_paintLayer = painting;
     m_paintTransactionActive = false;
     resetHistory();
@@ -71,14 +63,31 @@ bool VpDocument::hasPaintContent() const
     return false;
 }
 
-// 清空绘画层（不影响平面几何与浮动图像）
+// 清空绘画层（不影响平面几何与浮动选区）
 
-// 开始一次绘画事务：浅拷贝当前绘画层作为撤销基线（隐式共享，O(1)）
-void VpDocument::beginPaintTransaction()
+// 传统调用保留 COW 快照；画笔在每个 dab 写入前保存首次触及的块，避免整层 detach。
+void VpDocument::beginPaintTransaction(bool incremental)
 {
-    m_paintBefore = m_paintLayer;
+    clearPaintTransaction();
+    m_incrementalPaintTransaction = incremental;
+    if (!incremental) m_paintBefore = m_paintLayer;
     m_paintDirtyRect = QRect();
     m_paintTransactionActive = true;
+}
+
+void VpDocument::preparePaintDirty(const QRect &rect)
+{
+    if (!m_paintTransactionActive || !m_incrementalPaintTransaction) return;
+    const QRect dirty = rect.intersected(m_paintLayer.rect());
+    if (dirty.isEmpty()) return;
+    constexpr int tileSize = 256;
+    const int columns = (m_paintLayer.width() + tileSize - 1) / tileSize;
+    for (int y = dirty.top() / tileSize; y <= dirty.bottom() / tileSize; ++y)
+        for (int x = dirty.left() / tileSize; x <= dirty.right() / tileSize; ++x) {
+            const int key = y * columns + x;
+            if (!m_paintBeforeTiles.contains(key))
+                m_paintBeforeTiles.insert(key, m_paintLayer.copy(QRect(x*tileSize, y*tileSize, tileSize, tileSize)));
+        }
 }
 
 // 累积本次绘画事务的脏矩形
@@ -109,13 +118,15 @@ bool VpDocument::setPlane(int index, const PerspectivePlane &plane, bool allowSh
     return true;
 }
 
-bool VpDocument::setFloatingImage(int index, const FloatingImage &image)
+bool VpDocument::setFloatingSelection(int index, const FloatingSelection &image)
 {
-    if (index < 0 || index >= m_floatingImages.size() || image.bitmap.isNull()
+    if (index < 0 || index >= m_floatingSelections.size() || image.bitmap.isNull()
         || !qIsFinite(image.placementOrigin.x()) || !qIsFinite(image.placementOrigin.y())
         || !qIsFinite(image.rotationDegrees)
         || !qIsFinite(image.scaleFactors.x()) || !qIsFinite(image.scaleFactors.y())
         || image.scaleFactors.x() <= 0 || image.scaleFactors.y() <= 0)
+        return false;
+    if (image.opacity < 0 || image.opacity > 100 || image.healMode < 0 || image.healMode > 2)
         return false;
     if (image.surfaceAttached) {
         if (image.hostQuadIndex < 0 || image.hostQuadIndex >= image.surfaceQuads.size())
@@ -124,72 +135,86 @@ bool VpDocument::setFloatingImage(int index, const FloatingImage &image)
             if (!quad.isProjectable())
                 return false;
     }
-    m_floatingImages[index] = image;
+    m_floatingSelections[index] = image;
     return true;
 }
 
-// 删除指定平面。内容已与平面解耦：浮动图像持有自己的几何快照，
+// 删除指定平面。内容已与平面解耦：浮动选区持有自己的几何快照，
 // 绘画层独立于平面，因此删除平面无需修正任何内容。
 void VpDocument::removePlane(int index)
 {
     if (index < 0 || index >= m_planes.size())
         return;
-    // 删除前先解除共用边的锁定。这里必须依赖 parentPlaneIndex / parentEdgeIndex 这条
-    // 显式关系，不能靠"两端点几何重合"来判断：子平面被缩放后（延长它的邻边会
-    // 连带改变共用边的长度），共用边的端点已经不再与父平面重合，几何匹配会失效，
-    // 父平面的锁定边就永远解不开——表现为删除子平面后，父平面共用边上的三个控制点
-    // 仍锁死、平面也拖不动。
-    const PerspectivePlane removed = m_planes[index];
-    auto unlockEdge = [this](int planeIndex, int edge) {
-        if (planeIndex >= 0 && planeIndex < m_planes.size() && edge >= 0 && edge < 4)
-            m_planes[planeIndex].setEdgeLocked(edge, false);
-    };
-    // 被删的是子平面：解锁父平面上被它共用的那条边。
-    bool stillShared = false;
-    for (int other = 0; other < m_planes.size(); ++other)
-        if (other != index && m_planes[other].parentPlaneIndex() == removed.parentPlaneIndex()
-            && m_planes[other].parentEdgeIndex() == removed.parentEdgeIndex())
-            stillShared = true;
-    if (!stillShared)
-        unlockEdge(removed.parentPlaneIndex(), removed.parentEdgeIndex());
-    for (int other = 0; other < m_planes.size(); ++other) {
-        if (other == index)
-            continue;
-        if (m_planes[other].parentPlaneIndex() == index) {
-            // 被删的是父平面：子平面的第 0 条边就是共用边。
-            unlockEdge(other, 0);
-            m_planes[other].clearParent();
-        } else if (m_planes[other].parentPlaneIndex() > index) {
-            m_planes[other].setParent(m_planes[other].parentPlaneIndex() - 1,
-                                      m_planes[other].parentEdgeIndex());
+    QVector<bool> removed(m_planes.size(), false);
+    QVector<int> subtree{index};
+    removed[index] = true;
+    // Follow explicit parent links, including grandchildren and deeper descendants.
+    for (int cursor = 0; cursor < subtree.size(); ++cursor) {
+        for (int other = 0; other < m_planes.size(); ++other) {
+            if (!removed[other] && m_planes[other].parentPlaneIndex() == subtree[cursor]) {
+                removed[other] = true;
+                subtree.append(other);
+            }
         }
     }
-    m_planes.removeAt(index);
-    if (m_selectedPlane > index)
-        --m_selectedPlane;
-    else if (m_selectedPlane == index)
-        m_selectedPlane = m_planes.isEmpty() ? -1 : qMin(index, m_planes.size() - 1);
+    // Unlock surviving parents only if no surviving child still shares that edge.
+    for (int child : subtree) {
+        const int parent = m_planes[child].parentPlaneIndex();
+        const int edge = m_planes[child].parentEdgeIndex();
+        if (parent < 0 || parent >= m_planes.size() || removed[parent]) continue;
+        bool stillShared = false;
+        for (int other = 0; other < m_planes.size(); ++other) {
+            if (!removed[other] && m_planes[other].parentPlaneIndex() == parent
+                && m_planes[other].parentEdgeIndex() == edge) {
+                stillShared = true;
+                break;
+            }
+        }
+        if (!stillShared) m_planes[parent].setEdgeLocked(edge, false);
+    }
+    QVector<int> newIndices(m_planes.size(), -1);
+    QVector<PerspectivePlane> surviving;
+    for (int old = 0; old < m_planes.size(); ++old) {
+        if (!removed[old]) {
+            newIndices[old] = surviving.size();
+            surviving.append(m_planes[old]);
+        }
+    }
+    for (PerspectivePlane &plane : surviving) {
+        const int parent = plane.parentPlaneIndex();
+        if (parent >= 0 && parent < newIndices.size())
+            plane.setParent(newIndices[parent], plane.parentEdgeIndex());
+    }
+    if (m_selectedPlane >= 0 && m_selectedPlane < newIndices.size()) {
+        if (newIndices[m_selectedPlane] >= 0) {
+            m_selectedPlane = newIndices[m_selectedPlane];
+        } else {
+            int before = 0;
+            for (int old = 0; old < m_selectedPlane; ++old)
+                if (!removed[old]) ++before;
+            m_selectedPlane = surviving.isEmpty() ? -1 : qMin(before, surviving.size() - 1);
+        }
+    }
+    m_planes = std::move(surviving);
     if (!m_editActive)
         commitHistory();
 }
 
-// 追加一张浮动图像到画布左上角，返回其索引
-int VpDocument::addFloatingImage(const QImage &image)
+// 追加浮动选区快照，保留复制时的透视、位置、缩放和旋转。
+int VpDocument::addFloatingSelection(const FloatingSelection &selection)
 {
-    if (image.isNull())
+    const int index = m_floatingSelections.size();
+    m_floatingSelections.append(selection);
+    if (!setFloatingSelection(index, selection)) {
+        m_floatingSelections.removeLast();
         return -1;
-    FloatingImage floating;
-    floating.bitmap = image.convertToFormat(QImage::Format_ARGB32);
-    floating.placementOrigin = QPointF(0, 0);
-    floating.surfaceAttached = false;
-    floating.hostQuadIndex = -1;
-    m_floatingImages.append(floating);
-    setSelectedFloatingImage(m_floatingImages.size() - 1);
+    }
+    setSelectedFloatingSelection(m_floatingSelections.size() - 1);
     commitHistory();
-    return m_selectedFloatingImage;
+    return m_selectedFloatingSelection;
 }
 
-int VpDocument::addFloatingImageOnSurface(const QImage &image,
+int VpDocument::addFloatingSelectionOnSurface(const QImage &image,
                                                const QVector<PerspectiveQuad> &surfaceQuads,
                                                int hostQuadIndex,
                                                const QPointF &surfaceOrigin)
@@ -198,7 +223,7 @@ int VpDocument::addFloatingImageOnSurface(const QImage &image,
         || hostQuadIndex < 0 || hostQuadIndex >= surfaceQuads.size()) {
         return -1;
     }
-    FloatingImage floating;
+    FloatingSelection floating;
     floating.bitmap = image.convertToFormat(QImage::Format_ARGB32);
     floating.placementOrigin = surfaceOrigin;
     floating.surfaceAttached = true;
@@ -209,10 +234,10 @@ int VpDocument::addFloatingImageOnSurface(const QImage &image,
     for (const PerspectiveQuad &quad : surfaceQuads)
         if (!quad.isProjectable())
             return -1;
-    m_floatingImages.append(floating);
-    setSelectedFloatingImage(m_floatingImages.size() - 1);
+    m_floatingSelections.append(floating);
+    setSelectedFloatingSelection(m_floatingSelections.size() - 1);
     commitHistory();
-    return m_selectedFloatingImage;
+    return m_selectedFloatingSelection;
 }
 
 void VpDocument::lockPlaneEdge(int index, int edge)
@@ -235,68 +260,68 @@ bool VpDocument::isPlaneLinked(int index) const
     return false;
 }
 
-// 删除浮动图像，并将选中项移动到删除位置上的下一张（若无则为上一张）。
-void VpDocument::removeFloatingImage(int index)
+// 删除浮动选区，并将选中项移动到删除位置上的下一张（若无则为上一张）。
+void VpDocument::removeFloatingSelection(int index)
 {
-    if (index < 0 || index >= m_floatingImages.size())
+    if (index < 0 || index >= m_floatingSelections.size())
         return;
 
-    m_floatingImages.removeAt(index);
-    int nextSelection = m_selectedFloatingImage;
-    if (m_selectedFloatingImage == index)
-        nextSelection = m_floatingImages.isEmpty() ? -1 : qMin(index, m_floatingImages.size() - 1);
-    else if (m_selectedFloatingImage > index)
+    m_floatingSelections.removeAt(index);
+    int nextSelection = m_selectedFloatingSelection;
+    if (m_selectedFloatingSelection == index)
+        nextSelection = m_floatingSelections.isEmpty() ? -1 : qMin(index, m_floatingSelections.size() - 1);
+    else if (m_selectedFloatingSelection > index)
         --nextSelection;
-    setSelectedFloatingImage(nextSelection);
+    setSelectedFloatingSelection(nextSelection);
     if (!m_editActive)
         commitHistory();
 }
 
 // 仅移动图像位置（不改变吸附状态）
-void VpDocument::setSelectedFloatingImage(int index)
+void VpDocument::setSelectedFloatingSelection(int index)
 {
-    index = index >= 0 && index < m_floatingImages.size() ? index : -1;
-    if (m_selectedFloatingImage == index)
+    index = index >= 0 && index < m_floatingSelections.size() ? index : -1;
+    if (m_selectedFloatingSelection == index)
         return;
-    m_selectedFloatingImage = index;
-    emit imageSelectionChanged(index >= 0);
+    m_selectedFloatingSelection = index;
+    emit floatingSelectionChanged(index >= 0);
 }
 
-void VpDocument::setFloatingImageOrigin(int index, const QPointF &placementOrigin)
+void VpDocument::setFloatingSelectionOrigin(int index, const QPointF &placementOrigin)
 {
-    if (index < 0 || index >= m_floatingImages.size())
+    if (index < 0 || index >= m_floatingSelections.size())
         return;
-    FloatingImage image = m_floatingImages[index];
+    FloatingSelection image = m_floatingSelections[index];
     image.placementOrigin = placementOrigin;
-    setFloatingImage(index, image);
+    setFloatingSelection(index, image);
 }
 
 // 把图像吸附到一组几何快照上（严格快照：此后平面增删改不再影响它）
-void VpDocument::attachFloatingImage(int index,
+void VpDocument::attachFloatingSelection(int index,
                                          const QVector<PerspectiveQuad> &surfaceQuads,
                                          int hostQuadIndex, const QPointF &surfaceOrigin)
 {
-    if (index < 0 || index >= m_floatingImages.size())
+    if (index < 0 || index >= m_floatingSelections.size())
         return;
-    FloatingImage image = m_floatingImages[index];
+    FloatingSelection image = m_floatingSelections[index];
     image.surfaceQuads = surfaceQuads;
     image.hostQuadIndex = hostQuadIndex;
     image.placementOrigin = surfaceOrigin;
     image.surfaceAttached = true;
-    setFloatingImage(index, image);
+    setFloatingSelection(index, image);
 }
 
 // 让图像脱离曲面，回到画布坐标
-void VpDocument::detachFloatingImage(int index, const QPointF &canvasOrigin)
+void VpDocument::detachFloatingSelection(int index, const QPointF &canvasOrigin)
 {
-    if (index < 0 || index >= m_floatingImages.size())
+    if (index < 0 || index >= m_floatingSelections.size())
         return;
-    FloatingImage image = m_floatingImages[index];
+    FloatingSelection image = m_floatingSelections[index];
     image.surfaceQuads.clear();
     image.hostQuadIndex = -1;
     image.placementOrigin = canvasOrigin;
     image.surfaceAttached = false;
-    setFloatingImage(index, image);
+    setFloatingSelection(index, image);
 }
 
 // 撤销：回退到上一状态（结构 + 绘画层脏矩形反演）
@@ -366,9 +391,7 @@ void VpDocument::commitEdit(bool changed)
     if (changed)
         commitHistory();
     else {
-        m_paintTransactionActive = false;
-        m_paintBefore = QImage();
-        m_paintDirtyRect = QRect();
+        clearPaintTransaction();
     }
 }
 
@@ -382,9 +405,7 @@ void VpDocument::cancelEdit()
     m_paintLayer = m_editPaintBefore;
     m_editBefore = HistoryEntry();
     m_editPaintBefore = QImage();
-    m_paintBefore = QImage();
-    m_paintDirtyRect = QRect();
-    m_paintTransactionActive = false;
+    clearPaintTransaction();
     restoreStructure(before);
 }
 
@@ -398,14 +419,23 @@ void VpDocument::commitHistory()
         const QRect dirty = m_paintDirtyRect.intersected(m_paintLayer.rect());
         if (!dirty.isEmpty()) {
             entry.paintRect = dirty;
-            entry.paintBefore = m_paintBefore.copy(dirty);
             entry.paintAfter = m_paintLayer.copy(dirty);
+            if (m_incrementalPaintTransaction) {
+                // Pixels outside changed tiles are unchanged, so the after image is a valid base.
+                entry.paintBefore = entry.paintAfter.copy();
+                QPainter before(&entry.paintBefore);
+                before.setCompositionMode(QPainter::CompositionMode_Source);
+                constexpr int tileSize = 256;
+                const int columns = (m_paintLayer.width() + tileSize - 1) / tileSize;
+                for (auto tile = m_paintBeforeTiles.cbegin(); tile != m_paintBeforeTiles.cend(); ++tile)
+                    before.drawImage(QPoint((tile.key()%columns)*tileSize, (tile.key()/columns)*tileSize) - dirty.topLeft(), tile.value());
+            } else entry.paintBefore = m_paintBefore.copy(dirty);
         }
     }
     clearPaintTransaction();
 
     const HistoryEntry &current = m_history[m_historyIndex];
-    if (entry.planes == current.planes && entry.floatingImages == current.floatingImages
+    if (entry.planes == current.planes && entry.floatingSelections == current.floatingSelections
         && (entry.paintRect.isEmpty() || entry.paintBefore == entry.paintAfter))
         return;
     while (m_history.size() > m_historyIndex + 1)
@@ -415,14 +445,20 @@ void VpDocument::commitHistory()
     auto historyBytes = [this] {
         qint64 bytes = 0;
         QSet<qint64> counted;
-        for (const FloatingImage &image : m_floatingImages)
+        for (const FloatingSelection &image : m_floatingSelections)
             counted.insert(image.bitmap.cacheKey());
+        for (const FloatingSelection &image : m_floatingSelections)
+            counted.insert(image.unhealedBitmap.cacheKey());
         for (const HistoryEntry &state : m_history) {
             bytes += state.paintBefore.sizeInBytes() + state.paintAfter.sizeInBytes();
-            for (const FloatingImage &image : state.floatingImages) {
+            for (const FloatingSelection &image : state.floatingSelections) {
                 if (!counted.contains(image.bitmap.cacheKey())) {
                     counted.insert(image.bitmap.cacheKey());
                     bytes += image.bitmap.sizeInBytes();
+                }
+                if (!counted.contains(image.unhealedBitmap.cacheKey())) {
+                    counted.insert(image.unhealedBitmap.cacheKey());
+                    bytes += image.unhealedBitmap.sizeInBytes();
                 }
             }
         }
@@ -441,13 +477,13 @@ void VpDocument::commitHistory()
     emit structureChanged();
 }
 
-// 仅恢复结构部分（平面 + 浮动图像 + 选中状态）
+// 仅恢复结构部分（平面 + 浮动选区 + 选中状态）
 void VpDocument::restoreStructure(const HistoryEntry &entry)
 {
     m_planes = entry.planes;
     m_selectedPlane = entry.selectedPlane;
-    m_floatingImages = entry.floatingImages;
-    setSelectedFloatingImage(entry.selectedFloatingImage);
+    m_floatingSelections = entry.floatingSelections;
+    setSelectedFloatingSelection(entry.selectedFloatingSelection);
     emit structureChanged();
 }
 
@@ -466,8 +502,8 @@ VpDocument::HistoryEntry VpDocument::captureStructure() const
     HistoryEntry entry;
     entry.planes = m_planes;
     entry.selectedPlane = m_selectedPlane;
-    entry.floatingImages = m_floatingImages;
-    entry.selectedFloatingImage = m_selectedFloatingImage;
+    entry.floatingSelections = m_floatingSelections;
+    entry.selectedFloatingSelection = m_selectedFloatingSelection;
     return entry;
 }
 
@@ -475,5 +511,7 @@ void VpDocument::clearPaintTransaction()
 {
     m_paintTransactionActive = false;
     m_paintBefore = QImage();
+    m_paintBeforeTiles.clear();
+    m_incrementalPaintTransaction = false;
     m_paintDirtyRect = QRect();
 }

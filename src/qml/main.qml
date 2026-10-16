@@ -61,6 +61,7 @@ Window {
 
             HintBar {
                 id: hintBar
+                controller: vpController
                 Layout.fillWidth: true
                 Layout.preferredHeight: 38
             }
@@ -87,7 +88,7 @@ Window {
 
     Shortcut {
         sequence: "Ctrl+V"
-        onActivated: vpController.pasteImage()
+        onActivated: vpController.pasteSelection()
     }
 
     Shortcut {
@@ -100,8 +101,4 @@ Window {
         onActivated: vpController.redo()
     }
 
-    Connections {
-        target: vpController
-        function onStatusMessage(text) { hintBar.message = text }
-    }
 }

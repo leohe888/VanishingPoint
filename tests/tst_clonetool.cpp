@@ -1,16 +1,24 @@
-#include <QtTest>
-#include <QTemporaryDir>
+#include <QGuiApplication>
+#include <QHoverEvent>
+#include <QKeyEvent>
 #include <QPainter>
+#include <QPainterPath>
+#include <QTemporaryDir>
+#include <QtTest>
 
-#include "core/vpdocument.h"
-#include "tools/clonetool.h"
+#include "canvas/auxiliaryoverlayitem.h"
+#include "canvas/vpcanvas.h"
+#include "canvas/vpdocument.h"
+#include "core/scenerenderer.h"
 #include "testhelpers.h"
+#include "tools/clonetool.h"
 
 class CloneToolTest : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void targetPlaneTracksHoverAndLocksDuringStroke();
     void clampsParameters();
     void refusesToStart();
     void clonesFromSourceOffset();
@@ -28,7 +36,7 @@ private:
     static QImage makeSource();
     static int alphaAt(const QImage &image, int x, int y);
     static QRgb rgbAt(const QImage &image, int x, int y);
-    static CloneTool readyTool();
+    static void readyTool(CloneTool &tool);
 };
 
 QImage CloneToolTest::makeLayer()
@@ -60,19 +68,20 @@ QRgb CloneToolTest::rgbAt(const QImage &image, int x, int y)
 }
 
 // 直径 8、完全硬边、完全不透明：笔触点中心像素与源像素逐一对应
-CloneTool CloneToolTest::readyTool()
+void CloneToolTest::readyTool(CloneTool &tool)
 {
-    CloneTool tool;
     tool.setDiameter(8);
     tool.setHardness(100);
     tool.setOpacity(100);
-    return tool;
+
 }
 
 // 参数越界时钳到合法区间
 void CloneToolTest::clampsParameters()
 {
     CloneTool tool;
+    QCOMPARE(tool.healMode(), int(HealingBlend::On));
+    QVERIFY(!tool.aligned());
     tool.setDiameter(0);
     QCOMPARE(tool.diameter(), 1);
     tool.setDiameter(999);
@@ -93,7 +102,7 @@ void CloneToolTest::refusesToStart()
     QImage layer = makeLayer();
     const QImage source = makeSource();
     QImage nullLayer;
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
 
     QVERIFY(tool.begin(layer, source, {}, layer.size(), QPointF(100, 60)).isEmpty());
     QVERIFY(!tool.drawing());
@@ -110,7 +119,7 @@ void CloneToolTest::clonesFromSourceOffset()
 {
     QImage layer = makeLayer();
     const QImage source = makeSource();
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
     QVERIFY(tool.pickSource({}, layer.size(), QPointF(60, 45)));
     QCOMPARE(tool.marker(), QPointF(60, 45));
 
@@ -126,7 +135,7 @@ void CloneToolTest::strokeKeepsOffset()
 {
     QImage layer = makeLayer();
     const QImage source = makeSource();
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
     tool.pickSource({}, layer.size(), QPointF(60, 45));
     tool.begin(layer, source, {}, layer.size(), QPointF(100, 60));
 
@@ -145,7 +154,7 @@ void CloneToolTest::followsPlanePerspective()
     QImage layer = makeLayer();
     const QImage source = makeSource();
     const QVector<PerspectivePlane> planes{makeTestPlane()}; // 画面角点 = 展开坐标 + (10,10)
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
     QVERIFY(tool.pickSource(planes, layer.size(), QPointF(40, 40)));
 
     QVERIFY(!tool.begin(layer, source, planes, layer.size(), QPointF(90, 60)).isEmpty());
@@ -158,7 +167,8 @@ void CloneToolTest::alignedMovesSourceWithCursor()
 {
     QImage layer = makeLayer();
     const QImage source = makeSource();
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
+    tool.setAligned(true);
     QVERIFY(tool.aligned());
     tool.pickSource({}, layer.size(), QPointF(60, 45));
 
@@ -176,7 +186,7 @@ void CloneToolTest::unalignedReturnsToOriginalSource()
 {
     QImage layer = makeLayer();
     const QImage source = makeSource();
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
     tool.setAligned(false);
     tool.pickSource({}, layer.size(), QPointF(60, 45));
 
@@ -196,7 +206,7 @@ void CloneToolTest::unalignedPreviewFollowsDuringStroke()
 {
     QImage canvas = makeLayer();
     const QImage source = makeSource(); // 红色标记在 x∈[50,90)、y∈[30,70)
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
     tool.setAligned(false);
     tool.pickSource({}, canvas.size(), QPointF(60, 45));
 
@@ -222,7 +232,7 @@ void CloneToolTest::previewPreservesActiveStrokeSource()
     const QImage source = makeSource();
     QImage previewSource = source;
     previewSource.fill(Qt::blue);
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
     QVERIFY(tool.pickSource({}, layer.size(), QPointF(60, 45)));
     QVERIFY(!tool.begin(layer, source, {}, layer.size(), QPointF(100, 60)).isEmpty());
 
@@ -240,7 +250,7 @@ void CloneToolTest::previewDrawsSampledContent()
 {
     QImage canvas = makeLayer();
     const QImage source = makeSource();
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
     tool.pickSource({}, canvas.size(), QPointF(60, 45));
 
     QPainter painter(&canvas);
@@ -264,9 +274,9 @@ void CloneToolTest::undoRemovesWholeStroke()
     QVERIFY(background.save(path));
 
     VpDocument document;
-    QVERIFY(document.loadImage(path));
+    QVERIFY(document.setImage(QImage(path)));
 
-    CloneTool tool = readyTool();
+    CloneTool tool; readyTool(tool);
     tool.pickSource({}, background.size(), QPointF(60, 45));
 
     // 与 VpCanvas 的文案一致：先开事务，再落笔
@@ -289,5 +299,41 @@ void CloneToolTest::undoRemovesWholeStroke()
     QCOMPARE(alphaAt(document.paintLayer(), 140, 60), 255);
 }
 
-QTEST_GUILESS_MAIN(CloneToolTest)
+void CloneToolTest::targetPlaneTracksHoverAndLocksDuringStroke()
+{
+    const auto check = [](bool passed, const char *message) {
+        QVERIFY2(passed, message);
+    };
+    VpController controller;
+    QImage background(280,220,QImage::Format_ARGB32_Premultiplied);background.fill(Qt::white);
+    controller.document().setImage(background);
+    for(int x : {20,100}) {
+        const PerspectiveQuad::Corners corners{{QPointF(x,20),QPointF(x+140,20),
+                                                QPointF(x+140,180),QPointF(x,180)}};
+        controller.document().appendPlane(PerspectivePlane(corners,corners));
+    }
+    const auto tool = VpTools::CloneStamp;
+    {
+        controller.setTool(tool);
+        const bool undoBefore=controller.canUndo();
+        check(controller.paintTargetPlane(QPointF(50,100))==0,"hover resolves lower non-overlapping plane");
+        check(controller.paintTargetPlane(QPointF(120,100))==1,"overlap highlights topmost target plane");
+        check(controller.paintTargetPlane(QPointF(5,5))==-1,"canvas fallback highlights no plane");
+        check(controller.document().selectedPlane()==-1 && controller.canUndo()==undoBefore,
+              "hover target does not select plane or add history");
+        if(tool==VpTools::CloneStamp) check(controller.pickCloneSource(QPointF(50,40)),"clone source picks first plane");
+        controller.pointerPress(QPointF(50,100),1,Qt::NoModifier);
+        controller.pointerMove(QPointF(220,100),Qt::NoModifier);
+        check(controller.paintTargetPlane(QPointF(220,100))==0,"stroke locks highlight to actual start plane");
+        controller.pointerRelease(QPointF(220,100),Qt::NoModifier);
+        check(controller.paintTargetPlane(QPointF(220,100))==1,"stroke release resumes hover plane");
+        controller.pointerPress(QPointF(5,5),1,Qt::NoModifier);
+        controller.pointerMove(QPointF(120,100),Qt::NoModifier);
+        check(controller.paintTargetPlane(QPointF(120,100))==-1,"fallback stroke does not highlight newly crossed plane");
+        controller.pointerRelease(QPointF(120,100),Qt::NoModifier);
+    }
+
+}
+
+QTEST_MAIN(CloneToolTest)
 #include "tst_clonetool.moc"

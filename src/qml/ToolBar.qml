@@ -24,6 +24,7 @@ Rectangle {
         { toolId: VpTools.CloneStamp,  tooltip: qsTr("图章工具 (S)"),     icon: "stamp.png",       shortcut: "S", separatorBefore: true },
         { toolId: VpTools.Brush,       tooltip: qsTr("画笔工具 (B)"),     icon: "brush.png",       shortcut: "B" },
         { toolId: VpTools.Transform,   tooltip: qsTr("变换工具 (T)"),     icon: "transform.png",   shortcut: "T", separatorBefore: true },
+        { toolId: VpTools.Eyedropper, tooltip: qsTr("吸管工具 (I)"), icon: "image_absorption.svg", shortcut: "I" },
         { toolId: VpTools.Hand, tooltip: qsTr("抓手工具 (H)"), icon: "hand.png", shortcut: "H", separatorBefore: true },
         { toolId: VpTools.Zoom, tooltip: qsTr("缩放工具 (Z)"), icon: "magnifier.png", shortcut: "Z" }
     ]

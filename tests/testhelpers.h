@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/perspectiveplane.h"
+#include "core/floatingselection.h"
 
 inline PerspectivePlane makeTestPlane()
 {
@@ -17,4 +18,11 @@ inline PerspectivePlane makeSelfIntersectingPlane()
     plane.quad().setCanvasCorner(2, QPointF(10, 80));
     plane.quad().setCanvasCorner(3, QPointF(110, 80));
     return plane;
+}
+
+inline FloatingSelection makeTestSelection(const QImage &bitmap)
+{
+    FloatingSelection selection;
+    selection.bitmap = bitmap;
+    return selection;
 }

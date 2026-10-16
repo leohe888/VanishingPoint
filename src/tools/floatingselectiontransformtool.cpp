@@ -1,6 +1,6 @@
-#include "floatingimagetransformtool.h"
+#include "floatingselectiontransformtool.h"
 
-#include "core/floatingimageprojection.h"
+#include "../core/floatingselectionprojection.h"
 
 #include <QLineF>
 #include <QtMath>
@@ -9,20 +9,20 @@
 
 namespace {
 
-FloatingImage scaledImage(const FloatingImage &startImage, int handleIndex,
+FloatingSelection scaledSelection(const FloatingSelection &startSelection, int handleIndex,
                           const QPointF &placementPoint, bool keepAspectRatio,
                           bool scaleFromCenter)
 {
-    FloatingImage result = startImage;
+    FloatingSelection result = startSelection;
     if (handleIndex < 0 || handleIndex >= 8
         || !std::isfinite(placementPoint.x()) || !std::isfinite(placementPoint.y())) {
         return result;
     }
 
-    const QRectF startRect(startImage.placementOrigin, startImage.displaySize());
+    const QRectF startRect = startSelection.placementRect();
     QTransform rotation;
     rotation.translate(startRect.center().x(), startRect.center().y());
-    rotation.rotate(startImage.rotationDegrees);
+    rotation.rotate(startSelection.rotationDegrees);
     rotation.translate(-startRect.center().x(), -startRect.center().y());
     const QPointF unrotatedPoint = rotation.inverted().map(placementPoint);
     const bool left = handleIndex == 0 || handleIndex == 3 || handleIndex == 7;
@@ -67,16 +67,17 @@ FloatingImage scaledImage(const FloatingImage &startImage, int handleIndex,
         result.placementOrigin = startRect.center() - QPointF(width / 2, height / 2);
     const QPointF halfSize(width / 2, height / 2);
     result.placementOrigin = rotation.map(result.placementOrigin + halfSize) - halfSize;
-    result.scaleFactors = QPointF(width / startImage.bitmap.width(),
-                                 height / startImage.bitmap.height());
+    const QRectF logical = startSelection.bitmapSelectionRect();
+    result.scaleFactors = QPointF(width / logical.width(), height / logical.height());
+    result.placementOrigin -= QPointF(logical.x() * result.scaleFactors.x(), logical.y() * result.scaleFactors.y());
     return result;
 }
 
-FloatingImage rotatedImage(const FloatingImage &startImage, const QPointF &pressPosition,
+FloatingSelection rotatedSelection(const FloatingSelection &startSelection, const QPointF &pressPosition,
                            const QPointF &currentPosition, bool snapToIncrement)
 {
-    FloatingImage result = startImage;
-    const QPointF center = QRectF(startImage.placementOrigin, startImage.displaySize()).center();
+    FloatingSelection result = startSelection;
+    const QPointF center = startSelection.placementRect().center();
     const QPointF startVector = pressPosition - center;
     const QPointF currentVector = currentPosition - center;
     if (QLineF(center, pressPosition).length() < 1e-6
@@ -84,7 +85,7 @@ FloatingImage rotatedImage(const FloatingImage &startImage, const QPointF &press
         return result;
     }
 
-    qreal angle = startImage.rotationDegrees
+    qreal angle = startSelection.rotationDegrees
         + qRadiansToDegrees(std::atan2(currentVector.y(), currentVector.x())
                             - std::atan2(startVector.y(), startVector.x()));
     if (!std::isfinite(angle))
@@ -97,7 +98,7 @@ FloatingImage rotatedImage(const FloatingImage &startImage, const QPointF &press
 
 } // namespace
 
-bool FloatingImageTransformTool::beginTransform(const FloatingImage &image,
+bool FloatingSelectionTransformTool::beginTransform(const FloatingSelection &image,
                                                 const QPointF &canvasPoint,
                                                 int handleIndex, Mode mode)
 {
@@ -105,7 +106,7 @@ bool FloatingImageTransformTool::beginTransform(const FloatingImage &image,
         || (mode != Mode::Scale && mode != Mode::Rotate)) {
         return false;
     }
-    m_startImage = image;
+    m_startSelection = image;
     const QPointF handlePosition = image.transformHandlePositions()[handleIndex];
     image.mapPlacementToCanvas(handlePosition, &m_activeQuadIndex);
     if (!image.mapCanvasToPlacement(canvasPoint, &m_pressPosition, m_activeQuadIndex))
@@ -116,40 +117,40 @@ bool FloatingImageTransformTool::beginTransform(const FloatingImage &image,
     return true;
 }
 
-void FloatingImageTransformTool::beginMove(const FloatingImage &image,
+void FloatingSelectionTransformTool::beginMove(const FloatingSelection &image,
                                            const QPointF &placementOffset)
 {
-    m_startImage = image;
+    m_startSelection = image;
     m_grabOffset = placementOffset;
     m_activeQuadIndex = -1;
     m_mode = Mode::Move;
 }
 
-bool FloatingImageTransformTool::update(const QPointF &canvasPoint, bool constrain,
-                                        bool fromCenter, FloatingImage *result) const
+bool FloatingSelectionTransformTool::update(const QPointF &canvasPoint, bool constrain,
+                                        bool fromCenter, FloatingSelection *result) const
 {
     if (!result || m_mode == Mode::Idle)
         return false;
     QPointF placementPoint;
-    if (!m_startImage.mapCanvasToPlacement(canvasPoint, &placementPoint, m_activeQuadIndex))
+    if (!m_startSelection.mapCanvasToPlacement(canvasPoint, &placementPoint, m_activeQuadIndex))
         return false;
 
     if (m_mode == Mode::Rotate) {
-        *result = rotatedImage(m_startImage, m_pressPosition, placementPoint, constrain);
+        *result = rotatedSelection(m_startSelection, m_pressPosition, placementPoint, constrain);
     } else if (m_mode == Mode::Scale) {
-        *result = scaledImage(m_startImage, m_activeHandle, placementPoint - m_grabOffset,
+        *result = scaledSelection(m_startSelection, m_activeHandle, placementPoint - m_grabOffset,
                               constrain, fromCenter);
     } else {
-        *result = m_startImage;
+        *result = m_startSelection;
         result->placementOrigin = placementPoint - m_grabOffset;
     }
     return true;
 }
 
-int FloatingImageTransformTool::handleAt(const FloatingImage &image,
+int FloatingSelectionTransformTool::handleAt(const FloatingSelection &image,
                                          const QPointF &canvasPoint, qreal viewScale)
 {
-    const auto projection = FloatingImageProjection::forImage(image);
+    const auto projection = FloatingSelectionProjection::forSelection(image);
     const auto &handles = projection->transformHandles();
     for (int index = 0; index < handles.size(); ++index) {
         if (QLineF(canvasPoint, handles[index]).length() <= 8 / viewScale)
@@ -158,11 +159,11 @@ int FloatingImageTransformTool::handleAt(const FloatingImage &image,
     return -1;
 }
 
-int FloatingImageTransformTool::rotationCornerAt(const FloatingImage &image,
+int FloatingSelectionTransformTool::rotationCornerAt(const FloatingSelection &image,
                                                  const QPointF &canvasPoint,
                                                  qreal viewScale)
 {
-    const auto projection = FloatingImageProjection::forImage(image);
+    const auto projection = FloatingSelectionProjection::forSelection(image);
     const auto &handles = projection->transformHandles();
     for (int index = 0; index < 4; ++index) {
         const qreal distance = QLineF(canvasPoint, handles[index]).length() * viewScale;

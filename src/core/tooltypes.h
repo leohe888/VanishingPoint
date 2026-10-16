@@ -15,7 +15,8 @@ enum Tool {
     Brush = 4,
     Transform = 5,
     Hand = 6,
-    Zoom = 7
+    Zoom = 7,
+    Eyedropper = 8
 };
 Q_ENUM_NS(Tool)
 }

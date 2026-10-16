@@ -1,16 +1,24 @@
-#include <QtTest>
-#include <QTemporaryDir>
+#include <QGuiApplication>
+#include <QHoverEvent>
+#include <QKeyEvent>
 #include <QPainter>
+#include <QPainterPath>
+#include <QTemporaryDir>
+#include <QtTest>
 
-#include "tools/brushtool.h"
-#include "core/vpdocument.h"
+#include "canvas/auxiliaryoverlayitem.h"
+#include "canvas/vpcanvas.h"
+#include "canvas/vpdocument.h"
+#include "core/scenerenderer.h"
 #include "testhelpers.h"
+#include "tools/brushtool.h"
 
 class BrushToolTest : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void targetPlaneTracksHoverAndLocksDuringStroke();
     void clampsParameters();
     void refusesToStart();
     void paintsOnPlane();
@@ -155,7 +163,7 @@ void BrushToolTest::undoRemovesWholeStroke()
     QVERIFY(background.save(path));
 
     VpDocument document;
-    QVERIFY(document.loadImage(path));
+    QVERIFY(document.setImage(QImage(path)));
 
     BrushTool tool;
     tool.setDiameter(40);
@@ -182,5 +190,41 @@ void BrushToolTest::undoRemovesWholeStroke()
     QCOMPARE(alphaAt(document.paintLayer(), 140, 60), 255);
 }
 
-QTEST_GUILESS_MAIN(BrushToolTest)
+void BrushToolTest::targetPlaneTracksHoverAndLocksDuringStroke()
+{
+    const auto check = [](bool passed, const char *message) {
+        QVERIFY2(passed, message);
+    };
+    VpController controller;
+    QImage background(280,220,QImage::Format_ARGB32_Premultiplied);background.fill(Qt::white);
+    controller.document().setImage(background);
+    for(int x : {20,100}) {
+        const PerspectiveQuad::Corners corners{{QPointF(x,20),QPointF(x+140,20),
+                                                QPointF(x+140,180),QPointF(x,180)}};
+        controller.document().appendPlane(PerspectivePlane(corners,corners));
+    }
+    const auto tool = VpTools::Brush;
+    {
+        controller.setTool(tool);
+        const bool undoBefore=controller.canUndo();
+        check(controller.paintTargetPlane(QPointF(50,100))==0,"hover resolves lower non-overlapping plane");
+        check(controller.paintTargetPlane(QPointF(120,100))==1,"overlap highlights topmost target plane");
+        check(controller.paintTargetPlane(QPointF(5,5))==-1,"canvas fallback highlights no plane");
+        check(controller.document().selectedPlane()==-1 && controller.canUndo()==undoBefore,
+              "hover target does not select plane or add history");
+        if(tool==VpTools::CloneStamp) check(controller.pickCloneSource(QPointF(50,40)),"clone source picks first plane");
+        controller.pointerPress(QPointF(50,100),1,Qt::NoModifier);
+        controller.pointerMove(QPointF(220,100),Qt::NoModifier);
+        check(controller.paintTargetPlane(QPointF(220,100))==0,"stroke locks highlight to actual start plane");
+        controller.pointerRelease(QPointF(220,100),Qt::NoModifier);
+        check(controller.paintTargetPlane(QPointF(220,100))==1,"stroke release resumes hover plane");
+        controller.pointerPress(QPointF(5,5),1,Qt::NoModifier);
+        controller.pointerMove(QPointF(120,100),Qt::NoModifier);
+        check(controller.paintTargetPlane(QPointF(120,100))==-1,"fallback stroke does not highlight newly crossed plane");
+        controller.pointerRelease(QPointF(120,100),Qt::NoModifier);
+    }
+
+}
+
+QTEST_MAIN(BrushToolTest)
 #include "tst_brushtool.moc"
