@@ -24,7 +24,7 @@ endfunction()
 
 foreach(name IN ITEMS canvasnavigation perspectiveplane perspectivetransform perspectivequad
         planecreatetool planeedittool marqueetool vpdocument brushtool clonetool
-        vpcontroller floatingselectionprojection floatingselectiontransformtool eyedroppertool healingblend auditinteractions auditboundaries)
+        vpcontroller imagesaving floatingselectionprojection floatingselectiontransformtool eyedroppertool healingblend auditinteractions auditboundaries)
     add_vp_test(tst_${name} tst_${name}.cpp)
     set_tests_properties(tst_${name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software")
 endforeach()

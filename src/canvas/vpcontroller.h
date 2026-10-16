@@ -11,6 +11,7 @@
 
 #include <QByteArray>
 #include <QObject>
+#include <QUrl>
 #include <functional>
 #include <utility>
 
@@ -21,6 +22,8 @@ class VpController final : public QObject
     Q_OBJECT
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY historyChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY historyChanged)
+    Q_PROPERTY(bool canSave READ canSave NOTIFY documentReplaced)
+    Q_PROPERTY(QUrl savedImageUrl READ savedImageUrl NOTIFY savedImageUrlChanged)
     Q_PROPERTY(VpTools::Tool tool READ tool WRITE setTool NOTIFY toolChanged)
     Q_PROPERTY(QString toolHint READ toolHint NOTIFY toolChanged)
     Q_PROPERTY(QString interactionHint READ interactionHint NOTIFY interactionHintChanged)
@@ -110,6 +113,10 @@ public:
     bool canUndo() const { return m_document.canUndo(); }
     bool canRedo() const { return m_document.canRedo(); }
     Q_INVOKABLE bool openImage(const QUrl &url);
+    bool canSave() const { return m_document.hasLoadedImage(); }
+    QUrl savedImageUrl() const { return m_savedImageUrl; }
+    Q_INVOKABLE QUrl suggestedSaveUrl() const;
+    Q_INVOKABLE bool saveImage(const QUrl &url);
     Q_INVOKABLE void copySelection();
     Q_INVOKABLE void pasteSelection();
     void setCopiedCanvasSelection(const QImage &image);
@@ -161,6 +168,7 @@ public:
     void finishActiveStrokes();
 
 signals:
+    void savedImageUrlChanged();
     void documentReplaced();
     void historyChanged();
     void toolChanged();
@@ -183,6 +191,8 @@ signals:
     void focusRequested();
 
 private:
+    QUrl m_sourceImageUrl;
+    QUrl m_savedImageUrl;
     void setInteractionHint(const QString &text);
     QString m_interactionHint;
     FloatingSelection m_copiedSelection; // 内部复制保留透视、变换及选区选项。

@@ -31,6 +31,12 @@ private slots:
         QVERIFY(!engine.rootObjects().isEmpty());
         auto *root=engine.rootObjects().first(); root->setProperty("visible",false);
         auto *canvas=root->findChild<VpCanvas*>(); QVERIFY(canvas);
+        auto *saveButton=root->findChild<QObject *>("saveButton");
+        auto *saveShortcut=root->findChild<QObject *>("saveShortcut");
+        auto *saveDialog=root->findChild<QObject *>("saveDialog");
+        QVERIFY(saveButton && saveShortcut && saveDialog);
+        QVERIFY(!saveButton->property("enabled").toBool());
+        QVERIFY(!saveShortcut->property("enabled").toBool());
         QCOMPARE(canvas->controller(), &controller);
         QCOMPARE(QQmlEngine::objectOwnership(&controller), QQmlEngine::CppOwnership);
         auto *window = qobject_cast<QQuickWindow *>(root); QVERIFY(window);
@@ -62,6 +68,8 @@ private slots:
         QTemporaryDir dir; auto path=dir.filePath("background.png");
         QImage image(64,64,QImage::Format_ARGB32); image.fill(Qt::white); QVERIFY(image.save(path));
         QVERIFY(canvas->controller()->openImage(QUrl::fromLocalFile(path)));
+        QVERIFY(saveButton->property("enabled").toBool());
+        QVERIFY(saveShortcut->property("enabled").toBool());
         auto *toolbar = root->findChild<QObject *>("toolBar");
         QVERIFY(toolbar);
         const auto selectedButton = [window](int tool) -> QQuickItem * {
@@ -176,6 +184,15 @@ private slots:
         QVERIFY(!controller.flippedHorizontally());
         controller.setTool(VpTools::Eyedropper);
         QVERIFY(brushOptions->property("eyedropperOptionsVisible").toBool());
+        const QUrl savedUrl=QUrl::fromLocalFile(dir.filePath("ui-save.png"));
+        QVERIFY(saveDialog->setProperty("selectedFile",savedUrl));
+        QVERIFY(QMetaObject::invokeMethod(saveDialog,"accepted"));
+        QVERIFY(!QImage(savedUrl.toLocalFile()).isNull());
+        QCOMPARE(controller.savedImageUrl(),savedUrl);
+        doc.paintLayer().fill(Qt::green);
+        QVERIFY(QMetaObject::invokeMethod(saveShortcut,"activated"));
+        QCOMPARE(QImage(savedUrl.toLocalFile()).pixelColor(60,60),QColor(Qt::green));
+        QVERIFY(!saveDialog->property("visible").toBool());
         engine.collectGarbage();
         QCOMPARE(QQmlEngine::objectOwnership(&controller), QQmlEngine::CppOwnership);
         QVERIFY(canvas->controller()->openImage(QUrl::fromLocalFile(path)));

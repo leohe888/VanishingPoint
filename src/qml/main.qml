@@ -5,11 +5,23 @@ import QtQuick.Layouts 1.15
 import QtQuick.Dialogs
 
 Window {
+    id: window
     width: 1280
     height: 820
     visible: true
     color: VpTheme.panelBackground
     title: qsTr("消失点")
+
+    function requestSave(saveAs) {
+        if (!vpController.canSave)
+            return
+        if (!saveAs && vpController.savedImageUrl.toString().length > 0) {
+            vpController.saveImage(vpController.savedImageUrl)
+            return
+        }
+        saveDialog.selectedFile = vpController.suggestedSaveUrl()
+        saveDialog.open()
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -39,6 +51,14 @@ Window {
                     tooltip: qsTr("打开图片")
                     tooltipBelow: true
                     onActivated: imageDialog.open()
+                }
+                ToolButton {
+                    objectName: "saveButton"
+                    iconSource: "image_save.svg"
+                    tooltip: qsTr("保存图片 (Ctrl+S)")
+                    tooltipBelow: true
+                    enabled: vpController.canSave
+                    onActivated: window.requestSave(false)
                 }
                 ToolButton {
                     iconSource: "undo.png"
@@ -80,6 +100,30 @@ Window {
         title: qsTr("打开图片")
         nameFilters: [qsTr("图片 (*.png *.jpg *.jpeg *.bmp *.webp *.tif *.tiff)"), qsTr("所有文件 (*)")]
         onAccepted: vpController.openImage(selectedFile)
+    }
+
+    FileDialog {
+        id: saveDialog
+        objectName: "saveDialog"
+        title: qsTr("保存图片")
+        fileMode: FileDialog.SaveFile
+        nameFilters: [qsTr("PNG 图片 (*.png)"), qsTr("JPEG 图片 (*.jpg *.jpeg)"), qsTr("BMP 图片 (*.bmp)")]
+        defaultSuffix: selectedNameFilter.index === 1 ? "jpg"
+                       : selectedNameFilter.index === 2 ? "bmp" : "png"
+        onAccepted: vpController.saveImage(selectedFile)
+    }
+
+    Shortcut {
+        objectName: "saveShortcut"
+        sequence: "Ctrl+S"
+        enabled: vpController.canSave
+        onActivated: window.requestSave(false)
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Shift+S"
+        enabled: vpController.canSave
+        onActivated: window.requestSave(true)
     }
 
     Shortcut {

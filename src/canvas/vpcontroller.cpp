@@ -5,6 +5,11 @@
 
 #include <QDataStream>
 #include <QImageReader>
+#include <QImageWriter>
+#include <QSaveFile>
+#include <QFileInfo>
+#include <QDir>
+#include <QStandardPaths>
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QMimeData>
@@ -28,6 +33,11 @@ VpController::VpController(QObject *parent) : QObject(parent)
     connect(&m_document, &VpDocument::structureChanged, this, &VpController::transformOptionsChanged);
     connect(&m_document, &VpDocument::structureChanged, this, &VpController::syncMarqueeOptions);
     connect(&m_document, &VpDocument::documentAvailabilityChanged, this, [this] {
+        m_sourceImageUrl = QUrl();
+        if (!m_savedImageUrl.isEmpty()) {
+            m_savedImageUrl = QUrl();
+            emit savedImageUrlChanged();
+        }
         setInteractionHint(QString());
         emit statusMessageCleared();
         m_ctrlPlaneCyclePending = false;
@@ -1559,8 +1569,82 @@ bool VpController::openImage(const QUrl &url)
         postStatus(tr("图片打开失败。"), true);
         return false;
     }
+    m_sourceImageUrl = url;
     setTool(VpTools::CreatePlane);
     postStatus(tr("图片已打开，请先创建平面。"));
     emit focusRequested();
+    return true;
+}
+
+QUrl VpController::suggestedSaveUrl() const
+{
+    if (!m_savedImageUrl.isEmpty())
+        return m_savedImageUrl;
+    if (m_sourceImageUrl.isLocalFile()) {
+        const QFileInfo source(m_sourceImageUrl.toLocalFile());
+        return QUrl::fromLocalFile(source.dir().filePath(source.completeBaseName() + "_edited.png"));
+    }
+    QString folder = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    if (folder.isEmpty()) folder = QDir::homePath();
+    return QUrl::fromLocalFile(QDir(folder).filePath("vanishing-point.png"));
+}
+
+bool VpController::saveImage(const QUrl &url)
+{
+    if (!canSave()) {
+        postStatus(tr("请先打开图片再保存。"), true);
+        return false;
+    }
+    if (!url.isLocalFile() || url.toLocalFile().isEmpty()) {
+        postStatus(tr("请选择本地图片保存位置。"), true);
+        return false;
+    }
+    QString fileName = url.toLocalFile();
+    QByteArray format = QFileInfo(fileName).suffix().toLower().toLatin1();
+    if (format.isEmpty()) {
+        fileName += ".png";
+        format = "png";
+    }
+    if (format != "png" && format != "jpg" && format != "jpeg" && format != "bmp") {
+        postStatus(tr("保存失败：请选择 PNG、JPEG 或 BMP 格式。"), true);
+        return false;
+    }
+    finishActiveStrokes();
+    const bool opaque = format != "png";
+    QImage image(m_document.background().size(), opaque ? QImage::Format_RGB32
+                                                       : QImage::Format_ARGB32_Premultiplied);
+    if (image.isNull()) {
+        postStatus(tr("保存失败：无法分配图像内存。"), true);
+        return false;
+    }
+    image.fill(opaque ? Qt::white : Qt::transparent);
+    {
+        QPainter painter(&image);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+        SceneRenderer(m_document).renderContent(painter);
+    }
+    // Encode to a temporary file so a failed write cannot damage an existing image.
+    QSaveFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly)) {
+        postStatus(tr("保存失败：%1").arg(file.errorString()), true);
+        return false;
+    }
+    QImageWriter writer(&file, format);
+    if (format == "jpg" || format == "jpeg") writer.setQuality(95);
+    if (!writer.write(image)) {
+        postStatus(tr("保存失败：%1").arg(writer.errorString()), true);
+        file.cancelWriting();
+        return false;
+    }
+    if (!file.commit()) {
+        postStatus(tr("保存失败：%1").arg(file.errorString()), true);
+        return false;
+    }
+    const QUrl savedUrl = QUrl::fromLocalFile(fileName);
+    if (m_savedImageUrl != savedUrl) {
+        m_savedImageUrl = savedUrl;
+        emit savedImageUrlChanged();
+    }
+    postStatus(tr("图片已保存：%1").arg(QDir::toNativeSeparators(fileName)));
     return true;
 }

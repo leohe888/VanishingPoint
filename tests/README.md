@@ -8,12 +8,13 @@ cmake --build build -j 6
 ctest --test-dir build --output-on-failure -j 1
 ~~~
 
-19 个常规测试程序默认采用 offscreen / software。启用 VP_ENABLE_GPU_TESTS 后，Windows 上额外运行 D3D11 网格渲染检查 vp_grid_d3d11。剪切板测试必须串行运行。Qt Test 日志位于 build/tests/test-results。
+20 个常规测试程序默认采用 offscreen / software。启用 VP_ENABLE_GPU_TESTS 后，Windows 上额外运行 D3D11 网格渲染检查 vp_grid_d3d11。剪切板测试必须串行运行。Qt Test 日志位于 build/tests/test-results。
 
 ## 测试覆盖
 
 | 测试程序 | 覆盖范围 |
 | --- | --- |
+| `tst_imagesaving` | 背景/绘画层/浮动选区合成、辅助线排除、PNG 透明度、JPEG/BMP 白底、默认路径、无效请求与写入失败、保存目标重置及活动笔触提交 |
 | `tst_perspectivetransform`、`tst_perspectivequad`、`tst_perspectiveplane` | 透视映射、退化输入、命中、控制点、平面连接、状态色与辅助显示 |
 | `tst_planecreatetool` | 落点状态、创建提交与失败恢复、取消／工具切换、键盘回退、连续创建与历史、几何阈值、角点顺序与绕序、快照独立性、创建预览颜色与诊断状态、选区附着方向及子平面坐标方向 |
 | `tst_planeedittool` | 四角四边编辑、连续更新与非法位置恢复、夹角旋转及跨 ±180°、派生预览与父子连接、共享边锁定、历史与取消／工具切换、缩放命中及 Ctrl 拖动阈值、状态色与编辑光标 |
