@@ -54,3 +54,19 @@ if(VP_BUILD_BENCHMARKS)
         target_compile_definitions(vp_${name}_check PRIVATE VP_${stage_name}_STAGE=${VP_${stage_name}_STAGE})
     endforeach()
 endif()
+
+# The software backend does not exercise stencil geometry. Use Windows' default
+# hardware backend explicitly to catch unsupported primitive topologies.
+option(VP_ENABLE_GPU_TESTS "Register D3D11 grid clipping regression" OFF)
+if(VP_ENABLE_GPU_TESTS AND WIN32)
+    get_filename_component(vp_compiler_bin "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    add_test(NAME vp_grid_d3d11 COMMAND ${CMAKE_COMMAND} -E env
+        "PATH=$<TARGET_FILE_DIR:Qt6::Core>;${vp_compiler_bin};$ENV{PATH}"
+        ${CMAKE_COMMAND}
+        "-DVP_TEST_EXECUTABLE=$<TARGET_FILE:tst_floatingselectionprojection>"
+        "-DVP_TEST_LOG=${CMAKE_CURRENT_BINARY_DIR}/test-results/grid-d3d11.txt"
+        -DVP_TEST_FUNCTION=planeGridCoversBothDiagonalHalves
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_qt_test.cmake")
+    set_tests_properties(vp_grid_d3d11 PROPERTIES TIMEOUT 120 LABELS gpu
+        ENVIRONMENT "QT_QPA_PLATFORM=windows;QT_QUICK_BACKEND=;QSG_RHI_BACKEND=d3d11;VP_TEST_GPU=1")
+endif()

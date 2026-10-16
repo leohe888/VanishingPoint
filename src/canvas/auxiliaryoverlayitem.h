@@ -69,18 +69,21 @@ class AuxiliaryOverlayItem final : public QQuickItem
         }
     };
     struct ClipNode : QSGClipNode {
-        QSGGeometry clipGeometry{QSGGeometry::defaultAttributes_Point2D(), 4};
+        QSGGeometry clipGeometry{QSGGeometry::defaultAttributes_Point2D(), 6};
         ClipNode()
         {
-            clipGeometry.setDrawingMode(QSGGeometry::DrawTriangleFan);
+            // Triangle fans are unsupported by Qt 6 RHI backends such as D3D11.
+            clipGeometry.setDrawingMode(QSGGeometry::DrawTriangles);
             setGeometry(&clipGeometry);
             setIsRectangular(false);
         }
         void assign(const QPolygonF &polygon)
         {
             auto *vertices = clipGeometry.vertexDataAsPoint2D();
-            for (int i = 0; i < 4; ++i) {
-                const QPointF point = i < polygon.size() ? polygon[i] : QPointF();
+            constexpr int corners[] = {0, 1, 2, 0, 2, 3};
+            for (int i = 0; i < 6; ++i) {
+                const int corner = corners[i];
+                const QPointF point = corner < polygon.size() ? polygon[corner] : QPointF();
                 vertices[i].set(float(point.x()), float(point.y()));
             }
             markDirty(DirtyGeometry);

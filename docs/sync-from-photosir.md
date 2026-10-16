@@ -31,3 +31,9 @@ ctest --test-dir build --output-on-failure -j 1
 Qt Test 文本报告保存在 build/tests/test-results。性能检查可通过 -DVP_BUILD_BENCHMARKS=ON 构建，按需交互运行，不加入默认 CTest。
 
 本次验证：Debug 主程序与 5 个性能检查程序构建通过，19/19 CTest 通过，OpenGL 选区轮廓检查通过。Qt 6 的 offscreen 平台不提供 OpenGL 上下文，GPU 检查需使用 QT_QPA_PLATFORM=windows、QSG_RHI_BACKEND=opengl、VP_TEST_OPENGL=1，并清空 QT_QUICK_BACKEND。
+
+### D3D11 网格裁剪回归
+
+2026-10-16 补充修复：Qt 6 的 D3D11 RHI 不支持 DrawTriangleFan。平面网格裁剪改用两个显式三角形，避免只显示对角线一侧。此前 OpenGL 轮廓检查不覆盖该路径。
+
+在 Windows 上配置 -DVP_ENABLE_GPU_TESTS=ON 后，CTest 会额外执行 vp_grid_d3d11，在四个象限检查网格可见性。测试截图保存在 build/tests/plane-grid-gpu.png。

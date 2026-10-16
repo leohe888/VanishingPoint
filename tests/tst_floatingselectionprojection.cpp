@@ -80,6 +80,7 @@ class FloatingSelectionProjectionTest : public QObject
 
 private slots:
     void selectionOutlineRendering();
+    void planeGridCoversBothDiagonalHalves();
     void clipsAcrossSurfacesWithoutLosingPixels();
     void detachedImageProducesSinglePatch();
     void attachedImageSpansEveryQuad();
@@ -341,6 +342,34 @@ void FloatingSelectionProjectionTest::selectionOutlineRendering()
             control.sync(); control.render(); control.endFrame(); return fbo.toImage();
         });
         control.invalidate();
+    }
+}
+
+void FloatingSelectionProjectionTest::planeGridCoversBothDiagonalHalves()
+{
+    if (qEnvironmentVariableIsEmpty("VP_TEST_GPU"))
+        QSKIP("Run with VP_TEST_GPU=1 and a hardware RHI to check GPU clipping");
+    const QSize viewport(280, 280);
+    QQuickWindow window;
+    window.setGeometry(QRect(QPoint(), viewport)); window.setColor(Qt::white);
+    auto *overlay = new AuxiliaryOverlayItem(window.contentItem()); overlay->setSize(viewport);
+    const PerspectiveQuad::Corners corners{{{40,40},{240,40},{240,240},{40,240}}};
+    const PerspectivePlane plane(corners, corners);
+    overlay->setPlaneGuides({plane}, 0, false, false, nullptr, 20, 1, {});
+    // CTest may launch Windows GUI executables with an initially hidden window.
+    window.show(); window.hide(); window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    const QImage shot = window.grabWindow();
+    QVERIFY(!shot.isNull());
+    shot.save(QCoreApplication::applicationDirPath() + "/plane-grid-gpu.png");
+    // Probe grid segments in all four quadrants, away from the diagonal and border.
+    for (int x : {60, 100, 180, 220}) for (int y : {70, 210}) {
+        bool visible = false;
+        for (int dx = -2; dx <= 2; ++dx) {
+            const QColor color = shot.pixelColor(x + dx, y);
+            visible |= color.blue() > color.red() + 20;
+        }
+        QVERIFY2(visible, qPrintable(QString("Grid missing at (%1,%2)").arg(x).arg(y)));
     }
 }
 
